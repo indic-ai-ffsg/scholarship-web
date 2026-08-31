@@ -265,6 +265,16 @@ export const en: Dict = {
   'auth.welcome': 'Welcome. Let us set up your details.',
 
   'profile.complete': '{n}% complete',
+  /* The profile review screen. "Change" rather than "Edit": the student is not
+     editing a record, they are correcting something that has changed. */
+  'profile.viewLede': 'Everything you have told us. Change any answer and it is used for every scholarship from then on.',
+  'profile.change': 'Change',
+  'profile.add': 'Add',
+  'profile.save': 'Save',
+  'profile.saving': 'Saving…',
+  'profile.cancelEdit': 'Cancel',
+  'profile.notAnswered': 'Not answered yet',
+  'profile.verified': 'Verified',
   'profile.continue': 'Continue where you left off',
   'profile.start': 'Start your profile',
   'profile.saved': 'Saved',

@@ -37,6 +37,7 @@ const Applications = lazy(() => import('./pages/Applications'))
 const ApplicationDetail = lazy(() => import('./pages/ApplicationDetail'))
 const Apply = lazy(() => import('./pages/Apply'))
 const ProfileWizard = lazy(() => import('./pages/ProfileWizard'))
+const Profile = lazy(() => import('./pages/Profile'))
 const MyData = lazy(() => import('./pages/MyData'))
 const Helpers = lazy(() => import('./pages/Helpers'))
 
@@ -83,7 +84,13 @@ export default function App() {
 
         {/* The student's own. */}
         <Route path="/dashboard" element={<RequireProfile><Dashboard /></RequireProfile>} />
-        <Route path="/profile" element={<RequireAuth><ProfileWizard /></RequireAuth>} />
+        {/* Two screens, and which one you get depends on whether you have
+            finished rather than on which link you pressed. /profile is the
+            review; the nine questions live at /profile/setup, because
+            "Question 1 of 9" is the right thing to show somebody exactly once
+            and the wrong thing to show them ever after. */}
+        <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+        <Route path="/profile/setup" element={<RequireAuth><ProfileWizard /></RequireAuth>} />
         <Route path="/matches" element={<RequireProfile><Matches /></RequireProfile>} />
         <Route path="/documents" element={<RequireProfile><Documents /></RequireProfile>} />
         <Route path="/apply/:scholarshipId" element={<RequireProfile><Apply /></RequireProfile>} />
@@ -125,7 +132,7 @@ function RequireProfile({ children }: { children: React.ReactNode }) {
   if (status === 'loading') return <div className="page"><Loading /></div>
   if (status !== 'authenticated') return <Navigate to="/signin" replace />
   if (!profile) {
-    return <Navigate to={withNext('/profile', location.pathname + location.search)} replace />
+    return <Navigate to={withNext('/profile/setup', location.pathname + location.search)} replace />
   }
   return <>{children}</>
 }

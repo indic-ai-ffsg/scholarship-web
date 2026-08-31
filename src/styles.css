@@ -1784,6 +1784,51 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   padding-top: 2rem;
 }
 
+/* --- my profile ---------------------------------------------------------------
+ *
+ * The review screen: every answer on one page, one of them editable at a time.
+ * A <dl>, because that is what this is — a list of questions and the answers
+ * given to them — and a screen reader then announces the pairing instead of
+ * eighteen unrelated lines.
+ */
+
+.detail-list { margin: 1.5rem 0 0; }
+.detail-row {
+  display: grid; gap: 0.25rem 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--border);
+}
+/* Two columns once there is room for them, and the question column is capped
+   so a long question does not push every answer on the page to the right. */
+@media (min-width: 40rem) {
+  .detail-row { grid-template-columns: minmax(0, 18rem) 1fr; align-items: baseline; }
+  .detail-row.editing { grid-template-columns: 1fr; }
+}
+.detail-row dt {
+  font-weight: 600;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+}
+.detail-row dd {
+  margin: 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
+}
+/* Editing turns the row into a column: the control, its help and its two
+   buttons need the full width, and a 18rem label column beside a set of radio
+   rows wastes most of the screen a phone has. */
+.detail-row.editing dd { display: block; }
+.detail-row.editing { background: var(--surface); border-radius: var(--radius); padding: 1rem; }
+.detail-row.editing .row { margin-top: 1rem; }
+
+/* Checked against a document, so the student knows which answers a provider has
+   already accepted. A word and a tick, never the colour alone. */
+.detail-row .verified {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--eligible-weak); color: var(--eligible);
+  font-size: var(--step--1); font-weight: 700;
+}
+
 /* --- the student's dashboard --------------------------------------------------
  *
  * Orientation, in one screen: how complete am I, what is waiting on me, and

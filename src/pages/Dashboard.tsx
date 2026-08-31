@@ -55,7 +55,7 @@ export default function Dashboard() {
      than as a second, differently-worded empty state: if the guard is ever
      loosened, the answer to "registered but not finished" should stay one
      answer given in one place. */
-  if (!profile) return <Navigate to="/profile" replace />
+  if (!profile) return <Navigate to="/profile/setup" replace />
 
   const s = summary.data
   const applications = recent.data ?? []
@@ -105,7 +105,7 @@ export default function Dashboard() {
           ) : null}
 
           <div className="actions">
-            <Link className="btn primary" to="/profile">{t('profile.continue')}</Link>
+            <Link className="btn primary" to="/profile/setup">{t('profile.continue')}</Link>
           </div>
         </section>
       ) : null}
