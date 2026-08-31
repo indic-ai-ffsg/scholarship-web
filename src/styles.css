@@ -1811,20 +1811,29 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 .doc-thumb {
   display: block;
   width: 100%;
-  height: 14rem;
+  /* The document's own shape, not a box it has to fit.
+   *
+   * This was a fixed 14rem rectangle with object-fit: contain, which is the
+   * wrong instinct for a document: a portrait certificate in a landscape box
+   * is a small picture with grey bars either side, and the thing you are trying
+   * to recognise ends up the smallest part of the card. height: auto lets a
+   * tall scan be tall and a wide one be wide, at the full width either way. */
+  height: auto;
   margin-top: 0.75rem;
-  object-fit: contain;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-sunken);
   pointer-events: none;
 }
 
-/* A PDF renders through the browser's viewer, which has no object-fit and no
-   notion of being a thumbnail: it lays the page out at its own width and shows
-   the top of it. That is the right first page to show, and the frame simply
-   holds a window onto it. */
+/* A PDF has no intrinsic size to lay out from — an iframe is whatever you say
+   it is — so the page's own proportions have to be stated. 1:√2 is A4, which
+   is what a certificate, a marksheet and a bonafide letter are printed on;
+   with view=FitH the viewer fits the page to that width and the first page
+   fills the frame exactly, no bars and no cropping. */
 .doc-thumb-page {
+  aspect-ratio: 1 / 1.414;
+  height: auto;
   border-color: var(--border);
   background: var(--surface);
 }

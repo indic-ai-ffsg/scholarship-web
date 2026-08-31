@@ -277,7 +277,9 @@ function DocumentCard({
                alt={`${label} — ${doc.original_name}`} referrerPolicy="no-referrer" />
         ) : (
           <iframe className="doc-thumb doc-thumb-page"
-                  src={`${preview}#toolbar=0&navpanes=0`}
+                  // FitH fits the page to the frame's width; the frame's own
+                  // aspect-ratio is A4, so the whole first page lands in it.
+                  src={`${preview}#toolbar=0&navpanes=0&view=FitH`}
                   title={`${label} — ${doc.original_name}`}
                   tabIndex={-1} referrerPolicy="no-referrer" />
         )
