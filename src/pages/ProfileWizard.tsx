@@ -53,6 +53,14 @@ interface Question {
   min?: number
   max?: number
   outOfRange?: string
+  /* Whole numbers only, because the API field is an int rather than a float.
+   *
+   * disability_percent is *int in profile.UpsertInput. A student who types 40.5
+   * sends 40.5, and Go fails to decode the body before any handler or validator
+   * runs — so the reply is the generic "We could not read that request", naming
+   * no field, at the end of a nine-question form. Rounding it quietly would be
+   * worse: that is their certificate's number, and it is not ours to adjust. */
+  integer?: boolean
   inputMode?: 'text' | 'numeric' | 'tel'
 }
 
@@ -182,6 +190,7 @@ function buildQuestions(): Question[] {
       placeholder: '40',
       min: 0,
       max: 100,
+      integer: true,
       outOfRange: 'A certificate percentage is between 0 and 100.',
     },
     {
@@ -367,6 +376,9 @@ export default function ProfileWizard() {
     if (question?.kind !== 'number' || value === '') return null
     const n = Number(value)
     if (!Number.isFinite(n)) return 'Enter a number.'
+    if (question.integer && !Number.isInteger(n)) {
+      return 'Enter a whole number, without a decimal point.'
+    }
     const under = question.min !== undefined && n < question.min
     const over = question.max !== undefined && n > question.max
     return under || over ? question.outOfRange ?? 'That number is out of range.' : null
@@ -397,7 +409,15 @@ export default function ProfileWizard() {
     for (const q of questions) {
       const v = answers[q.field]
       if (v === undefined || v === '') continue
-      payload[q.field] = q.kind === 'number' ? Number(v) : v
+      /* 'marks' counts as a number here, and forgetting that is a 400.
+       *
+       * The marks question has its own kind because it renders a scale chooser
+       * as well as a box, but the answer it stores is still academic_percentage
+       * — numeric(5,2) in the database, *float64 on the API struct. Sent as the
+       * string "79.8" the body fails to decode before any handler sees it, and
+       * the student is told "We could not read that request" at the moment they
+       * press Finish, with no clue which of nine answers was wrong. */
+      payload[q.field] = q.kind === 'number' || q.kind === 'marks' ? Number(v) : v
     }
 
     try {
@@ -559,6 +579,9 @@ export default function ProfileWizard() {
                 placeholder={question.placeholder}
                 min={question.min}
                 max={question.kind === 'date' ? today : question.max}
+                // The spinner arrows then step in ones, and a phone keypad
+                // offers no decimal point for a field that cannot take one.
+                step={question.integer ? 1 : undefined}
                 value={value}
                 onChange={e => setAnswer(question.field, e.target.value)}
               />
