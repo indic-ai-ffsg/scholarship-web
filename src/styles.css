@@ -1798,25 +1798,35 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
  * portrait, and left to itself a 3000px scan pushes the page down by three
  * screens. The border and ground say it is the document rather than part of
  * the page — a scan on a white card on a white page has no edge otherwise. */
-.doc-preview {
+/* The document itself, on its own card.
+ *
+ * Not a control. It is inert by design — pointer-events: none means there is
+ * nothing to click, scroll, drag or right-click-save, which is what makes this
+ * a preview rather than an embedded viewer. A student recognises the page they
+ * uploaded and moves on.
+ *
+ * contain rather than cover: a cropped certificate is a certificate you cannot
+ * identify, and identifying it is the entire job. The sunken ground is what a
+ * portrait scan sits on when it does not fill the width. */
+.doc-thumb {
   display: block;
+  width: 100%;
+  height: 14rem;
   margin-top: 0.75rem;
-  max-width: 100%;
-  max-height: 24rem;
-  width: auto;
+  object-fit: contain;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-sunken);
+  pointer-events: none;
 }
 
-/* A document with pages needs a window rather than a fitted box: an image is
-   as tall as it is, a PDF is as tall as the reader wants to scroll. Height in
-   rem so it grows with the reader's own font size, and 70vh so it never grows
-   past the screen it has to fit inside. */
-.doc-preview-page {
-  width: 100%;
-  height: min(32rem, 70vh);
-  max-height: none;
+/* A PDF renders through the browser's viewer, which has no object-fit and no
+   notion of being a thumbnail: it lays the page out at its own width and shows
+   the top of it. That is the right first page to show, and the frame simply
+   holds a window onto it. */
+.doc-thumb-page {
+  border-color: var(--border);
+  background: var(--surface);
 }
 
 /* --- my profile ---------------------------------------------------------------

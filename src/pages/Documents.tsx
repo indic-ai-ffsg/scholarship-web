@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
@@ -165,43 +165,31 @@ function DocumentCard({
   const expiringSoon = v?.is_live && v.days_to_expiry <= 30
   const expired = v && !v.is_live && v.status === 'VERIFIED'
 
-  /* The signed URL, fetched only when it is asked for.
+  /* The preview, fetched as the card mounts.
    *
-   * /documents/:id/download answers with a URL and an expiry rather than the
-   * bytes, and the API's own note says why: a redirect would leave the
-   * signature in browser history and in the referrer the storage host sees. So
-   * it is held in memory while the preview is open and never written into an
-   * href the browser will remember.
+   * Every document shows its own contents — there is no button, nothing to
+   * press, nothing that opens or downloads. A student checking they uploaded
+   * the right page should be able to see that it is the right page.
    *
-   * On demand rather than for every row at load: six documents would otherwise
-   * mint six signed URLs the student may never look at, each live for its whole
-   * TTL.
-   *
-   * The image test is on the file name because that is what the API sends —
-   * Document carries original_name and size_bytes, not a MIME type. The server
-   * sniffs the real type at upload and rejects anything that is not a PDF or a
-   * picture, so the extension here is choosing how to show a file that has
-   * already been vouched for, not deciding whether to trust it. */
+   * The cost is real and it is the reason this was behind a button before: a
+   * list of six documents mints six signed URLs, each live for its whole TTL,
+   * whether or not anyone looks. That is the trade for a preview that is simply
+   * there, and it is a fair one — a document vault whose documents are all
+   * invisible is a filing cabinet with the drawers welded shut.
+   */
   const [preview, setPreview] = useState<string | null>(null)
-  const [previewing, setPreviewing] = useState(false)
   const isImage = /\.(png|jpe?g|webp)$/i.test(doc.original_name)
 
-  async function showPreview() {
-    if (preview) { setPreview(null); return }
-    setPreviewing(true)
-    try {
-      // purpose=view is what makes this renderable: the API leaves the
-      // Content-Disposition alone for viewing, so the browser shows the file
-      // instead of saving it.
-      const res = await api.get<{ url: string }>(
-        `/documents/${doc.document_id}/download`, { purpose: 'view' })
-      setPreview(res.data.url)
-    } catch {
-      /* the list reload will show the truth either way */
-    } finally {
-      setPreviewing(false)
-    }
-  }
+  useEffect(() => {
+    let cancelled = false
+    // purpose=view is what makes it renderable: the API leaves the
+    // Content-Disposition alone for viewing, so the browser shows the file
+    // instead of saving it.
+    api.get<{ url: string }>(`/documents/${doc.document_id}/download`, { purpose: 'view' })
+      .then(res => { if (!cancelled) setPreview(res.data.url) })
+      .catch(() => { /* the card still shows its name, type and status */ })
+    return () => { cancelled = true }
+  }, [doc.document_id])
 
   async function remove() {
     setBusy(true)
@@ -262,17 +250,6 @@ function DocumentCard({
       )}
 
       <div className="row" style={{ margin: '0.75rem 0 0' }}>
-        {/* The label says which document, because a list of six cards otherwise
-            offers a screen reader six identical "View" buttons. */}
-        <button
-          className="quiet"
-          onClick={showPreview}
-          disabled={busy || previewing}
-          aria-expanded={Boolean(preview)}
-          aria-label={`${preview ? t('doc.hide') : t('doc.preview')} ${label}`}
-        >
-          {previewing ? t('doc.opening') : preview ? t('doc.hide') : t('doc.preview')}
-        </button>
         <button
           className="quiet"
           onClick={remove}
@@ -283,31 +260,26 @@ function DocumentCard({
         </button>
       </div>
 
-      {/* Shown in place, both kinds. Opening a tab or saving a file to check
-          you uploaded the right page is a lot of ceremony for a glance, and on
-          a phone it loses the page you were on.
+      {/* #toolbar=0&navpanes=0 removes Chrome's PDF chrome — which is where the
+          download and print buttons were, and the reason a "preview" was
+          offering a download at all.
 
-          referrerPolicy so the signed URL is not handed to whatever the storage
-          host logs.
-
-          No sandbox attribute on the frame, and that is measured rather than
-          assumed: Chrome declines to render a PDF in a sandboxed iframe at all.
-          sandbox="" shows its grey broken-document placeholder, and so do
-          allow-scripts and allow-scripts allow-same-origin — the built-in
-          viewer needs privileges no sandbox value grants. What the frame holds
-          is a cross-origin document from our own bucket, served as a PDF, with
-          no referrer and nothing of ours reachable from it. */}
+          pointer-events: none in the stylesheet finishes the job: the preview
+          is something to look at, not something to operate. Nothing in it can
+          be clicked, scrolled or dragged out, so a multi-page document shows
+          its first page and stops there. */}
       {preview && (
         isImage ? (
           // alt is the document's own name. Describing the picture is not
           // something this code can do, and "UDID card" is what tells the
           // reader it is the right one.
-          <img className="doc-preview" src={preview}
+          <img className="doc-thumb" src={preview}
                alt={`${label} — ${doc.original_name}`} referrerPolicy="no-referrer" />
         ) : (
-          <iframe className="doc-preview doc-preview-page" src={preview}
+          <iframe className="doc-thumb doc-thumb-page"
+                  src={`${preview}#toolbar=0&navpanes=0`}
                   title={`${label} — ${doc.original_name}`}
-                  referrerPolicy="no-referrer" />
+                  tabIndex={-1} referrerPolicy="no-referrer" />
         )
       )}
     </article>

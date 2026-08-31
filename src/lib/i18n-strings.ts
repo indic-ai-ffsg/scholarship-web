@@ -324,9 +324,6 @@ export const en: Dict = {
   'doc.validUntil': 'Valid until {date}',
   'doc.none': 'You have not added any documents yet',
   'doc.uploading': 'Uploading…',
-  'doc.preview': 'Preview',
-  'doc.hide': 'Hide',
-  'doc.opening': 'Loading…',
   'doc.remove': 'Remove',
 
   'apply.title': 'Apply',
