@@ -288,8 +288,15 @@ function DocumentCard({
           a phone it loses the page you were on.
 
           referrerPolicy so the signed URL is not handed to whatever the storage
-          host logs; the frame is same-origin-free content, so it is sandboxed
-          to nothing it does not need. */}
+          host logs.
+
+          No sandbox attribute on the frame, and that is measured rather than
+          assumed: Chrome declines to render a PDF in a sandboxed iframe at all.
+          sandbox="" shows its grey broken-document placeholder, and so do
+          allow-scripts and allow-scripts allow-same-origin — the built-in
+          viewer needs privileges no sandbox value grants. What the frame holds
+          is a cross-origin document from our own bucket, served as a PDF, with
+          no referrer and nothing of ours reachable from it. */}
       {preview && (
         isImage ? (
           // alt is the document's own name. Describing the picture is not
@@ -300,7 +307,7 @@ function DocumentCard({
         ) : (
           <iframe className="doc-preview doc-preview-page" src={preview}
                   title={`${label} — ${doc.original_name}`}
-                  referrerPolicy="no-referrer" sandbox="" />
+                  referrerPolicy="no-referrer" />
         )
       )}
     </article>
