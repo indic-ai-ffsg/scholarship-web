@@ -66,14 +66,48 @@ export default function Dashboard() {
       <h1>{t('dash.title')}</h1>
       <p className="lede">{t('dash.lede')}</p>
 
-      {/* One instruction, not a list. next_steps is ordered by how many schemes
-          each missing field unlocks, so the first entry is the highest-value
-          thing this student could do next. */}
-      {profile.completeness_score < 100 && profile.next_steps?.length ? (
-        <Notice tone="warn" title={t('profile.complete', { n: profile.completeness_score })}>
-          <p>{profile.next_steps[0].message}</p>
-          <Link className="btn" to="/profile">{t('profile.continue')}</Link>
-        </Notice>
+      {/* Completeness as a meter, not as a warning.
+       *
+       * One instruction, not a list: next_steps is ordered by how many schemes
+       * each missing field unlocks, so the first entry is the highest-value
+       * thing this student could do next.
+       *
+       * The amber Notice this used to be is kept below for the two things that
+       * genuinely wait on the student. A profile at 92% is progress, and a page
+       * that shouts at somebody for the 8% teaches them to ignore the colour
+       * that means "act on this". */}
+      {profile.completeness_score < 100 ? (
+        <section className="card progress-panel" aria-labelledby="profile-progress">
+          <h2 id="profile-progress">{t('dash.profileTitle')}</h2>
+
+          <div className="progress">
+            <div className="label">
+              <span>{t('profile.complete', { n: profile.completeness_score })}</span>
+              <span>{t('dash.toGo', { n: 100 - profile.completeness_score })}</span>
+            </div>
+            <div
+              className="bar"
+              role="progressbar"
+              aria-valuenow={profile.completeness_score}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={t('profile.complete', { n: profile.completeness_score })}
+            >
+              <span style={{ width: `${profile.completeness_score}%` }} />
+            </div>
+          </div>
+
+          {profile.next_steps?.length ? (
+            <p className="next">
+              <span className="mark" aria-hidden="true">→</span>
+              <span>{profile.next_steps[0].message}</span>
+            </p>
+          ) : null}
+
+          <div className="actions">
+            <Link className="btn primary" to="/profile">{t('profile.continue')}</Link>
+          </div>
+        </section>
       ) : null}
 
       {s && s.applications.draft > 0 && (
@@ -104,6 +138,7 @@ export default function Dashboard() {
                 ? t('dash.matchesBlocked', { n: s.matches.blocked })
                 : t('dash.matchesHint')
             }
+            go={t('dash.matchesGo')}
           />
           <Figure
             to="/applications"
@@ -113,12 +148,14 @@ export default function Dashboard() {
               approved: s.applications.approved,
               rejected: s.applications.rejected,
             })}
+            go={t('dash.applicationsGo')}
           />
           <Figure
             to="/documents"
             label={t('dash.documents')}
             value={s.documents_verified}
             hint={t('dash.documentsHint')}
+            go={t('dash.documentsGo')}
           />
         </ul>
       )}
@@ -138,18 +175,29 @@ export default function Dashboard() {
         </section>
       )}
 
-      <section style={{ marginTop: '2.5rem' }}>
-        <h2 style={{ fontSize: 'var(--step-1)' }}>{t('dash.recent')}</h2>
+      <section>
+        <div className="dash-head">
+          <h2>{t('dash.recent')}</h2>
+          {applications.length > 0 && (
+            <Link to="/applications">{t('dash.allApplications')}</Link>
+          )}
+        </div>
 
         {recent.loading && !recent.data && <Loading />}
         {recent.error ? <ErrorState error={recent.error} onRetry={recent.reload} /> : null}
 
+        {/* The empty state carries the only "find scholarships" on the page.
+            There were two, four hundred pixels apart: this one and a full-width
+            button at the foot, which is the same instruction given twice to
+            somebody who has not yet decided to follow it once. */}
         {recent.data && applications.length === 0 && (
-          <Empty
-            title={t('dash.noApplications')}
-            hint={t('dash.noApplicationsHint')}
-            action={<Link className="btn primary" to="/matches">{t('dash.findScholarships')}</Link>}
-          />
+          <div className="card">
+            <Empty
+              title={t('dash.noApplications')}
+              hint={t('dash.noApplicationsHint')}
+              action={<Link className="btn primary" to="/matches">{t('dash.findScholarships')}</Link>}
+            />
+          </div>
         )}
 
         {applications.length > 0 && (
@@ -180,10 +228,15 @@ export default function Dashboard() {
         )}
       </section>
 
-      {/* The two hand-offs the flow diagram hangs off this screen. */}
-      <nav className="stack" style={{ marginTop: '2.5rem' }} aria-label={t('dash.title')}>
-        <Link className="btn wide" to="/profile">{t('dash.editDetails')}</Link>
-        <Link className="btn primary wide" to="/matches">{t('dash.findScholarships')}</Link>
+      {/* One hand-off, not two stacked full-width buttons.
+       *
+       * "Find scholarships" was here as well as in the empty state above, and
+       * the pair of them read as the page's conclusion when the page's actual
+       * conclusion is whatever the student came to check. Editing details is
+       * reachable from the tile above, the account menu and the profile link;
+       * it does not need a full-width button of its own at the foot. */}
+      <nav className="dash-foot" aria-label={t('dash.title')}>
+        <Link className="btn" to="/profile">{t('dash.editDetails')}</Link>
       </nav>
     </div>
   )
@@ -194,15 +247,24 @@ export default function Dashboard() {
  * Reuses the .figure pattern the impact page already uses, so the dashboard
  * inherits its spacing, its accent rule and its dark-mode handling rather than
  * growing a parallel set of tile styles that drift apart later. */
-function Figure({ to, label, value, hint }: {
-  to: string; label: string; value: number; hint: string
+function Figure({ to, label, value, hint, go }: {
+  to: string; label: string; value: number; hint: string; go: string
 }) {
   return (
     <li>
       <Link className="figure figure-link" to={to}>
         <span className="figure-label">{label}</span>
         <strong>{value}</strong>
-        <span className="muted">{hint}</span>
+        <span className="figure-tail">
+          <span className="muted">{hint}</span>
+          {/* What pressing the tile does, said in words. A card that changes
+              colour under a pointer tells a mouse user it is a target and tells
+              a keyboard or screen-reader user nothing; this is the part that
+              works for everybody. */}
+          <span className="go-row">
+            {go}<span className="go" aria-hidden="true">→</span>
+          </span>
+        </span>
       </Link>
     </li>
   )

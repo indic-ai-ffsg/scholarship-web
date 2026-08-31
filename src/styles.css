@@ -732,7 +732,10 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 
 .wizard { max-width: 34rem; margin: 0 auto; }
 .progress { margin-bottom: 1.5rem; }
-.progress .bar { height: 10px; background: var(--surface-sunken); border-radius: 999px; overflow: hidden; }
+/* The unfilled track is a lighter step of the same colour as the fill, not a
+   neutral grey: the pair then reads as one measure part-done rather than as a
+   green bar sitting on an unrelated grey one. */
+.progress .bar { height: 10px; background: var(--accent-weak); border-radius: 999px; overflow: hidden; }
 .progress .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
 .progress .label { display: flex; justify-content: space-between; font-size: var(--step--1); color: var(--text-muted); margin-bottom: 0.375rem; }
 
@@ -1447,6 +1450,15 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   display: grid; gap: var(--gap);
   grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
 }
+/* The li stays a real list item and passes the row track through.
+ *
+ * The alternative was display: contents on the li so the link became the grid
+ * item directly, and it is not worth it here: this audience includes VoiceOver
+ * on iOS, where a list whose items are display: contents has a history of being
+ * announced without its item count — and "list, 3 items" is the thing that
+ * tells somebody how much of this row there is. Two nested subgrids cost
+ * nothing and keep the markup honest. */
+.figures > li { display: grid; grid-row: span 3; grid-template-rows: subgrid; }
 .figure {
   display: grid; gap: 0.125rem;
   padding: 1.25rem;
@@ -1454,10 +1466,24 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   border: 1px solid var(--border);
   border-inline-start: 4px solid var(--accent);
   border-radius: var(--radius);
+  /* Three rows — label, value, hint — taken from the track the row set up, so
+   * the numbers sit on one line across all three tiles however many lines a
+   * label wraps to. Without it a two-line label pushes its own number down and
+   * the row reads as three unrelated cards. Where subgrid is missing the tiles
+   * simply size themselves, which is where they started. */
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  align-content: start;
 }
 .figure strong {
   font-size: var(--step-3); line-height: 1.1;
-  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  /* Proportional figures, deliberately. tabular-nums gives every digit the
+   * width of a zero, which is right in a column of numbers that must align and
+   * wrong here: at this size a standalone "1" then sits in a visibly empty box
+   * and "121" reads loose. The column that needs alignment is the tiles' rows
+   * above, and subgrid does that. */
+  align-self: end;
 }
 .figure .figure-label { font-weight: 600; }
 .figure .muted { font-size: var(--step--1); }
@@ -1466,10 +1492,25 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
  *
  * The figure already carries the border, padding and accent rule; all this adds
  * is the affordance that it can be pressed, and the removal of the underline
- * that would otherwise run under a number set at --step-3. */
+ * that would otherwise run under a number set at --step-3.
+ *
+ * The label was --accent-text here, which is #ffffff — white type on the white
+ * card. The tiles rendered as a bare 1, 0 and 0 with nothing saying what any of
+ * them counted, and the text was still in the page for a screen reader to read
+ * out, so nothing looked broken from the outside. Labels wear label ink. */
 .figure-link { text-decoration: none; color: inherit; }
-.figure-link:hover, .figure-link:focus-visible { border-color: var(--border-strong); }
-.figure-link .figure-label { color: var(--accent-text); }
+.figure-link .figure-label { color: var(--text-muted); }
+.figure-link:hover, .figure-link:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-sunken);
+}
+/* The affordance that this whole tile is a doorway: the label picks up the
+   accent and the arrow slides, so a pointer user sees a target and not a card
+   that happens to change colour. */
+.figure-link:hover .figure-label, .figure-link:focus-visible .figure-label { color: var(--accent); }
+.figure-link .go { color: var(--accent); font-weight: 700; }
+.figure-link:hover .go { transform: translateX(2px); }
+.figure-link .go { display: inline-block; margin-inline-start: 0.375rem; transition: transform 120ms ease-out; }
 
 .impact-splits {
   display: grid; gap: 2rem 3rem;
@@ -1742,6 +1783,72 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   border-top: 1px solid var(--border);
   padding-top: 2rem;
 }
+
+/* --- the student's dashboard --------------------------------------------------
+ *
+ * Orientation, in one screen: how complete am I, what is waiting on me, and
+ * what happened to what I sent. The page had all three and read as a stack of
+ * unrelated blocks separated by empty space — so what changed is grouping and
+ * order, not content.
+ */
+
+/* Profile completeness, as a panel rather than as a warning.
+ *
+ * It was a warn Notice: amber border, amber heading, the same treatment this
+ * page gives an expiring document. A profile at 92% is not a problem, it is
+ * progress, and dressing it as a fault is how a student learns to ignore the
+ * colour that is meant to mean "act on this" — which is still used, below,
+ * where something genuinely is waiting on them. */
+.progress-panel {
+  display: grid; gap: 0.875rem;
+  margin-bottom: var(--gap);
+}
+.progress-panel h2 { font-size: var(--step-1); margin: 0; }
+.progress-panel .progress { margin: 0; }
+.progress-panel .next {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  margin: 0; font-weight: 600;
+}
+.progress-panel .next .mark { color: var(--accent); flex: none; }
+.progress-panel .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+/* The section headings on this page, each with its own quiet way onward.
+   A heading and a link on one line, wrapping to two when the width runs out. */
+.dash-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 0.75rem; flex-wrap: wrap;
+  margin: 2.5rem 0 0.75rem;
+}
+.dash-head h2 { font-size: var(--step-1); margin: 0; }
+
+/* The tile's own bottom line: what this number leads to.
+ *
+ * The hint above it runs to one line in two tiles and two in the third, so the
+ * link has to be pushed to the bottom of the row rather than following the text
+ * — otherwise the three sit at three different heights and the row loses the
+ * baseline the subgrid just gave it. The wrapper stretches to the shared row
+ * height and margin-top: auto does the rest. */
+.figure-link > .figure-tail {
+  display: flex; flex-direction: column;
+  align-self: stretch;
+}
+.figure .go-row {
+  /* Block, not flex: as a flex row the arrow became a second item and, once the
+     label wrapped to two lines, floated off to the far right of the tile beside
+     the middle of them. Inline, it follows the last word wherever that lands. */
+  display: block;
+  margin-top: auto; padding-top: 0.5rem;
+  font-size: var(--step--1); font-weight: 600; color: var(--accent);
+}
+
+/* An empty state that is part of the page rather than adrift in it. The old one
+   was centred text on the page background with a button under it, floating in
+   a column of nothing; inside the card it belongs to the section above it. */
+.card .state-block { padding: 1.5rem 0.5rem; }
+
+/* One button, left-aligned, at its own size. Two stacked full-width buttons
+   read as the page's conclusion; this reads as the footnote it is. */
+.dash-foot { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2.5rem; }
 
 /* --- the front door ----------------------------------------------------------
  *

@@ -198,6 +198,16 @@ export const en: Dict = {
   'dash.noApplicationsHint': 'When you apply for a scholarship it will appear here with its progress.',
   'dash.findScholarships': 'Find scholarships',
   'dash.editDetails': 'View or edit your details',
+  /* The dashboard's completeness panel. "to go" rather than "incomplete": the
+     same number said as the distance left rather than as a deficiency. */
+  'dash.profileTitle': 'Your profile',
+  'dash.toGo': '{n}% to go',
+  'dash.allApplications': 'See all',
+  /* What each tile leads to, in words. A card that only changes colour under a
+     pointer says nothing to a keyboard or screen-reader user. */
+  'dash.matchesGo': 'See your matches',
+  'dash.applicationsGo': 'Track your applications',
+  'dash.documentsGo': 'Manage documents',
   'dash.draftsTitle': '{n} application not sent',
   'dash.draftsBody': 'A started application is not a submitted one. Finish it before the scholarship closes.',
   'dash.draftsAction': 'Finish it',
@@ -230,8 +240,6 @@ export const en: Dict = {
   'auth.privacy': 'Your number is used to sign you in and nothing else. There is no password to remember.',
   'auth.sendCode': 'Send code',
   'auth.sending': 'Sending…',
-  'auth.email': 'Email address',
-  'auth.emailOptional': 'Email address (optional)',
   'auth.continue': 'Continue',
   'auth.checking': 'Checking…',
   /* Still used by the public eligibility check, which sends somebody to the
@@ -255,10 +263,7 @@ export const en: Dict = {
   'auth.resendIn': 'Send it again in {n}s',
   'auth.changeNumber': 'Use a different number',
   'auth.welcome': 'Welcome. Let us set up your details.',
-  'auth.mfa': 'Sign-in code',
-  'auth.mfaHint': 'From the email we just sent you.',
 
-  'profile.title': 'Your profile',
   'profile.complete': '{n}% complete',
   'profile.continue': 'Continue where you left off',
   'profile.start': 'Start your profile',
@@ -338,15 +343,10 @@ export const en: Dict = {
 
   'common.loading': 'Loading',
   'common.retry': 'Try again',
-  'common.cancel': 'Cancel',
-  'common.close': 'Close',
   'common.required': 'required',
   'common.optional': 'optional',
   'common.error': 'Something went wrong',
   'common.offline': 'You are offline. Your work is saved on this device.',
-  'common.yes': 'Yes',
-  'common.no': 'No',
-  'common.notSure': 'I am not sure',
 
   /* Guardians and assisted use. Written for the student rather than about the
    * feature: "someone to help you" is what this is, and "guardian link" is
@@ -374,8 +374,6 @@ export const en: Dict = {
   'helpers.canSubmitNo': 'Can help, but cannot send applications',
 
   'helpers.theirs': 'Students I help',
-  'helpers.theirsNone': 'Nobody has asked for your help',
-  'helpers.theirsNoneHint': 'If a student asks you to help them, it will appear here.',
   'helpers.accept': 'Yes, I will help',
   'helpers.accepted': 'Thank you. Sign out and in again, then choose their name to help them.',
   'helpers.decline': 'No thank you',

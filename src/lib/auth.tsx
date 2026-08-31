@@ -27,6 +27,7 @@ import {
 
 import * as api from './api'
 import { AuthContext, type AuthApi, type AuthState } from './auth-context'
+import { clearAllDrafts } from './draft'
 import * as firebase from './firebase'
 import type { Envelope, LoginResult, Profile } from './types'
 
@@ -212,13 +213,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.logout()
     api.setAccessToken(null)
     await firebase.forgetFirebaseSession()
+
+    /* The drafts go with the session.
+     *
+     * clearAllDrafts has said "on sign-out" in its own doc comment since it was
+     * written and was never called from here, so signing out left the wizard's
+     * saved answers in localStorage: disability type, disability percentage,
+     * family income, UDID number. This app already treats the handset as shared
+     * — it is why the Firebase session is torn down two lines above — and a
+     * half-finished profile is the most sensitive thing it holds.
+     *
+     * Both keys, because the wizard writes under the profile id once there is
+     * one and under 'new' before that, and somebody who signs out mid-way
+     * through their first attempt is exactly the case worth clearing. */
+    const owner = state.context?.profile_id
+    if (owner) clearAllDrafts(owner)
+    clearAllDrafts('new')
+
     pending.current = null
     pendingPhone.current = null
     setState({
       status: 'anonymous', context: null, profile: null,
       pendingCode: null, justRegistered: false, error: null,
     })
-  }, [])
+  }, [state.context?.profile_id])
 
   /* Re-reads the profile, and the session with it.
    *

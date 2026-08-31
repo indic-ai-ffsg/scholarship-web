@@ -34,13 +34,6 @@ export interface LoginResult {
   language?: string
 }
 
-export interface RegisterResult {
-  user_id: string
-  channel: 'EMAIL' | 'SMS'
-  /** The address or number the code went to, masked. */
-  sent_to: string
-}
-
 export type EligibilityState = 'ELIGIBLE' | 'LIKELY_ELIGIBLE' | 'BLOCKED' | 'NOT_ELIGIBLE'
 
 /** One reason behind a classification, already written for the student to read. */
