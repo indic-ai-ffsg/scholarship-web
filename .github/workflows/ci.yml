@@ -1,0 +1,103 @@
+# The portal's own CI: lint, type-check, build.
+#
+# This repository IS the app. web/ was split out of the platform tree into
+# github.com/indic-ai-ffsg/scholarship-web, so this file sits at the root
+# beside package.json and every `run` step already starts in the right
+# directory. The platform tree's copy of this app runs the same commands from
+# web.yml with `defaults.run.working-directory: web`; here that setting would
+# be wrong, and would break every step rather than relocate it.
+#
+# Deliberately absent, for three different reasons:
+#
+#   check:contrast, check:responsive  run `python3 ../tools/...`, and tools/ is
+#     not in this repository — it belongs to the platform tree. In a standalone
+#     checkout that path does not exist, so wiring them in would fail on a
+#     missing file rather than on a real contrast or reflow regression. They
+#     also read admin/ and org/, so they want a workflow in the tree that holds
+#     all three apps, not this one.
+#
+#   check:routes  probes a running API for every path the portal calls, which
+#     needs Postgres, Redis, the API and the workers stood up. That belongs on
+#     a developer's machine (`cd backend && make dev`).
+#
+#   check:image, and publishing  the image is built, smoke-tested against its
+#     configured API and pushed from the platform tree's web.yml, behind its
+#     protected `production` environment. Nothing here logs in to a registry,
+#     so this workflow needs no secrets and names no environment — which is the
+#     point: a pull request gets full lint and build feedback without anyone
+#     being asked to approve anything.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# No `paths` filter, unlike web.yml in the platform tree. There it keeps a
+# change to org/ from rebuilding the portal. Here every tracked file belongs to
+# this one app, so a filter could only invent new ways to skip a check.
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 22 because the image builds on node:22-alpine. Tracking whatever is
+      # newest instead would let a build pass here and fail in the Dockerfile,
+      # and the Dockerfile is the one that ships.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` rather than `npm install`, for the same reason the Dockerfile
+      # uses it: it installs exactly what the lockfile pins and fails if the two
+      # disagree, so CI cannot pass against a dependency tree nobody has.
+      - name: Install
+        run: npm ci
+
+      - name: eslint
+        run: npm run lint
+
+      # tsc -b && vite build. The type check is the half that matters here —
+      # `vite build` alone would happily emit a bundle from code that does not
+      # type-check, because Vite strips types rather than checking them.
+      - name: Type-check and build
+        run: npm run build
+
+      - name: Report bundle sizes
+        run: ls -lh dist/assets/
+
+      # This bundle is NOT the one the image ships, and that is deliberate
+      # rather than a gap to close.
+      #
+      # .env is committed to this repository and `vite build` reads it with no
+      # flag, so the artifact below carries the values in it: API version v1 and
+      # the scholarship-adb48 Firebase project. Both are public by design — a
+      # Firebase web apiKey identifies a project without authorising anything,
+      # and phone sign-in is gated by the authorised-domain list and reCAPTCHA
+      # on Google's side.
+      #
+      # The image never sees that file: .dockerignore excludes .env from the
+      # build context on purpose, and the Dockerfile takes the same values as
+      # build arguments instead. So this job proves the code compiles and
+      # bundles. It does not prove the published image was pointed at the right
+      # API or the right Firebase project — web.yml's smoke test is what checks
+      # that, against the image it is about to push.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+          retention-days: 7
