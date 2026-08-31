@@ -1,0 +1,2066 @@
+/* Student portal and public site.
+ *
+ * Table 4.1 sets two briefs, and they share a design system without sharing an
+ * information architecture:
+ *
+ *   Public site    — "determine whether help exists". Plain language, large
+ *                    type, no authentication wall, multilingual.
+ *   Student portal — "complete one task at a time without anxiety". Linear and
+ *                    guided, a single question per screen, a persistent "what
+ *                    happens next", no dense tables.
+ *
+ * This is deliberately the opposite of the admin panel, which is dense and
+ * log-heavy. Same tokens, same components, different product — which is the
+ * report's argument in section 4.2.
+ *
+ * The entire user base has a disability, so WCAG 2.2 AA is the floor rather
+ * than the target. Decisions that follow from that are marked where they
+ * appear, because they are the ones most likely to be undone by someone who
+ * does not know why they are there.
+ */
+
+/* --- tokens ---------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  --bg: #fbfbfa;
+  --surface: #ffffff;
+  --surface-sunken: #f2f4f6;
+  --border: #d9dde3;
+  /* 3.09:1 against --surface. Form control boundaries are non-text
+   * content and must clear 3:1 under WCAG 2.2 (1.4.11); the lighter grey
+   * that looked tidier measured 2.19:1 and failed. */
+  --border-strong: #8e8c95;
+
+  /* Contrast against --surface is stated for each. 4.5:1 is the AA floor for
+   * body text; nothing below it is used for text anywhere. */
+  --text: #14171c;          /* 16.8:1 */
+  --text-muted: #4f5866;    /*  7.4:1 */
+
+  /* Green, not blue.
+   *
+   * The one thing worth writing down about this token, because it looks like a
+   * mistake and is not: --accent and --eligible are the same colour, on purpose.
+   *
+   * A colour that carries white text has to clear 4.5:1 against white, which
+   * puts every candidate green somewhere near this darkness — and every green
+   * that dark lands within about ten degrees of hue of every other. Two greens
+   * ten degrees apart do not read as two colours; they read as one colour
+   * applied inconsistently, which is worse than either merging them or picking
+   * different hues. So they are merged, and it says something true about this
+   * product: the site's colour and the word "eligible" mean the same thing here.
+   *
+   * What keeps a state legible is therefore not its hue. It never was — every
+   * one of the four pairs its colour with a text label and an icon shape, and
+   * none of them is distinguishable by colour alone to begin with. */
+  --accent: #0a5c3a;        /*  8.1:1 — deliberately dark enough to carry text */
+  --accent-weak: #e4f3ea;
+  --accent-text: #ffffff;
+
+  /* The four eligibility states of Table 4.2. Each pairs with a text label and
+   * an icon shape, never colour alone.
+   *
+   * --likely was a slate blue. It is a teal now: the ladder reads green, teal,
+   * amber, grey — "yes", "probably", "not as things stand", "no" — and the step
+   * from the first to the second is a step along one edge of the wheel rather
+   * than a jump across it. */
+  --eligible: #0a5c3a;      /*  8.1:1 — the accent; see above */
+  --eligible-weak: #e4f3ea;
+  --likely: #0f6470;        /*  6.8:1 */
+  --likely-weak: #e0f0f2;
+  --blocked: #8a4b00;       /*  6.8:1 */
+  --blocked-weak: #fdf0de;
+  --ineligible: #5a6472;    /*  6.0:1 */
+  --ineligible-weak: #f0f2f5;
+
+  --danger: #a3231c;        /*  6.7:1 */
+  --danger-weak: #fdecea;
+
+  /* The one blue left on the site, and it exists for exactly one lockup.
+   *
+   * The landing page's headline argues by changing colour — "Dis-" struck out in
+   * grey, "Ability to" in this blue, "Distinction" in the accent green. The
+   * sequence is the message: old perception, capability, outcome. Take the blue
+   * out and the middle step has nowhere to stand; make it the green and the
+   * headline is two greens and a grey, which reads as one colour applied
+   * unevenly rather than as a progression.
+   *
+   * This is the blue that used to be --accent, kept at the darkness that made it
+   * usable for text. It is deliberately not available to anything else: a second
+   * brand colour loose in the palette is how a green site slowly turns blue
+   * again. Grep for it before adding a use. */
+  --ability: #14508c;       /*  8.2:1 on white, 7.2:1 on the hero's wash */
+
+  --radius: 10px;
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Larger than the admin panel's 14px, and set in rem so the browser's own
+   * font-size setting is respected — which is how a low-vision user has
+   * already configured their device before arriving here. */
+  --step--1: 0.9375rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.25rem;
+  --step-2: 1.5rem;
+  --step-3: 1.875rem;
+
+  --gap: 1rem;
+  --measure: 38rem;   /* ~70 characters; longer lines are harder to track back */
+}
+
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+/* min-height rather than height.
+ *
+ * A sticky element can only stick inside its own containing block, and #root at
+ * exactly 100% is a box the height of the viewport — so the top bar stuck for
+ * one screen and then scrolled away with the box, on precisely the long pages
+ * it exists for. min-height keeps what the rule was for (a short page still
+ * fills the screen, so the footer sits at the bottom) and lets the box grow
+ * with the page. */
+#root { min-height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 var(--step-0)/1.6 var(--font);
+  -webkit-text-size-adjust: 100%;
+  /* An email address, a reference code or a scheme slug has no space in it to
+   * break at, so it pushes its container wide and takes the page with it —
+   * the one overflow a grid-track audit cannot find, because the offending
+   * width is in the content rather than in a rule. break-word only acts when a
+   * word genuinely cannot fit, so ordinary prose is untouched. */
+  overflow-wrap: break-word;
+}
+
+/* Text must resize to 200% without loss of function (Table 3.3). Every length
+ * above is rem or relative, and nothing below sets a fixed height on a
+ * container that holds text. */
+
+/* The cap is in characters rather than rem, so it tracks each heading's own
+ * size. It does nothing until the container is wide — inside a card it is never
+ * reached — and on a page running the full width of a 27-inch monitor it is
+ * what stops an h1 becoming one hundred-character line, which is harder to read
+ * than the narrow column it replaced. */
+h1, h2, h3 { line-height: 1.25; margin: 0 0 0.5rem; letter-spacing: -0.01em; max-width: 40ch; }
+h1 { font-size: var(--step-3); }
+h2 { font-size: var(--step-2); }
+h3 { font-size: var(--step-1); }
+p { margin: 0 0 1rem; max-width: var(--measure); }
+
+a { color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 3px; }
+
+/* --- focus ------------------------------------------------------------------
+ * Required by section 7.1, and the first thing removed by anyone tidying up.
+ * Thick and offset so it is visible against every surface here. */
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--accent); color: var(--accent-text);
+  font-weight: 600; border-radius: 0 0 var(--radius) 0;
+}
+.skip-link:focus { left: 0; top: 0; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* --- layout ------------------------------------------------------------------ */
+
+/* Full width. The shell sets no ceiling of its own; the parts that need one
+ * carry it themselves — prose at --measure, headings at 40ch, form fields at
+ * --measure below — so the extra width goes to the things that can use it: card
+ * grids gain columns, chip rows stop wrapping, nothing gains line length.
+ *
+ * The gutter grows with the window instead of staying at 1.25rem, which at
+ * 1920px reads as content pressed against the glass. It resolves to exactly
+ * 1.25rem at every width below 800px, so the 40px figures in
+ * tools/check-responsive.py still describe the 320px case. */
+.page { margin: 0 auto; padding: 1.5rem clamp(1.25rem, 2.5vw, 3rem) 5rem; }
+/* The exception, and it stays one: a screen that asks a single question is a
+ * column, not a page. Centred, because parked at the left edge of a wide
+ * monitor it reads as a rendering fault. */
+.page.narrow { max-width: 34rem; }
+
+/* --- the top bar ----------------------------------------------------------------
+ *
+ * Sticky, as one block with the offline banner above it. Forty results down the
+ * directory, the way back used to be a scroll to the top; now the bar is where
+ * it was. It costs 64px of a phone screen, which is affordable only because the
+ * bar is 64px — see the two groups below. */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  /* Only the shadow animates, and only between two states, so this is cheap
+   * and it is also the one movement on the page that says "the content is
+   * scrolling under here". */
+  transition: box-shadow 160ms ease-out;
+}
+
+/* An accent rule across the very top.
+ *
+ * Three pixels, and they do most of the work of making a plain white bar look
+ * like a decision. It is the same accent that marks the current page and fills
+ * the one button, so the bar is tied to the rest of the palette rather than
+ * being white-on-white chrome. */
+.topbar::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: var(--accent);
+}
+
+/* Raised once the page has scrolled under it. Class toggled from an
+ * IntersectionObserver in Layout.tsx — see the sentinel there. */
+.topbar.stuck { box-shadow: 0 4px 16px rgb(0 0 0 / 0.10); }
+
+/* The watched pixel. No height of its own: it sits at the very top of the
+ * document and is either in view or not. */
+.topbar-sentinel { height: 1px; margin-bottom: -1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar { transition: none; }
+}
+/* Focus moving into <main> — from the skip link, or on every route change —
+ * would otherwise scroll it under the sticky bar. */
+html { scroll-padding-top: 5rem; }
+main { scroll-margin-top: 5rem; }
+
+.masthead {
+  padding: 0.625rem clamp(1.25rem, 2.5vw, 3rem);
+}
+/* Uncapped, so the brand sits at one edge of the window and the controls at the
+ * other rather than both huddling in a 52rem strip down the middle.
+ *
+ * Three tracks, not one wrapping queue: identity, destinations, controls. The
+ * middle one takes the slack, so the group on each edge stays put as the window
+ * changes instead of drifting. */
+.masthead .inner {
+  display: flex; align-items: center; gap: 0.5rem 1.5rem; flex-wrap: wrap;
+}
+/* The middle zone. It takes the slack on both sides, which is what centres the
+ * destinations in the bar rather than leaving them against the brand with the
+ * window's empty third between them and the controls. */
+.masthead .nav-main { flex: 1 1 auto; justify-content: center; }
+.masthead .nav-end { display: flex; align-items: center; gap: 0.5rem; }
+/* On a wide window the account menu and the two actions read as one cluster at
+ * the far edge, whatever the markup says. */
+.masthead .account { margin-inline-start: 0.5rem; }
+/* The lockup: mark over name.
+ *
+ * A column, and deliberately still 48px tall — the same target as every other
+ * control in the bar, and the same row height, so stacking the brand did not
+ * cost the page any of the screen it was holding. That is what decides the two
+ * sizes below: a 28px mark, a 15px name, and 2px between them. */
+.masthead .brand {
+  text-decoration: none; color: var(--text);
+  display: inline-flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.125rem;
+  min-height: 48px;
+  line-height: 1.1;
+}
+.masthead .brand-name {
+  font-weight: 700; font-size: var(--step--1);
+  white-space: nowrap;
+}
+
+
+/* The mark is a glow drawn to sit on a dark ground. On this page's white it is
+ * still legible — the strokes are a saturated blue, not a pale halo — but it
+ * loses the surrounding bloom that gives it weight, so it is given a fraction
+ * more contrast rather than being redrawn. */
+.brand-mark {
+  flex: none;
+  width: 2.25rem; height: auto;
+  filter: saturate(1.15) contrast(1.05);
+  /* Scales with the reader's font size rather than staying 36 device pixels
+   * while the words beside it grow to 200%. */
+}
+
+@media (max-width: 40rem) {
+  /* The words shorten to "Scholarships" at this width; the mark stays, because
+   * it is the part that identifies the site at a glance. */
+  .brand-mark { width: 2rem; }
+}
+
+/* --- footer ---------------------------------------------------------------------
+ *
+ * Who runs this. A student handing over a disability certificate is entitled to
+ * know whose platform they are on, and a public service with no visible owner
+ * reads as a scam — the first thing this audience is warned about. */
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: 2rem clamp(1.25rem, 2.5vw, 3rem) 3rem;
+  margin-top: 3rem;
+}
+.site-footer .inner {
+  /* Three parts: who the foundation is on the reading side, the accounts at the
+   * far side, and the notice centred beneath both.
+   *
+   * It held four columns — brand, two lists of destinations, and a note about
+   * data rights. The lists came out because every place they pointed at is in
+   * the bar at the top of the page, and a footer that repeats the navigation is
+   * a second copy to keep in step. */
+  display: flex; flex-wrap: wrap; align-items: flex-start;
+  gap: 1.5rem 3rem;
+}
+/* The logo, then the foundation in its own words. Capped so the sentences stay
+ * at a length that can be tracked back to the start of the next line — the
+ * paragraph would otherwise run the full width of a monitor. */
+.footer-brand { flex: 1 1 22rem; max-width: 40rem; display: grid; gap: 0.75rem; justify-items: start; }
+.footer-about { font-size: var(--step--1); margin: 0; }
+.footer-logo {
+  /* The intrinsic ratio is preserved by height:auto, so the image cannot
+   * squash when the row wraps. */
+  width: 9rem; height: auto; flex: none;
+}
+.site-footer p { margin: 0; }
+.footer-logo { filter: saturate(1.1); }
+
+/* The notice, centred under both columns, because it belongs to neither: it is
+ * about the whole site rather than about the block above it. Under a rule, so it
+ * reads as the foot of the footer rather than the end of a paragraph. */
+.footer-end {
+  flex-basis: 100%;
+  border-top: 1px solid var(--border);
+  padding-top: 1.25rem;
+  display: flex; justify-content: center;
+}
+.footer-end p { font-size: var(--step--1); text-align: center; }
+
+/* The accounts, at the far side and level with the top of the logo. Square 48px
+ * targets, because a row of small icons is the hardest thing on any page for
+ * somebody with a tremor to hit, and this is a site for people who may have one.
+ * The mark itself stays 26px — the target is the space around it, not the
+ * drawing.
+ *
+ * margin-inline-start rather than a fixed order: it pushes the row to the far
+ * edge on a wide window and does nothing once the footer has wrapped to one
+ * column, where it simply follows the paragraph. */
+.footer-social {
+  display: flex; flex-wrap: wrap; gap: 0.25rem;
+  margin-inline-start: auto;
+}
+.footer-social a,
+.footer-social .unlinked {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px;
+  border-radius: var(--radius);
+}
+.footer-social a:hover { background: var(--surface-sunken); }
+.footer-social img { display: block; width: 26px; height: 26px; }
+
+@media (max-width: 40rem) {
+  /* One column, and tighter: on a phone this is four screens below the thing
+   * the reader came for, and every row of it is scrolled past twice. */
+  .site-footer .inner { gap: 1.5rem; }
+  .site-footer { padding-bottom: 2rem; }
+  /* Still centred on a phone: the notice is the last line on the page and
+   * reads as a signature there, not as the start of another column.
+   *
+   * And the accounts centred with it, once the footer has wrapped to a single
+   * column. The auto margin that puts them at the far edge of a wide window
+   * leaves them stranded mid-row here — aligned with nothing, which reads as a
+   * mistake rather than as a decision. */
+  .footer-social { margin-inline-start: 0; width: 100%; justify-content: center; }
+}
+
+.masthead nav {
+  display: flex; gap: 0.125rem; flex-wrap: wrap; align-items: center;
+}
+
+/* 48px, matching every button on the site. These are the most-tapped controls
+ * anywhere here, and they were the smallest — 43px against a stated floor of
+ * 48, which is well above WCAG 2.2's 24px minimum precisely because the target
+ * user includes people with tremor operating a phone one-handed. */
+/* Every pressable thing in the bar, wherever it sits in the markup: the
+ * destinations, the menu's own control, and the sign-in button — which lives
+ * outside <nav> because it is an action rather than a place. */
+.masthead nav a,
+.masthead .nav-end > a,
+.masthead .menu > summary {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius);
+  text-decoration: none; color: var(--text); font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.masthead nav a:hover,
+.masthead .nav-end > a:hover,
+.masthead .menu > summary:hover { background: var(--surface-sunken); }
+
+/* The page you are on, marked by more than colour: the weight changes and a
+ * rule sits under the word, so the current place survives a monochrome screen
+ * and a reader who cannot separate the accent from the text. */
+.masthead nav a[aria-current="page"] {
+  background: var(--accent-weak); color: var(--accent); font-weight: 700;
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+/* The one action in the bar, and now the only filled thing in it. As an
+ * outlined link it carried exactly as much weight as "Find scholarships" beside
+ * it, which left the bar with six controls and no answer to "what do I press". */
+.masthead a.signin {
+  background: var(--accent); color: var(--accent-text);
+  font-weight: 700; border: 2px solid var(--accent);
+  text-decoration: none;
+}
+.masthead a.signin:hover { background: var(--accent); filter: brightness(1.12); }
+
+/* The returning visitor's way in. Outlined rather than filled: it has to be
+ * easy to find and must not compete with the one action the site is asking a
+ * first-time reader to take. */
+.masthead a.login { border: 2px solid var(--border-strong); font-weight: 600; }
+
+/* --- the bar's menu -------------------------------------------------------------
+ *
+ * One of them — a student's account. A <details>: keyboard-operable, announces
+ * its own state, and works before JavaScript arrives. The marker is replaced
+ * rather than hidden; the caret is the affordance that says this opens. */
+
+.masthead .menu { position: relative; }
+.masthead .menu > summary { list-style: none; gap: 0.4rem; font-weight: 600; }
+.masthead .menu > summary::-webkit-details-marker { display: none; }
+.masthead .menu[open] > summary { background: var(--surface-sunken); }
+.masthead .menu .caret { font-size: 0.8em; transition: transform 120ms ease-out; }
+.masthead .menu[open] .caret { transform: rotate(180deg); }
+
+.menu-panel {
+  position: absolute; right: 0; top: calc(100% + 0.375rem); z-index: 50;
+  min-width: 16rem;
+  display: grid; gap: 0.125rem;
+  padding: 0.5rem;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+}
+.menu-panel a { justify-content: flex-start; width: 100%; }
+.menu-panel hr { border: 0; border-top: 1px solid var(--border); margin: 0.375rem 0; }
+
+/* Two rows on a phone, and only two.
+ *
+ * The bar used to make three: the brand, then destinations sharing a line with
+ * the language buttons, then a 176px colour select with the sign-in link. Two
+ * hundred pixels of a 640px screen, spent before a word of the page.
+ *
+ * Now the identity and the controls hold the first row — both are small — and
+ * the destinations take the second at full width, sharing it equally. Nothing
+ * wraps inside an item, so the row heights are predictable. */
+/* Three rows on a phone, each with one job.
+ *
+ * A visitor has four destinations and two actions, and no arrangement puts all
+ * of that beside a 144px lockup in 350px of width — the sums are in the comment
+ * on .nav-end below. So: the identity on the first row, with a signed-in
+ * student's account menu beside it; the destinations on the second and third as
+ * a two-by-two grid; and the two actions last, nearest the thumb.
+ *
+ * And the bar stops being sticky here. Three rows are affordable when they
+ * scroll away and indefensible when they sit on a third of a 640px screen for
+ * the whole visit; on a phone the way back to the top is a flick, while on a
+ * monitor it is a long scroll — which is where the sticky bar earns its keep. */
+@media (max-width: 44rem) {
+  .topbar { position: static; }
+
+  /* Every millimetre of the four rows that is not a target. */
+  .masthead { padding-block: 0.375rem; }
+  .masthead .inner { gap: 0.25rem; }
+  /* Not flex: 1 — given the row to itself the lockup centred in it, which read
+   * as a title rather than as a brand in a bar. */
+  .masthead .brand { flex: 0 0 auto; margin-inline-end: auto; }
+
+  /* Row one, beside the brand. */
+  .masthead .account { order: 0; margin-inline-start: 0; }
+
+  /* Rows two and three: the destinations, two to a row, equal targets. */
+  .masthead .nav-main {
+    order: 1; width: 100%; flex-basis: 100%;
+    gap: 0.25rem;
+  }
+  .masthead .nav-main a {
+    flex: 1; padding-inline: 0.375rem;
+    font-size: var(--step--1);
+  }
+
+  /* Last row: the two actions, half the width each.
+   *
+   * They were beside the brand, which is where the arithmetic failed — a 144px
+   * lockup, a 63px login and an 85px register leave 58px of a 350px row for the
+   * gaps between them, and that is before the account menu a signed-in student
+   * has in the same place. Down here they have the whole width, so both keep
+   * their words and their 48px targets. */
+  .masthead .nav-end {
+    order: 2; width: 100%; flex-basis: 100%;
+    gap: 0.5rem;
+  }
+  .masthead .nav-end > a { flex: 1; }
+
+  /* Anchored to the viewport edge rather than to the control that opened it, so
+   * the panel opens on screen rather than half off it. */
+  .menu-panel { right: 0; left: auto; min-width: min(18rem, calc(100vw - 2rem)); }
+}
+
+/* Narrow enough that four destinations cannot share one line.
+ *
+ * Two by two, rather than a row that wraps where it happens to run out: a
+ * student's four places came out as two on one line, one on the next and one
+ * stranded on a third, each a different width. A grid gives four equal targets
+ * in two even rows — and gives a visitor's two destinations a single row of
+ * halves, which is the same rule doing the same thing.
+ *
+ * The alternative, shrinking the text until it fits, is not available here.
+ * Nor is a scrolling row: a destination that has to be swiped into view is a
+ * destination this audience will not find. */
+@media (max-width: 30rem) {
+  .masthead .nav-main {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.25rem;
+  }
+  .masthead .nav-main a { white-space: nowrap; }
+}
+
+/* At the narrowest width the reflow rules have to work at, the name under the
+ * mark is what pushes the controls onto a third row. It is hidden rather than
+ * removed: the mark's alt text is empty by design — it would otherwise be read
+ * out twice — so deleting the word would leave the link to the home page with
+ * no accessible name at all. The mark carries the identity; the name is still
+ * announced, and the page's own h1 says it again a moment later. */
+@media (max-width: 22rem) {
+  .masthead .brand-name {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+}
+
+/* --- cards --------------------------------------------------------------------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+.card + .card { margin-top: var(--gap); }
+.card > :last-child { margin-bottom: 0; }
+
+.stack { display: grid; gap: var(--gap); }
+.stack.tight { gap: 0.5rem; }
+.row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+
+/* A list that is a list to a screen reader and a stack of cards to everybody
+ * else. The markers are removed and the semantics are not — but only because
+ * every call site carries role="list": WebKit drops the list role the moment
+ * list-style is none, and iOS Safari with VoiceOver is a first-class platform
+ * for this audience rather than an edge case. Without it a helper is no longer
+ * told "list, three items", which is how they know how many people can see
+ * their data. */
+.plain { list-style: none; padding: 0; margin: 0 0 var(--gap); }
+.right { margin-left: auto; }
+.muted { color: var(--text-muted); }
+.lede { font-size: var(--step-1); color: var(--text-muted); max-width: var(--measure); }
+
+/* --- controls -------------------------------------------------------------------
+ * Generous targets. WCAG 2.2 AA sets a 24x24 minimum (2.5.8); these are far
+ * larger, because the target user includes people with tremor and limited fine
+ * motor control operating a phone one-handed. */
+
+button, .btn {
+  font: 600 var(--step-0)/1.2 var(--font);
+  padding: 0.75rem 1.25rem;
+  min-height: 48px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+button:hover:not(:disabled), .btn:hover { background: var(--surface-sunken); }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* What a control does when a pointer arrives.
+ *
+ * 120ms: long enough to read as a response, short enough that somebody tabbing
+ * through a form is never waiting for the page to catch up. The global
+ * reduced-motion rule at the top cuts all of it to nothing.
+ *
+ * The lift is one pixel, and that number is the whole decision. A target that
+ * moves under a hovering pointer is a target that has to be re-aimed, and this
+ * is a product whose users include people with a tremor and people driving the
+ * page with a head pointer. One pixel and a shadow say "this is live" without
+ * moving the hit area anywhere. Pressing puts it back down, so hover and active
+ * together read as a press rather than as a hover that stuck. */
+button, .btn, .chip-link, input, select, textarea {
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out,
+    box-shadow 120ms ease-out,
+    transform 120ms ease-out,
+    filter 120ms ease-out;
+}
+/* Not .quiet: it has no border and no ground of its own, and a floating shadow
+ * under a bare word reads as a rendering fault rather than as a button. */
+button:hover:not(:disabled):not(.quiet):not(.dot), .btn:hover:not(.quiet), .chip-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.09);
+}
+button:active:not(:disabled), .btn:active, .chip-link:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+button.primary, .btn.primary {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-text);
+}
+button.primary:hover:not(:disabled), .btn.primary:hover { filter: brightness(1.12); }
+button.quiet { border-color: transparent; background: transparent; color: var(--accent); }
+button.quiet:hover:not(:disabled) { background: var(--accent-weak); }
+button.wide { width: 100%; }
+
+input, select, textarea {
+  font: 400 var(--step-0)/1.5 var(--font);
+  padding: 0.75rem;
+  min-height: 48px;
+  width: 100%;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+textarea { min-height: 6rem; resize: vertical; }
+input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+/* Inputs are width:100%, which on an uncapped page would draw a 1900px-wide
+ * text box for a mobile number. The cap is on the field rather than the control
+ * so the label, hint and error stay the same width as the thing they describe;
+ * inside a filter track or a wizard column it is never reached. */
+.field { display: grid; gap: 0.375rem; margin-bottom: 1.25rem; max-width: var(--measure); }
+.field > label { font-weight: 600; font-size: var(--step-0); }
+.field .hint { color: var(--text-muted); font-size: var(--step--1); max-width: var(--measure); }
+.field .error { color: var(--danger); font-weight: 600; font-size: var(--step--1); }
+
+/* Radio and checkbox groups are the profile wizard's main input. Presented as
+ * large tappable rows rather than small controls beside labels. */
+.choices { display: grid; gap: 0.5rem; }
+.choice {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+}
+.choice:hover { background: var(--surface-sunken); }
+.choice input { width: 1.375rem; height: 1.375rem; min-height: 0; margin: 0.125rem 0 0; flex: none; accent-color: var(--accent); }
+.choice:has(input:checked) { border-color: var(--accent); background: var(--accent-weak); }
+.choice .label { font-weight: 600; }
+.choice .sub { display: block; font-weight: 400; color: var(--text-muted); font-size: var(--step--1); }
+
+/* --- eligibility states (Table 4.2) ----------------------------------------------
+ * Colour is never the only signal. Each state carries a word and a distinct
+ * leading mark, so the four remain distinguishable in monochrome, to a
+ * colour-blind reader, and through a screen reader. */
+
+.state-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-weight: 700; font-size: var(--step--1);
+  border: 2px solid currentColor;
+}
+.state-badge.eligible   { color: var(--eligible);   background: var(--eligible-weak); }
+.state-badge.likely     { color: var(--likely);     background: var(--likely-weak); }
+.state-badge.blocked    { color: var(--blocked);    background: var(--blocked-weak); }
+.state-badge.ineligible { color: var(--ineligible); background: var(--ineligible-weak); }
+
+.match {
+  border-left: 6px solid var(--border);
+}
+.match.eligible   { border-left-color: var(--eligible); }
+.match.likely     { border-left-color: var(--likely); }
+.match.blocked    { border-left-color: var(--blocked); }
+.match.ineligible { border-left-color: var(--ineligible); opacity: 0.85; }
+
+/* The next action. This is the BLOCKED state's whole value — it converts an
+ * apparent dead end into a specific task — so it is given the visual weight of
+ * an instruction rather than of a footnote. */
+.next-action {
+  display: flex; gap: 0.625rem; align-items: flex-start;
+  margin-top: 0.75rem; padding: 0.75rem 0.875rem;
+  background: var(--surface-sunken);
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+.next-action .mark { flex: none; font-size: 1.1em; line-height: 1.4; }
+
+.amount { font-weight: 700; font-size: var(--step-1); }
+.deadline { font-weight: 600; }
+.deadline.soon { color: var(--danger); }
+
+/* --- wizard -----------------------------------------------------------------------
+ * One question per screen. The progress bar is the reassurance that this ends. */
+
+.wizard { max-width: 34rem; margin: 0 auto; }
+.progress { margin-bottom: 1.5rem; }
+.progress .bar { height: 10px; background: var(--surface-sunken); border-radius: 999px; overflow: hidden; }
+.progress .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.progress .label { display: flex; justify-content: space-between; font-size: var(--step--1); color: var(--text-muted); margin-bottom: 0.375rem; }
+
+.wizard-question { font-size: var(--step-2); margin-bottom: 0.25rem; }
+.wizard-help { color: var(--text-muted); margin-bottom: 1.5rem; max-width: var(--measure); }
+.wizard-nav { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+.wizard-nav .primary { flex: 1; }
+
+/* What a CGPA became.
+ *
+ * The marks question stores a percentage whichever scale was answered on, and
+ * this is the line that shows the student the number that will be saved and
+ * compared. Tinted rather than muted: it is the answer, not a footnote about
+ * the answer. */
+.wizard-derived {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius);
+  background: var(--accent-weak);
+  max-width: var(--measure);
+  font-size: var(--step--1);
+}
+.wizard-derived .mark { color: var(--accent); font-weight: 700; flex: none; }
+
+/* --- status timeline ---------------------------------------------------------------
+ * The persistent "what happens next" the report asks for. */
+
+.timeline { list-style: none; margin: 0; padding: 0; }
+.timeline li { display: flex; gap: 0.875rem; padding-bottom: 1.25rem; position: relative; }
+.timeline li::before {
+  content: ""; position: absolute; left: 0.6875rem; top: 1.75rem; bottom: 0;
+  width: 2px; background: var(--border);
+}
+.timeline li:last-child { padding-bottom: 0; }
+.timeline li:last-child::before { display: none; }
+.timeline .dot {
+  flex: none; width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  background: var(--surface); border: 3px solid var(--border);
+  margin-top: 0.125rem;
+}
+.timeline li.done .dot { background: var(--accent); border-color: var(--accent); }
+.timeline li.current .dot { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-weak); }
+.timeline .when { color: var(--text-muted); font-size: var(--step--1); }
+
+/* --- messages ----------------------------------------------------------------------- */
+
+.notice {
+  padding: 1rem 1.125rem;
+  border-radius: var(--radius);
+  border: 2px solid currentColor;
+  margin-bottom: var(--gap);
+}
+.notice > :last-child { margin-bottom: 0; }
+.notice.info    { color: var(--accent);   background: var(--accent-weak); }
+.notice.good    { color: var(--eligible); background: var(--eligible-weak); }
+.notice.warn    { color: var(--blocked);  background: var(--blocked-weak); }
+.notice.danger  { color: var(--danger);   background: var(--danger-weak); }
+.notice p, .notice h2, .notice h3 { color: var(--text); }
+.notice > strong:first-child { display: block; margin-bottom: 0.25rem; }
+
+.state-block { padding: 3rem 1rem; text-align: center; color: var(--text-muted); }
+.state-block strong { display: block; color: var(--text); font-size: var(--step-1); margin-bottom: 0.5rem; }
+
+/* --- filters (public directory) --------------------------------------------------------- */
+
+/* A ceiling on the track as well as a floor, and packed to the start rather
+ * than stretched. Four filters sharing 1fr of a full-width page gave each one a
+ * 470px select — a control whose target is a third of the screen wide reads as
+ * broken, and the eye has to travel the whole width to pair it with its label. */
+.filters {
+  display: grid; gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 18rem));
+  justify-content: start;
+}
+.filters .field { margin: 0; }
+
+/* --- the eligibility check's answers -------------------------------------------
+ *
+ * The same shape as the filters above, for the same reason: a set of short,
+ * independent questions is read faster in columns than as one tall stack, and on
+ * this page in particular the length of the form is what decides whether a
+ * visitor finishes it. The ceiling on the track is the same too — a select
+ * stretched across a third of a wide screen reads as broken. */
+.answers {
+  display: grid; gap: 0 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 22rem));
+  justify-content: start;
+}
+
+/* The two questions most students cannot answer off the top of their head, put
+ * behind a disclosure rather than dropped. A <details> because it is
+ * keyboard-operable and announces its own state with no script; the native
+ * marker is kept, since it is the affordance saying this opens. */
+.more-answers { margin: 0 0 1.25rem; }
+.more-answers > summary {
+  display: inline-flex; align-items: center;
+  min-height: 48px;
+  font-weight: 600; color: var(--accent); cursor: pointer;
+}
+.more-answers > p { margin-top: 0; }
+
+.chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.chip {
+  padding: 0.375rem 0.75rem; border-radius: 999px;
+  background: var(--surface-sunken); color: var(--text-muted);
+  font-size: var(--step--1); font-weight: 600;
+}
+
+/* --- offline banner -----------------------------------------------------------------------
+ * Drafts are tolerant of connection loss (Table 4.1). This says so, rather than
+ * letting a save fail silently on a train. */
+
+.offline {
+  /* Not sticky itself any more: it sits inside .topbar, which is, so the
+   * notice and the bar travel together instead of two elements both claiming
+   * top: 0 and one covering the other. */
+  padding: 0.625rem 1.25rem;
+  background: var(--blocked-weak); color: var(--blocked);
+  border-bottom: 2px solid currentColor;
+  font-weight: 600; text-align: center;
+}
+
+/* --- card grid ------------------------------------------------------------------
+ *
+ * The directory and the landing page both lay their scheme cards out this way.
+ *
+ * auto-fit with a 20rem floor rather than a fixed column count: on a phone it
+ * is one column, on a tablet two, on a desktop three, and at 200% text zoom it
+ * collapses back to one on its own — which is the requirement (Table 3.3) that
+ * a fixed grid-template-columns would break. The floor is 20rem rather than
+ * the 16rem that would fit more, because the type here is deliberately large
+ * and a narrower card turns a two-line scheme title into five.
+ *
+ * A <ul> underneath, so a screen reader still says "list, twelve items". The
+ * grid is presentation; the list is the thing. */
+
+.card-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--gap);
+  /* Clamped to the container: below 20rem of available space the floor
+   * becomes 100% and the grid is one column, with no breakpoint. */
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+}
+/* Cards fill their cell, so a row of three with different summary lengths has
+ * their bottom edges aligned rather than ragged. */
+.card-grid > li { display: flex; }
+.card-grid > li > .card { width: 100%; display: flex; flex-direction: column; }
+/* The organisation line sits at the foot of every card whatever is above it. */
+.card-grid > li > .card > :last-child { margin-top: auto; padding-top: 0.5rem; }
+
+/* --- announcement band ------------------------------------------------------
+ *
+ * A full-width band rather than a panel on the page.
+ *
+ * It was a bordered, rounded card with an accent stripe down its leading edge,
+ * which is what everything else on this site is — and that was the problem at
+ * the top of the page. A card announces "here is a component"; the first thing
+ * a visitor meets should read as the top of the site. So: no border, no corner
+ * radius, no stripe, and the box breaks out through the page's gutter to meet
+ * both window edges and the masthead above it.
+ *
+ * The negative margins are exactly .page's own padding — the same clamp, and
+ * the 1.5rem it sets on top — so the band is the width of the window at every
+ * size without a single hard-coded number, and the padding puts the content
+ * back on the page's own reading line. A hairline under it is what separates it
+ * from the section below, in place of the four borders it used to have.
+ */
+.slides {
+  margin-inline: calc(-1 * clamp(1.25rem, 2.5vw, 3rem));
+  margin-top: -1.5rem;
+  margin-bottom: 3rem;
+  padding: 1.5rem clamp(1.25rem, 2.5vw, 3rem);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+
+  /* Sized by its content, with a floor.
+   *
+   * This was the window's height less the bar — a full-screen hero. It went
+   * back for two reasons that turned out to be one reason.
+   *
+   * A screen-tall band only looks deliberate if something fills it, and the only
+   * thing available to fill it was type: the headline went to 44px to stop the
+   * band reading as empty. That is the wrong way round. The type should be the
+   * size a public service needs, and the band should be the size the type makes
+   * it.
+   *
+   * And it cost the page its job. Table 4.1 gives the public site one task —
+   * "determine whether help exists" — and a full screen of proposition put the
+   * search box, the live count and the schemes closing this week below the fold,
+   * behind a scroll a visitor has no reason to believe is worth taking. This is
+   * the one thing the big aggregators get right: a student lands on scholarships,
+   * not on a pitch.
+   *
+   * The floor is what keeps the rotation from moving the page. The panels no
+   * longer need to measure identically by accident — see .slide-notice, where
+   * the picture moved beside the words — but a two-line notice with no picture
+   * is still shorter than the lead panel, and 15rem absorbs the difference. */
+  min-height: 15rem;
+
+  /* A column, so the panel takes the free height inside that floor and the dots
+   * sit at the foot of the band rather than tight under the text. */
+  display: flex;
+  flex-direction: column;
+}
+
+/* The panel takes the band's free height and centres in it.
+ *
+ * Which also settles what the two-second cadence made urgent: every panel is
+ * now the height of the band, so nothing below the band moves when they swap.
+ * That used to depend on the panels happening to measure the same, and a notice
+ * carrying a picture did not. */
+.slide-region {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* The dots.
+ *
+ * The drawn dot is 9px and the button around it is 40px, which is the whole
+ * point of the two elements: a row of small circles is the hardest target on
+ * any page for somebody with a tremor, and this is a site for people who may
+ * have one. 40px clears SC 2.5.8's 24px floor with room and sits just under the
+ * 44px the AAA criterion asks for.
+ *
+ * The current one is filled with the accent and scaled up rather than only
+ * recoloured. Colour alone would leave the position invisible to a reader who
+ * cannot tell the two greys apart from the accent, and this is the one control
+ * in the band that no longer has a text equivalent beside it now that the
+ * counter is gone. */
+.slides-dots {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  margin-top: 1rem;
+}
+.slides-dots button.dot {
+  min-height: 0;
+  width: 40px; height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+}
+.slides-dots .dot-mark {
+  display: block;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  transition: background-color 120ms ease-out, transform 120ms ease-out;
+}
+.slides-dots button.dot:hover .dot-mark { background: var(--accent); }
+.slides-dots .dot.on .dot-mark {
+  background: var(--accent);
+  transform: scale(1.5);
+}
+
+/* An announcement: the words, and the picture beside them.
+ *
+ * The same wrapping flex line as the lead panel, and the same reasoning — see
+ * the note on Announcement() for why the picture moved out of the stack.
+ *
+ * Named .slide-notice and not .notice, which is already the site's alert box
+ * forty lines up. The first name collided with it and every announcement in the
+ * band came out wearing a 2px --text border. */
+.slide-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+/* Fills the line, for the reason .lead-main does: a column sized to its content
+ * leaves the panel a narrow strip in a wide band. */
+.slide-notice-main { flex: 1 1 auto; min-width: 0; }
+
+/* The picture, in a column the width of the lead panel's drawing.
+ *
+ * height:auto against the width and height attributes on the element is what
+ * reserves the space: the browser derives the aspect ratio from the two and
+ * holds it, so nothing moves when the file lands. The height cap is no longer
+ * holding the band to one height — the band's own min-height does that now — so
+ * it is only stopping one portrait upload from filling a screen on its own. */
+.slide-image {
+  display: block;
+  flex: 0 1 16rem;
+  width: auto; height: auto;
+  /* Both of these, and neither is decoration.
+   *
+   * A replaced element's automatic minimum size in a flex line is its own
+   * intrinsic width, so flex-shrink cannot get underneath it: a 1600px upload
+   * capped to 13rem tall still claimed 370px of a 320px screen and the whole
+   * document scrolled sideways. min-width lets the line shrink it and max-width
+   * stops it at the width of the line. tools/check-responsive.py cannot see this
+   * class of overflow — it reads declarations, and the offending number came
+   * from the file rather than the stylesheet. */
+  min-width: 0; max-width: 100%;
+  max-height: 13rem;
+  /* Room to be legible, now the band is a screen tall. An operator's diagram at
+   * 208px was a thumbnail nobody could read. */
+  /* contain, not cover.
+   *
+   * What operators actually upload is not always a photograph: a diagram, a
+   * poster, a screenshot of a notice. cover crops to fill the box, which on any
+   * of those cuts the words off at both edges — and a banner with half a
+   * sentence on it is worse than a letterboxed one. contain never crops; the
+   * sunken ground is what the spare space becomes. */
+  object-fit: contain;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+@media (min-width: 52rem) {
+  .slide-image { flex-basis: 20rem; max-height: 15rem; }
+}
+
+@media (max-width: 52rem) {
+  /* Wrapped, and centred on its own line for the reason the drawing is. */
+  .slide-notice { gap: 1.25rem; }
+  .slide-image { flex-basis: 18rem; margin-inline: auto; }
+}
+
+/* Sized per panel, not on `.slide h2`.
+ *
+ * There used to be a `.slide h2` base here, and it quietly beat both of the
+ * rules that were supposed to override it — a descendant selector scores
+ * (0,1,1), and a single class like .lead-headline only (0,1,0), so the base won
+ * no matter what order the file was in. It cost two rounds of "why is this the
+ * wrong size". The two panels each name their own heading now, so neither can
+ * outrank the other by accident:
+ *
+ *   .lead-headline    --step-2, the lead panel's lockup
+ *   .slide-notice h2  --step-1, an announcement — one step under it, which is
+ *                     the whole hierarchy this band needs
+ */
+.slide-notice h2 { font-size: var(--step-1); margin-bottom: 0.25rem; }
+.slide p { margin-bottom: 0.875rem; }
+.slide > :last-child { margin-bottom: 0; }
+
+/* --- the lead panel ---------------------------------------------------------
+ *
+ * The words on the reading side and the drawing beside them, which is the one
+ * place on this site where a picture earns its space: a visitor arriving from a
+ * forwarded message decides in about a second whether this is a real thing, and
+ * a bare wall of text on a wide screen does not help them decide.
+ *
+ * Flex rather than a grid: a grid needs a breakpoint to tell it when to become
+ * one column, and a flex line works it out from the space it actually has. The
+ * drawing drops below the words when the two no longer fit, at whatever width
+ * that turns out to be — which is also why there is no column floor here for
+ * tools/check-responsive.py to check. Both items may shrink and either may
+ * wrap, so neither can force the page sideways. The drawing is second in the
+ * source, so the words come first to a screen reader and first on a phone. */
+.lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+/* The words take the block, not the width they happen to need.
+ *
+ * Sizing this column to its content (`flex: 0 1 auto` with a max-width) made the
+ * panel narrow: the text ended up in a 600px strip at the left of a 1400px band
+ * and the whole thing read as a small thing in a big empty box. It grows to fill
+ * the line instead, and the paragraphs inside it carry their own reading measure
+ * the way every other paragraph on the site does.
+ *
+ * min-width: 0 against the flex default of min-content: without it a long
+ * unbroken word in the headline sets the floor for the whole line. */
+.lead-main { flex: 1 1 auto; min-width: 0; }
+/* --- the headline lockup ----------------------------------------------------
+ *
+ * Two lines, three colours, one argument:
+ *
+ *     Dis-Ability to        <- grey, struck through in red; then blue
+ *     Distinction           <- green
+ *
+ * Set at the site's own heading size and weight, and no display treatment on top
+ * of it. It went to 44px at weight 800 with the tracking pulled in, on the
+ * reasoning that a headline making an argument should look like one — and it just
+ * read as shouting. The argument is carried by the three colours and the line
+ * through "Dis-", which work at any size; the type does not have to shout as
+ * well. --step-2 is what every other h2 on the site is, so this is one size for
+ * one job rather than a special case with its own scale.
+ *
+ * max-width is off, and that is the one thing here that is not the default. The
+ * global h1/h2/h3 rule caps headings at 40ch to stop a hundred-character line,
+ * which is right for a sentence and wrong for this: the break between "Ability
+ * to" and "Distinction" is the composition, not something to leave to whatever
+ * width the window happens to be. */
+.lead-headline {
+  font-size: var(--step-2);
+  max-width: none;
+  margin-bottom: 0.75rem;
+}
+
+/* Each half owns its line, so the break is the design's rather than the
+ * window's. inline-block on the first: it has to be a line of its own without
+ * becoming a full-width block, or the struck span's underline logic and the
+ * baseline of the two spans inside it come apart. */
+.lead-headline .hl-line { display: inline-block; }
+.lead-headline .hl-dist { display: block; }
+
+/* "Dis-", struck.
+ *
+ * text-decoration rather than a pseudo-element or a border: it follows the
+ * glyphs, it survives a line break, it scales with the font, and
+ * text-decoration-color lets the rule be red while the letters stay grey —
+ * which is the whole point, since the colour of the line and the colour of the
+ * text are saying two different things.
+ *
+ * The line is a graphical object carrying meaning, so WCAG 2.2 1.4.11 wants 3:1
+ * against what is behind it; --danger measures 7.5:1 on white and 6.5:1 on the
+ * hero's wash. It is the site's error red, used here for its other meaning —
+ * struck out, removed — which is close enough to share the token rather than
+ * introduce a second red that has to be kept in step with it. Both figures are
+ * asserted by tools/check-contrast.py rather than only written down here. */
+.lead-headline .hl-was {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--danger);
+  /* From the font rather than a fixed px, so it thickens with the headline
+   * instead of thinning to a hair at 200% zoom. */
+  text-decoration-thickness: 0.075em;
+}
+
+.lead-headline .hl-able { color: var(--ability); }
+.lead-headline .hl-dist { color: var(--accent); }
+
+/* What the site actually does, under the headline that argues for it.
+ *
+ * No max-width of its own: the global `p` rule already caps every paragraph on
+ * the site at --measure, and squeezing this one to 30rem to force it into three
+ * tidy lines was setting a measure for composition rather than for reading. The
+ * site's own measure is the right answer here as everywhere else. */
+.lead-lede {
+  font-size: var(--step-1);
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+/* The three claims. A list, so they are counted; a row where there is room and
+ * a column where there is not, so nothing is ever half a claim per line. */
+.lead-points {
+  list-style: none;
+  margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  font-weight: 600;
+}
+.lead-points li { display: flex; align-items: center; gap: 0.5rem; }
+/* A filled disc rather than a bare character. Three loose ticks in a row read as
+ * punctuation that got away; three discs read as a set, and the shape gives the
+ * eye something to scan down when the row stacks on a phone.
+ *
+ * The green is the accent, which is also what this site marks "you qualify"
+ * with — the association is the point. Decorative, and hidden from assistive
+ * technology in the component, so it carries none of the meaning. */
+.lead-points .tick {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.375rem; height: 1.375rem;
+  border-radius: 50%;
+  background: var(--accent); color: var(--accent-text);
+  font-size: 0.8125rem; font-weight: 700; line-height: 1;
+}
+
+/* Sized by its column, and its own aspect ratio holds the height.
+ *
+ * The column is what bounds it, and there is deliberately no max-height. A cap
+ * on the height does not shrink an SVG — it shrinks the drawing inside a box
+ * that stays the full width of the column, so the artwork letterboxes and ends
+ * up a stamp with fifty pixels of nothing either side of it. Narrowing the
+ * column instead keeps the box and the drawing the same size.
+ *
+ * 16rem is chosen against the words: the text block stands about 150px on a
+ * monitor and 215px once it wraps, this stands about 243px, and the panel is
+ * close enough to the height of an announcement that the band does not lurch
+ * when it rotates. */
+.lead-art {
+  display: block;
+  flex: 0 1 16rem;
+  height: auto;
+  max-width: 100%;
+}
+@media (min-width: 52rem) {
+  /* Room to read as a drawing rather than a thumbnail, and no more. 26rem made
+   * it the loudest thing in the band, which for a decorative picture beside the
+   * site's actual proposition is the wrong way round. */
+  .lead-art { flex-basis: 20rem; }
+}
+
+/* The band's own ground, only while the lead panel is the one showing.
+ *
+ * A wash rather than a block of colour: strongest at the leading edge and gone
+ * by the time it reaches the far side. A flat panel of --accent-weak behind the
+ * whole hero was the first attempt and it read as an alert — this reads as the
+ * top of a page. The text sits on the pale end of it, which measures 15.7:1.
+ *
+ * Deeper padding than an announcement gets, because this one is a hero and the
+ * band is now the full width of the window: at the page's own 1.5rem the words
+ * sat in a letterbox. */
+.slides.slides-lead {
+  background:
+    linear-gradient(152deg, var(--accent-weak) 0%, var(--surface) 66%);
+  padding-block: 2.5rem;
+}
+@media (max-width: 34rem) {
+  .slides.slides-lead { padding-block: 1.75rem; }
+}
+
+/* --- the lead panel's entrance ----------------------------------------------
+ *
+ * One pass, on arrival, and never again — the component drops the reveal class
+ * after the first showing, so rotating back to this panel does not replay it.
+ *
+ * The words go first and fast: the headline is readable at 40ms and the whole
+ * text block has landed inside a third of a second, which is what stops this
+ * from being an animation the reader has to wait out. The drawing takes its
+ * time behind them, because nothing depends on it.
+ *
+ * Every rule here is switched off wholesale under reduced motion at the foot of
+ * the block. The global kill switch shortens durations but does not touch
+ * animation-delay, and a delay with `backwards` fill would leave an element
+ * invisible for its delay and then snap in — a flash rather than a fade. */
+@keyframes lead-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.slide-lead-reveal .lead-main > * {
+  animation: lead-rise 380ms cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+}
+.slide-lead-reveal h2 { animation-delay: 40ms; }
+.slide-lead-reveal .lead-lede { animation-delay: 120ms; }
+.slide-lead-reveal .lead-points { animation-delay: 200ms; }
+
+/* The drawing: a fade and the faintest scale, so it settles rather than slides.
+ * No transform on the groups inside it — each carries its own translate() as an
+ * attribute, and a CSS transform would replace it and stack every card at the
+ * origin. Opacity is the one property that cannot collide. */
+@keyframes lead-art-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+.slide-lead-reveal .lead-art {
+  animation: lead-art-in 620ms cubic-bezier(0.2, 0.7, 0.3, 1) 120ms backwards;
+}
+
+/* The branches draw outward from the trunk. pathLength="1" on each one
+ * normalises them, so a single dasharray covers paths of very different real
+ * lengths — the alternative is measuring seven curves by hand and having them
+ * wrong the first time somebody nudges a control point. */
+@keyframes art-draw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+.slide-lead-reveal .art-branch {
+  stroke-dasharray: 1;
+  animation: art-draw 560ms ease-out 260ms backwards;
+}
+
+/* Then the cap and the six cards, in the order they sit in the source: the cap
+ * first, because it is what the tree is growing towards, then the cards from
+ * the outside in. */
+@keyframes art-pop { from { opacity: 0; } to { opacity: 1; } }
+.slide-lead-reveal .lead-art > g {
+  animation: art-pop 300ms ease-out backwards;
+}
+.slide-lead-reveal .lead-art > g:nth-of-type(1) { animation-delay: 700ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(2) { animation-delay: 780ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(3) { animation-delay: 830ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(4) { animation-delay: 880ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(5) { animation-delay: 930ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(6) { animation-delay: 980ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(7) { animation-delay: 1030ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Removed outright rather than shortened, for the delay reason above. */
+  .slide-lead-reveal .lead-main > *,
+  .slide-lead-reveal .lead-art,
+  .slide-lead-reveal .lead-art > g,
+  .slide-lead-reveal .art-branch { animation: none; }
+  .slide-lead-reveal .art-branch { stroke-dasharray: none; }
+}
+
+@media (max-width: 52rem) {
+  /* Wrapped by now. Centre the drawing on its own line — left-aligned under a
+   * full-width block of text it reads as having come loose. */
+  .lead { gap: 1.5rem; }
+  .lead-art { flex-basis: 18rem; margin-inline: auto; }
+}
+
+@media (max-width: 34rem) {
+  /* Gone on a phone.
+   *
+   * Three hundred pixels of decoration, above the search box, on the screen
+   * where vertical space is the scarcest thing there is — and it says nothing
+   * the three claims above it do not. It is already hidden from assistive
+   * technology, so removing it removes nothing: this is one line to delete if
+   * somebody decides the phone should have the picture too. */
+  .lead-art { display: none; }
+
+  /* One step down on a phone, where --step-2 over two lines takes a third of the
+   * screen before a word of the page. The lockup still reads: two lines, three
+   * colours, the line through "Dis-". */
+  .lead-headline { font-size: var(--step-1); }
+  .lead-lede { font-size: var(--step-0); }
+  /* Stacked, not wrapped: three claims of very different lengths across two
+   * lines read as five things rather than three. */
+  .lead-points { flex-direction: column; gap: 0.375rem; }
+}
+
+/* The fade exists to say "this content was replaced", which a silent swap does
+ * not. Two hundred milliseconds and no movement: a slide that flies in from the
+ * side is the thing that makes a carousel unreadable. Switched off entirely
+ * under reduced motion, where the band does not rotate on its own anyway. */
+.slide { animation: slide-in 200ms ease-out; }
+@keyframes slide-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide { animation: none; }
+}
+
+/* --- becoming a partner -----------------------------------------------------------
+ *
+ * A page that argues by showing rather than by claiming, so the layout gives the
+ * evidence as much room as the pitch: the proposition on the reading side, and a
+ * real scheme card beside it, the same component the directory renders. */
+.partner-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  gap: 2rem 3rem;
+  align-items: start;
+  margin-bottom: 3rem;
+}
+.partner-example h2 { font-size: var(--step-1); }
+.partner-example > p { font-size: var(--step--1); }
+
+/* Three true numbers on one line, under the actions. Blown up into a row of
+ * tiles they would read as a brochure; at this size they read as a fact. */
+.partner-counts {
+  margin-top: 1.25rem;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+}
+.partner-counts strong { color: var(--text); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 64rem) {
+  .partner-hero { grid-template-columns: 1fr; }
+}
+
+/* The four states, each with its badge beside the sentence that explains it —
+ * the same badges the student sees, so a funder reading this page and a student
+ * reading their matches are looking at one vocabulary. */
+.state-explainer {
+  list-style: none; padding: 0; margin: 1.25rem 0 0;
+  display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+}
+.state-explainer li {
+  display: grid; gap: 0.5rem; justify-items: start;
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.state-explainer p { margin: 0; font-size: var(--step--1); }
+
+.partner-grid {
+  list-style: none; padding: 0; margin: 1.25rem 0 0;
+  display: grid; gap: var(--gap);
+  grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+}
+.partner-grid h3 { font-size: var(--step-1); margin-bottom: 0.375rem; }
+.partner-grid p { margin: 0; }
+
+/* The closing exchange: what it is, and the four fields. Two columns so the
+ * form is beside the invitation rather than under a scroll of it. */
+.partner-talk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 26rem);
+  gap: 1.5rem 3rem;
+  align-items: start;
+  margin-top: 3rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--border);
+  /* The anchor from the hero button lands here, and the sticky bar must not sit
+   * on top of the heading when it does. */
+  scroll-margin-top: 6rem;
+}
+.partner-talk-copy h2 { font-size: var(--step-2); }
+.partner-talk .card { display: grid; }
+.partner-talk .field:last-of-type { margin-bottom: 1.25rem; }
+
+@media (max-width: 64rem) {
+  .partner-talk { grid-template-columns: 1fr; }
+}
+
+/* --- impact -----------------------------------------------------------------------
+ *
+ * Four figures, then two breakdowns. The number leads and its name follows: a
+ * tile that opens with the label makes the reader hunt for the figure in it. */
+.figures {
+  list-style: none; padding: 0; margin: 1.5rem 0 0;
+  display: grid; gap: var(--gap);
+  grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+}
+.figure {
+  display: grid; gap: 0.125rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-inline-start: 4px solid var(--accent);
+  border-radius: var(--radius);
+}
+.figure strong {
+  font-size: var(--step-3); line-height: 1.1;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+}
+.figure .figure-label { font-weight: 600; }
+.figure .muted { font-size: var(--step--1); }
+
+/* A .figure that is also a link, on the student dashboard.
+ *
+ * The figure already carries the border, padding and accent rule; all this adds
+ * is the affordance that it can be pressed, and the removal of the underline
+ * that would otherwise run under a number set at --step-3. */
+.figure-link { text-decoration: none; color: inherit; }
+.figure-link:hover, .figure-link:focus-visible { border-color: var(--border-strong); }
+.figure-link .figure-label { color: var(--accent-text); }
+
+.impact-splits {
+  display: grid; gap: 2rem 3rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+  margin-top: 2.5rem;
+}
+.impact-splits h2 { font-size: var(--step-1); }
+
+/* A row per value: name, bar, count. The bar is the fast read and the count is
+ * the accurate one, so a reader who cannot judge one length against another —
+ * or who is hearing this rather than seeing it — is not left with only the bar. */
+.bars { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.625rem; }
+.bars li {
+  display: grid; align-items: center; gap: 0.75rem;
+  grid-template-columns: minmax(6rem, 10rem) 1fr auto;
+}
+.bar-track {
+  height: 0.75rem; border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.bar-fill { display: block; height: 100%; background: var(--accent); }
+.bar-count { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.impact-honest { margin-top: 2.5rem; }
+.impact-honest h2 { font-size: var(--step-1); margin-top: 0; }
+.impact-honest p { margin-bottom: 0; }
+
+/* --- the directory ----------------------------------------------------------------
+ *
+ * Filters beside the results rather than above them: as a band across the top
+ * they held four controls in the left third of a wide screen, and they scrolled
+ * out of reach the moment the results began. The column is fixed-width so the
+ * results take the slack — a grid of cards can use another 200px, a stack of
+ * four selects cannot. */
+.directory {
+  display: grid;
+  grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+  gap: 1.5rem 2.5rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+/* Offset by the top bar's height, so the panel's own heading is not tucked
+ * under it when it sticks. */
+.directory-filters { position: sticky; top: 5.5rem; }
+.directory-filters .card { display: grid; gap: 0.25rem; }
+.directory-filters .field { margin-bottom: 0.75rem; }
+.directory-filters .field:last-child { margin-bottom: 0; }
+
+.filter-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 0.25rem 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem;
+}
+.filter-head h2 { font-size: var(--step-0); margin: 0; }
+.filter-head button { min-height: 0; padding: 0.25rem 0.5rem; }
+
+/* The invitation at the foot of the results, not welded to the last card. */
+.directory-results .notice { margin-top: 1.5rem; }
+
+.result-count { margin: 0 0 0.875rem; font-weight: 700; font-size: var(--step-1); }
+
+@media (max-width: 64rem) {
+  /* One column, filters first: they are the control for what follows, and the
+   * reading order has to say so on a phone as much as on a monitor.
+   *
+   * Two selects to a row, though. Stacked one per row they were six hundred
+   * pixels of controls between the reader and the first result — on the page
+   * whose whole job is to show results. */
+  .directory { grid-template-columns: 1fr; }
+  .directory-filters { position: static; }
+  .directory-filters .card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+    gap: 0 1rem;
+    align-items: start;
+  }
+  .filter-head, .filter-search { grid-column: 1 / -1; }
+  .filter-search { max-width: 26rem; }
+}
+
+/* --- one scheme -------------------------------------------------------------------
+ *
+ * Two columns: what there is to read, and the facts that decide whether to read
+ * it. The panel is narrow and fixed in width so the main column takes the slack
+ * — the reading measure is what should grow with the window, not a box holding
+ * three short lines.
+ *
+ * Below 64rem it is one column with the panel first: on a phone, "₹25,000,
+ * closes in two days" is what decides whether the criteria get read at all. */
+.scheme {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem);
+  gap: 2rem 3rem;
+  align-items: start;
+}
+.scheme-main > section { margin-top: 2rem; }
+/* The first section in the column sits level with the top of the panel beside
+ * it, rather than two rem below it for no reason. */
+.scheme-main > section.first { margin-top: 0; }
+.scheme-main h2 { font-size: var(--step-2); }
+
+/* Sticks while the criteria scroll, offset by the height of the top bar so it
+ * does not tuck underneath it. */
+.scheme-facts { position: sticky; top: 5.5rem; }
+
+@media (max-width: 64rem) {
+  .scheme { grid-template-columns: 1fr; }
+  /* The facts before the reading: with the title and summary now above both
+   * columns, this puts "₹25,000, closes in 2 days" directly under the name of
+   * the scheme — which is the order somebody decides in. */
+  .scheme-facts { position: static; order: -1; }
+  .scheme-main > section.first { margin-top: 2rem; }
+}
+
+/* The award, set as the loudest thing on the page. It was a line of body text
+ * inside a list of three, which for the one number the whole page is about is
+ * a strange way to say it. */
+.fact-award { display: grid; gap: 0.125rem; margin: 0; }
+.fact-award strong {
+  font-size: var(--step-3); font-weight: 700;
+  line-height: 1.1; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.fact-award .muted { font-size: var(--step--1); }
+
+.facts { display: grid; gap: 0.875rem; margin: 0; }
+.facts dt { font-size: var(--step--1); margin-bottom: 0.125rem; }
+.facts dd { margin: 0; font-weight: 600; }
+.facts .block { display: block; font-weight: 400; font-size: var(--step--1); }
+
+.scheme-facts .card { display: grid; gap: 1rem; }
+.scheme-facts hr { border: 0; border-top: 1px solid var(--border); margin: 0; width: 100%; }
+.scheme-facts .small { font-size: var(--step--1); margin: 0.5rem 0 0; }
+
+/* A checklist, not bullets: every line is a condition to measure yourself
+ * against, and the tick says that where a disc says "list item". The mark is
+ * its own column so a wrapped sentence stays aligned under itself rather than
+ * running back under the tick. */
+.criteria { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.625rem; }
+.criteria li { display: grid; grid-template-columns: 1.5rem 1fr; align-items: start; }
+.criteria .mark { color: var(--eligible); font-weight: 700; }
+
+.breadcrumb { margin-bottom: 0.5rem; }
+
+/* --- landing page ------------------------------------------------------------------ */
+
+.home section { margin-bottom: 3rem; }
+.home section:last-child { margin-bottom: 0; }
+
+/* The hero, in two columns where the window has two columns to give.
+ *
+ * The pitch and the search on one side, the deadlines on the other. The panel
+ * is fixed-width and the text takes the slack, for the same reason as on a
+ * scheme page: a reading measure benefits from more room, a list of three short
+ * rows does not. Below 64rem the panel drops under the pitch — it is a
+ * supporting fact, and on a phone the sentence explaining the site has to come
+ * first. */
+.hero {
+  padding-top: 0.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: 1.5rem 3rem;
+  align-items: start;
+}
+.hero h1 { max-width: 20ch; }
+@media (max-width: 64rem) {
+  .hero { grid-template-columns: 1fr; }
+}
+
+.hero-side .card { display: grid; gap: 0.5rem; }
+.hero-side h2 { font-size: var(--step-1); margin: 0; }
+.hero-side .small { font-size: var(--step--1); margin: 0; }
+.hero-side .btn { justify-self: start; }
+
+/* Three rows, each a scheme and its clock. Ruled rather than boxed: a card
+ * inside a card is a border for nothing. */
+.deadline-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.deadline-list li { padding: 0.75rem 0; border-top: 1px solid var(--border); }
+.deadline-list li:first-child { border-top: 0; }
+.deadline-list a { font-weight: 600; }
+.deadline-list p {
+  margin: 0.25rem 0 0;
+  display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem;
+  font-size: var(--step--1);
+}
+
+/* The search box and its button on one line, the button sized to its own text
+ * rather than stretched. It drops below the field on a narrow screen, where a
+ * side-by-side pair would leave the input too short to read what was typed. */
+.hero-search {
+  display: flex; gap: 0.75rem; align-items: flex-end;
+  max-width: var(--measure);
+  margin-bottom: 0.75rem;
+}
+.hero-search .field { flex: 1; margin-bottom: 0; }
+@media (max-width: 30rem) {
+  .hero-search { display: block; }
+  .hero-search button { width: 100%; margin-top: 0.75rem; }
+}
+
+.hero-meta { margin-bottom: 1.25rem; }
+
+.home-section h2 { font-size: var(--step-2); }
+.home-section h3 { font-size: var(--step-1); margin-top: 1.25rem; }
+
+/* Numbered because the order is the point: the profile comes before the
+ * matches, and the matches before the application. counter-reset on the list
+ * rather than the browser's own markers, which cannot be styled to this size
+ * and sit outside the text block. */
+.steps {
+  list-style: none; padding: 0; margin: 0;
+  counter-reset: step;
+  display: grid; gap: var(--gap);
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+}
+.steps > li {
+  counter-increment: step;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+.steps > li::before {
+  content: counter(step);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem;
+  margin-bottom: 0.625rem;
+  border-radius: 999px;
+  background: var(--accent-weak); color: var(--accent);
+  font-weight: 700;
+}
+.steps h3 { margin-top: 0; }
+.steps p { margin-bottom: 0; }
+
+/* Browse entry points. Links rather than the .chip span used for read-only
+ * tags elsewhere, so they carry a full-size target and look pressable. */
+.chip-link {
+  display: inline-flex; align-items: center;
+  min-height: 48px;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.chip-link:hover { background: var(--accent-weak); border-color: var(--accent); }
+
+/* The closing invitation. A row rather than a stack: the words on one side and
+ * the button on the other, both centred against each other, so a band the width
+ * of a monitor reads as one statement instead of three lines in its top-left
+ * corner. */
+.home-cta {
+  background: var(--accent-weak);
+  border-radius: var(--radius);
+  padding: 1.75rem clamp(1.25rem, 3vw, 2.5rem);
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 1rem 2.5rem;
+}
+.home-cta h2 { margin-top: 0; margin-bottom: 0.25rem; }
+.home-cta p { margin-bottom: 0; }
+.home-cta > .btn { margin-inline-start: auto; }
+.home-cta > div { flex: 1 1 20rem; }
+
+/* Section rhythm: one ruled break between subjects rather than the same gap
+ * everywhere, which left the page reading as one long column of blocks. */
+.home-section + .home-section,
+.home-section:first-of-type {
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+}
+
+/* --- the front door ----------------------------------------------------------
+ *
+ * The one screen everybody meets, and the only one in the portal built as a
+ * card rather than as a page.
+ *
+ * It was a heading, a grey paragraph and an input loose on the background. That
+ * is the correct shape for a page of content and the wrong one for a single
+ * question: nothing bounded the task, so nothing said how long it would take,
+ * and the field asking a stranger for their mobile number sat on the same open
+ * ground as the marketing copy above it. This audience is warned about exactly
+ * that — a form asking for a phone number with no visible owner. So the card
+ * carries a boundary, a mark, a two-step meter and one line about what the
+ * number is used for.
+ *
+ * Nothing here shrinks a target or a type size to buy the card its shape: the
+ * 48px controls, the --step-0 body and the 3px focus ring are the shared ones,
+ * and the card is sized around them.
+ */
+
+/* Narrower than .narrow's 34rem. A column holding one field reads as a form at
+ * this width and as an empty page at that one. */
+.page.narrow.auth {
+  max-width: 29rem;
+  padding-top: clamp(1.5rem, 6vh, 3.5rem);
+}
+
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  padding: clamp(1.25rem, 5vw, 2rem);
+  /* A hairline plus a wide, soft drop. The card has to lift off --bg, which is
+   * a near-white: a border alone at that contrast is a rectangle, not a
+   * surface. */
+  box-shadow: 0 1px 2px rgb(20 23 28 / 0.05), 0 18px 40px -28px rgb(20 23 28 / 0.35);
+}
+.auth-card h1 { font-size: var(--step-2); margin-bottom: 0.375rem; }
+.auth-card form > :last-child { margin-bottom: 0; }
+
+/* How far in, and how far to go. The bars are decoration — the sentence beside
+ * them carries the same fact in words, which is why they are aria-hidden and
+ * why colour is not doing this alone. */
+.auth-progress {
+  /* baseline, not centre: on a narrow screen the label wraps to two lines and
+   * centring floats the bars in the gap between them. Aligned to the first
+   * line's baseline they read as a rule beside the words either way. */
+  display: flex; align-items: baseline; gap: 0.625rem;
+  margin: 0 0 1.25rem;
+  color: var(--text-muted); font-size: var(--step--1); font-weight: 600;
+}
+.auth-progress .ticks { display: flex; gap: 0.25rem; flex: none; }
+.auth-progress .tick {
+  width: 1.75rem; height: 0.3125rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+.auth-progress .tick.on { background: var(--accent); border-color: var(--accent); }
+
+.auth-lede { color: var(--text-muted); margin-bottom: 1.5rem; }
+
+/* A fixed prefix inside the control's own border, so "+91" and the ten digits
+ * read as one number and neither can be deleted by accident. The border and the
+ * focus ring move up to the group: two rings, one round the group and one round
+ * the input inside it, is what a naive version of this looks like. */
+.input-group {
+  display: flex; align-items: stretch;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+.input-group .prefix {
+  display: flex; align-items: center;
+  flex: none;
+  padding: 0 0.75rem;
+  background: var(--surface-sunken);
+  border-right: 2px solid var(--border-strong);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.input-group input {
+  flex: 1; min-width: 0;
+  border: 0; border-radius: 0; background: transparent;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+/* Suppressed on the input and reinstated on the group, at the same 3px the
+ * rest of the site uses. Both rules are needed: :focus-within colours the
+ * border for a pointer user, :has draws the ring for a keyboard one. */
+.input-group input:focus-visible { outline: none; }
+.input-group:focus-within { border-color: var(--accent); }
+.input-group:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 3px; }
+.input-group:has(input[aria-invalid="true"]) { border-color: var(--danger); }
+
+/* Six boxes, one field.
+ *
+ * The boxes are decoration — spans showing where each digit landed — and the
+ * field is a single transparent input lying across all six. SignIn.tsx carries
+ * the argument for that; what the CSS has to hold up is the illusion, which is
+ * three rules: the input covers the whole group so every press lands on it, its
+ * text is transparent so only the boxes show a digit, and the caret is drawn by
+ * the box that comes next rather than by the browser.
+ *
+ * A box is about 36px wide on a 320px screen, which would be a poor target if a
+ * box were a target. None of them is: the control behind them is the full
+ * 248px by 56px of the group, and that is what 2.5.8 measures.
+ */
+.code-boxes {
+  position: relative;
+  display: block;
+  /* Six 3rem boxes and five 0.5rem gaps. Below that width the boxes share out
+   * what there is — flex: 1 with no floor — rather than the row overflowing,
+   * which is also what keeps them on one line at 200% text size. */
+  max-width: 21rem;
+  border-radius: var(--radius);
+}
+/* Wrapping, and the floor under a box is what makes it wrap.
+ *
+ * At 200% text (Table 3.3) the page has half the CSS pixels across and the
+ * boxes have the same rem width, so six of them in a row no longer fit any
+ * phone. Given a floor they break to two rows of three and stay readable;
+ * without one they would shrink until a digit no longer fits inside its own
+ * box. The input is inset: 0 over the group, so it covers both rows and the
+ * field is still one target however the boxes fall. */
+.code-boxes .boxes {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 0.5rem;
+}
+.code-boxes .box {
+  flex: 1 1 0; min-width: 2rem; max-width: 3rem;
+  display: flex; align-items: center; justify-content: center;
+  height: 3.5rem;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: var(--step-2); font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* Progress, said twice: the digit is in the box, and the box has changed. The
+ * colour is not carrying this on its own. */
+.code-boxes .box.filled { border-color: var(--accent); }
+
+/* On a 320px phone a box is 36px across, and 56px of height on 36px of width
+ * reads as a slot rather than as a box. */
+@media (max-width: 24rem) {
+  .code-boxes .box { height: 3rem; }
+}
+
+/* Where the next digit will go. Only while the field has focus — a caret
+ * blinking in a form nobody is typing in is a form that looks focused and is
+ * not. */
+.code-boxes:has(input:focus) .box.next {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.code-boxes:has(input:focus) .box.next::after {
+  content: '';
+  width: 2px; height: 1.75rem;
+  background: var(--accent);
+  animation: code-caret 1.06s steps(1) infinite;
+}
+/* The hidden half is the second one, so the reduced-motion rule at the top of
+ * the file — which cuts every animation to a single 0.01ms pass — leaves a
+ * steady bar rather than no bar at all. */
+@keyframes code-caret { 50% { opacity: 0; } }
+
+.code-boxes input {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  min-height: 0;
+  padding: 0; border: 0; border-radius: inherit;
+  background: transparent;
+  text-align: center;
+  /* Transparent, not hidden: opacity and visibility are what autofill
+   * heuristics read to decide a field is not really on the page, and the
+   * autofill is the point of keeping one input. -webkit-text-fill-color as
+   * well as color, because Safari paints an autofilled value through the
+   * first one. */
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: transparent;
+  /* Never below 16px: iOS zooms the page in when a smaller field takes focus,
+   * and the six boxes are then wider than the screen. */
+  font-size: 1rem;
+}
+/* Invisible text still highlights, and a select-all across the field would
+ * otherwise drag a blue block over the boxes. */
+.code-boxes input::selection { background: transparent; }
+
+/* One ring, round the group, at the 3px the rest of the site uses. */
+.code-boxes input:focus-visible { outline: none; }
+.code-boxes:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 4px; }
+.code-boxes:has(input[aria-invalid="true"]) .box { border-color: var(--danger); }
+
+/* The number the code went to, with the way to correct it beside it. A typo is
+ * discovered here, and the remedy belongs next to the evidence. */
+.auth-target {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.auth-target .number { font-weight: 700; font-variant-numeric: tabular-nums; }
+button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--step--1); }
+
+/* Signing in or being registered, said before the code is typed. A tinted strip
+ * rather than a notice: it is context, not something that went wrong. */
+.auth-branch {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius);
+  background: var(--accent-weak);
+  font-size: var(--step--1);
+}
+.auth-branch .mark { color: var(--accent); font-weight: 700; flex: none; }
+
+/* Reserved height. The confirmation appears in a live region after a resend,
+ * and a line that pushes the buttons down as it arrives moves a target out from
+ * under the pointer that just pressed it. */
+.auth-sent {
+  min-height: 1.5rem;
+  margin: 0.75rem 0 0;
+  color: var(--accent); font-weight: 600; font-size: var(--step--1);
+}
+
+.auth-foot {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 0.5rem; padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: var(--step--1);
+}
+
+/* What the number is for. Under the button that sends it, which is where the
+ * question is actually being asked. */
+.auth-fine {
+  margin: 1rem 0 0;
+  color: var(--text-muted); font-size: var(--step--1);
+}
+
+/* --- confirmations -------------------------------------------------------------
+ *
+ * The visible half of an announcement; the spoken half is the live region in
+ * Announcer.tsx, which is why this stack is aria-hidden — without that, every
+ * confirmation would be read out twice.
+ *
+ * Bottom of the screen rather than top. On a phone held one-handed the bottom
+ * third is the part a thumb reaches, and a message that appears above the fold
+ * on a page already scrolled halfway down is a message nobody sees. */
+
+.toasts {
+  position: fixed;
+  left: 1rem; right: 1rem; bottom: 1rem;
+  z-index: 60;
+  display: grid; gap: 0.5rem;
+  justify-items: center;
+}
+
+.toast {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  width: min(32rem, 100%);
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius);
+  border: 2px solid currentColor;
+  background: var(--surface);
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  animation: toast-in 140ms ease-out;
+}
+.toast > span { flex: 1; }
+.toast > button { flex: none; padding: 0.4rem 0.875rem; }
+
+/* Tone is never the only signal — the sentence says what happened. */
+.toast.ok     { background: var(--eligible-weak); color: var(--eligible); }
+.toast.warn   { background: var(--blocked-weak);  color: var(--blocked); }
+.toast.danger { background: var(--danger-weak);   color: var(--danger); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* --- results being refetched ------------------------------------------------------
+ *
+ * The previous answer, held on screen while the next one is fetched.
+ *
+ * Not dimmed. Fading is the usual way to say "this is not current", and it
+ * cannot be used here: the text is tuned to sit just above 4.5:1, and any
+ * opacity that reads as faded drops it below the floor. On a site whose entire
+ * audience has a disability that is not a trade worth making, so the signal
+ * moves onto a progress bar and the region is made inert instead — a tap
+ * cannot land on a result that is about to be replaced by a different one. */
+
+.refetching { position: relative; pointer-events: none; }
+.refetching::before,
+.refetching::after {
+  content: "";
+  position: absolute;
+  top: 0; height: 3px;
+  border-radius: 999px;
+  z-index: 1;
+}
+.refetching::before { left: 0; right: 0; background: var(--accent-weak); }
+.refetching::after {
+  width: 30%;
+  background: var(--accent);
+  animation: sweep 900ms linear infinite;
+}
+
+@keyframes sweep {
+  from { left: -30%; }
+  to   { left: 100%; }
+}
+
+/* The global reduced-motion rule shortens durations but cannot un-name an
+ * animation, which would leave the bar frozen wherever its last frame landed.
+ * Replaced outright: a full-width bar still says "working". */
+@media (prefers-reduced-motion: reduce) {
+  .refetching::after { animation: none; left: 0; width: 100%; }
+}
