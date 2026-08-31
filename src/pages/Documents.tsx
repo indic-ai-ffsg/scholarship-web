@@ -165,6 +165,47 @@ function DocumentCard({
   const expiringSoon = v?.is_live && v.days_to_expiry <= 30
   const expired = v && !v.is_live && v.status === 'VERIFIED'
 
+  /* The signed URL, fetched only when it is asked for.
+   *
+   * /documents/:id/download answers with a URL and an expiry rather than the
+   * bytes, and the API's own note says why: a redirect would leave the
+   * signature in browser history and in the referrer the storage host sees. So
+   * it is held in memory while the preview is open and never written into an
+   * href the browser will remember.
+   *
+   * On demand rather than for every row at load: six documents would otherwise
+   * mint six signed URLs the student may never look at, each live for its whole
+   * TTL.
+   *
+   * The image test is on the file name because that is what the API sends —
+   * Document carries original_name and size_bytes, not a MIME type. The server
+   * sniffs the real type at upload and rejects anything that is not a PDF or a
+   * picture, so the extension here is choosing how to show a file that has
+   * already been vouched for, not deciding whether to trust it. */
+  const [preview, setPreview] = useState<string | null>(null)
+  const [previewing, setPreviewing] = useState(false)
+  const isImage = /\.(png|jpe?g|webp)$/i.test(doc.original_name)
+
+  async function showPreview() {
+    if (preview) { setPreview(null); return }
+    setPreviewing(true)
+    try {
+      const res = await api.get<{ url: string }>(`/documents/${doc.document_id}/download`)
+      if (isImage) {
+        setPreview(res.data.url)
+      } else {
+        // A PDF is the browser's job. noopener so the new tab cannot reach back
+        // into this one, noreferrer so the signature is not handed to whatever
+        // the storage host logs.
+        window.open(res.data.url, '_blank', 'noopener,noreferrer')
+      }
+    } catch {
+      /* the list reload will show the truth either way */
+    } finally {
+      setPreviewing(false)
+    }
+  }
+
   async function remove() {
     setBusy(true)
     try {
@@ -223,11 +264,29 @@ function DocumentCard({
         </Notice>
       )}
 
-      <p style={{ margin: '0.75rem 0 0' }}>
+      <div className="row" style={{ margin: '0.75rem 0 0' }}>
+        {/* The label says which document, because a list of six cards otherwise
+            offers a screen reader six identical "View" buttons. */}
+        <button
+          className="quiet"
+          onClick={showPreview}
+          disabled={busy || previewing}
+          aria-expanded={isImage ? Boolean(preview) : undefined}
+          aria-label={`${preview ? t('doc.hide') : t('doc.view')} ${label}`}
+        >
+          {previewing ? t('doc.opening') : preview ? t('doc.hide') : t('doc.view')}
+        </button>
         <button className="quiet" onClick={remove} disabled={busy}>
           {t('doc.remove')}<span className="sr-only"> {label}</span>
         </button>
-      </p>
+      </div>
+
+      {/* alt is the document's own name. Describing the picture is not something
+          this code can do, and "UDID card" is what tells the reader it is the
+          right one. */}
+      {preview && (
+        <img className="doc-preview" src={preview} alt={`${label} — ${doc.original_name}`} />
+      )}
     </article>
   )
 }

@@ -1792,6 +1792,23 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   padding-top: 2rem;
 }
 
+/* A document shown in place, under the card it belongs to.
+ *
+ * Capped in height rather than width: a photographed certificate is usually
+ * portrait, and left to itself a 3000px scan pushes the page down by three
+ * screens. The border and ground say it is the document rather than part of
+ * the page — a scan on a white card on a white page has no edge otherwise. */
+.doc-preview {
+  display: block;
+  margin-top: 0.75rem;
+  max-width: 100%;
+  max-height: 24rem;
+  width: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
 /* --- my profile ---------------------------------------------------------------
  *
  * The review screen: every answer on one page, one of them editable at a time.
