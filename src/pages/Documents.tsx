@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
@@ -180,16 +180,44 @@ function DocumentCard({
   const [preview, setPreview] = useState<string | null>(null)
   const isImage = /\.(png|jpe?g|webp)$/i.test(doc.original_name)
 
+  /* The preview URL, fetched once and then left alone.
+   *
+   * It was on a timer, renewed at four fifths of SIGNED_URL_TTL so it could
+   * never expire on screen. That cured a real problem and caused a worse one:
+   * replacing the src remounts the PDF viewer, which drops the reader back to
+   * page one. Anyone reading a multi-page certificate was returned to the start
+   * every few minutes — which looks exactly like a preview that will not scroll.
+   *
+   * A loaded document does not need a live URL. The bytes are in the browser;
+   * the signature only mattered at the moment of the request. So the URL is
+   * fetched once, and refreshed only if something actually fails — which is
+   * what an expired link looks like from here, and the only case the timer was
+   * really for.
+   */
+  const signedURL = useCallback(async (): Promise<string | null> => {
+    try {
+      // purpose=view leaves the Content-Disposition alone, so the browser
+      // renders the file instead of saving it.
+      const res = await api.get<{ url: string }>(
+        `/documents/${doc.document_id}/download`, { purpose: 'view' })
+      return res.data.url
+    } catch {
+      /* the card still shows its name, type and status */
+      return null
+    }
+  }, [doc.document_id])
+
+  /* Guarded so the effect does not set state on the pass that mounted it —
+     which is what the lint rule is about, and is a real cascade rather than a
+     style preference. */
   useEffect(() => {
     let cancelled = false
-    // purpose=view is what makes it renderable: the API leaves the
-    // Content-Disposition alone for viewing, so the browser shows the file
-    // instead of saving it.
-    api.get<{ url: string }>(`/documents/${doc.document_id}/download`, { purpose: 'view' })
-      .then(res => { if (!cancelled) setPreview(res.data.url) })
-      .catch(() => { /* the card still shows its name, type and status */ })
+    void (async () => {
+      const url = await signedURL()
+      if (!cancelled && url) setPreview(url)
+    })()
     return () => { cancelled = true }
-  }, [doc.document_id])
+  }, [signedURL])
 
   async function remove() {
     setBusy(true)
@@ -264,24 +292,27 @@ function DocumentCard({
           download and print buttons were, and the reason a "preview" was
           offering a download at all.
 
-          pointer-events: none in the stylesheet finishes the job: the preview
-          is something to look at, not something to operate. Nothing in it can
-          be clicked, scrolled or dragged out, so a multi-page document shows
-          its first page and stops there. */}
+          An image is inert — nothing to click, drag or right-click-save. A PDF
+          is not, and cannot be: a two-page certificate whose second page is
+          unreachable is a preview hiding half the evidence. It scrolls, and
+          that is all it does; the toolbar carrying download and print is
+          still off. */}
       {preview && (
         isImage ? (
           // alt is the document's own name. Describing the picture is not
           // something this code can do, and "UDID card" is what tells the
           // reader it is the right one.
           <img className="doc-thumb" src={preview}
-               alt={`${label} — ${doc.original_name}`} referrerPolicy="no-referrer" />
+               alt={`${label} — ${doc.original_name}`} referrerPolicy="no-referrer"
+               onError={() => { void signedURL().then(u => u && setPreview(u)) }} />
         ) : (
           <iframe className="doc-thumb doc-thumb-page"
-                  // FitH fits the page to the frame's width; the frame's own
-                  // aspect-ratio is A4, so the whole first page lands in it.
+                  // FitH fits the page to the frame's width, so the text is
+                  // readable at a glance and the rest of the page is below the
+                  // fold of the window rather than shrunk to fit it.
                   src={`${preview}#toolbar=0&navpanes=0&view=FitH`}
                   title={`${label} — ${doc.original_name}`}
-                  tabIndex={-1} referrerPolicy="no-referrer" />
+                  referrerPolicy="no-referrer" />
         )
       )}
     </article>

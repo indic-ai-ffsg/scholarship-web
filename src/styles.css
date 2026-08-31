@@ -1800,42 +1800,54 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
  * the page — a scan on a white card on a white page has no edge otherwise. */
 /* The document itself, on its own card.
  *
- * Not a control. It is inert by design — pointer-events: none means there is
- * nothing to click, scroll, drag or right-click-save, which is what makes this
- * a preview rather than an embedded viewer. A student recognises the page they
- * uploaded and moves on.
+ * Three shapes were tried and two were wrong, so the reasoning is worth
+ * keeping:
  *
- * contain rather than cover: a cropped certificate is a certificate you cannot
- * identify, and identifying it is the entire job. The sunken ground is what a
- * portrait scan sits on when it does not fill the width. */
+ *   A fixed rectangle with object-fit: contain letterboxed everything. A
+ *   portrait certificate in a landscape box is a small picture with grey bars
+ *   either side, and the thing you are trying to recognise ends up the
+ *   smallest part of the card.
+ *
+ *   Natural size at full width fixed the bars and overshot: a full-width A4
+ *   page is most of a phone screen, so a list of three documents became three
+ *   screens of scrolling, and the page was hard to scroll past at all.
+ *
+ * What is left is a cap, not a frame. The document keeps its own proportions —
+ * a tall scan stays tall, a wide one stays wide — and is simply not allowed to
+ * be more than a glance tall. Recognising a certificate does not need it
+ * full size; it needs it legible and out of the way.
+ */
 .doc-thumb {
   display: block;
-  width: 100%;
-  /* The document's own shape, not a box it has to fit.
-   *
-   * This was a fixed 14rem rectangle with object-fit: contain, which is the
-   * wrong instinct for a document: a portrait certificate in a landscape box
-   * is a small picture with grey bars either side, and the thing you are trying
-   * to recognise ends up the smallest part of the card. height: auto lets a
-   * tall scan be tall and a wide one be wide, at the full width either way. */
-  height: auto;
   margin-top: 0.75rem;
+  /* Width follows the height for an image, so a portrait scan is a narrow
+     column rather than a full-width slab with empty sides. */
+  max-width: 100%;
+  max-height: 15rem;
+  width: auto;
+  height: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-sunken);
+  /* An image has one page and nothing to operate: no click, no drag, no
+     context menu offering a save. */
   pointer-events: none;
 }
 
-/* A PDF has no intrinsic size to lay out from — an iframe is whatever you say
-   it is — so the page's own proportions have to be stated. 1:√2 is A4, which
-   is what a certificate, a marksheet and a bonafide letter are printed on;
-   with view=FitH the viewer fits the page to that width and the first page
-   fills the frame exactly, no bars and no cropping. */
+/* A PDF has no natural size to cap — an iframe is whatever you say it is — so
+   it gets a window instead: full width, a glance tall, and scrollable inside
+   for the pages below the first. The A4 proportion is gone deliberately; it is
+   what made the frame a full page. */
 .doc-thumb-page {
-  aspect-ratio: 1 / 1.414;
-  height: auto;
+  width: 100%;
+  height: 15rem;
+  max-height: 15rem;
   border-color: var(--border);
   background: var(--surface);
+  /* The one thing here that has to be operable. Inert, a two-page certificate
+     showed page one with no way to reach page two. Scrolling is not opening
+     and not downloading, and the toolbar carrying those is still off. */
+  pointer-events: auto;
 }
 
 /* --- my profile ---------------------------------------------------------------
