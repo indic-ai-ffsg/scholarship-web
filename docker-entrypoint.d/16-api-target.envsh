@@ -88,7 +88,9 @@ fi
 # --- who resolves that host --------------------------------------------------
 #
 # 15-local-resolvers.envsh has already read /etc/resolv.conf and exported the
-# container's own nameservers, which is a better default than naming one:
+# container's own nameservers — but only because the Dockerfile sets
+# NGINX_ENTRYPOINT_LOCAL_RESOLVERS, which is what that script returns early
+# without. Reading the file is a better default than naming a resolver:
 # on a compose network that IS Docker's embedded DNS at 127.0.0.11, and on the
 # default bridge or a cloud host it is whatever the platform actually provides.
 # Hardcoding 127.0.0.11 made `docker run` with no --network answer 502 for every
@@ -104,11 +106,17 @@ elif [ -n "$local_resolvers" ]; then
     DNS_RESOLVER="$NGINX_LOCAL_RESOLVERS"
     resolver_source="from /etc/resolv.conf"
 else
-    # An empty or nameserver-less /etc/resolv.conf. `resolver;` with no address
-    # is a configuration error and nginx would not start at all, so fall back to
-    # the embedded DNS and let a proxied request be what fails.
+    # Nothing was exported. That is an empty or nameserver-less
+    # /etc/resolv.conf, or 15-local-resolvers.envsh not running at all — so this
+    # says what was actually observed rather than diagnosing a file it has not
+    # read. Claiming the file named no nameserver is what sent the last
+    # investigation of this in the wrong direction.
+    #
+    # `resolver;` with no address is a configuration error and nginx would not
+    # start, so fall back to the embedded DNS and let a proxied request be what
+    # fails.
     DNS_RESOLVER=127.0.0.11
-    resolver_source="FALLBACK — /etc/resolv.conf named no nameserver"
+    resolver_source="FALLBACK — NGINX_LOCAL_RESOLVERS is empty"
 fi
 
 # --- what to listen on -------------------------------------------------------

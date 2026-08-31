@@ -94,6 +94,18 @@ ENV API_TARGET=${API_TARGET}
 # and the platform's resolver anywhere else. A default of 127.0.0.11 baked in
 # here would be wrong off a user-defined network, where nothing listens there and
 # every proxied request answers 502.
+#
+# That script is opt-in, and this is the opt-in. Its first line is
+# `[ "${NGINX_ENTRYPOINT_LOCAL_RESOLVERS:-}" ] || return 0`, so without the flag
+# it exports nothing at all and the entrypoint below falls back — reporting
+# "resolv.conf named no nameserver" about a file that named one perfectly well.
+# That is why every proxied request on Railway was resolved against 127.0.0.11,
+# which exists only under Docker.
+#
+# It also brackets an IPv6 nameserver on the way out ([fd12::10]), which is both
+# the form the resolver directive requires and the form a platform with an
+# IPv6-only private network hands out.
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 
 # envsubst replaces every ${NAME} it is given, and the entrypoint gives it every
 # environment variable unless filtered. Unfiltered, a HOSTNAME in the
