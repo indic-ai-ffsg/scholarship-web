@@ -190,15 +190,12 @@ function DocumentCard({
     if (preview) { setPreview(null); return }
     setPreviewing(true)
     try {
-      const res = await api.get<{ url: string }>(`/documents/${doc.document_id}/download`)
-      if (isImage) {
-        setPreview(res.data.url)
-      } else {
-        // A PDF is the browser's job. noopener so the new tab cannot reach back
-        // into this one, noreferrer so the signature is not handed to whatever
-        // the storage host logs.
-        window.open(res.data.url, '_blank', 'noopener,noreferrer')
-      }
+      // purpose=view is what makes this renderable: the API leaves the
+      // Content-Disposition alone for viewing, so the browser shows the file
+      // instead of saving it.
+      const res = await api.get<{ url: string }>(
+        `/documents/${doc.document_id}/download`, { purpose: 'view' })
+      setPreview(res.data.url)
     } catch {
       /* the list reload will show the truth either way */
     } finally {
@@ -271,21 +268,40 @@ function DocumentCard({
           className="quiet"
           onClick={showPreview}
           disabled={busy || previewing}
-          aria-expanded={isImage ? Boolean(preview) : undefined}
-          aria-label={`${preview ? t('doc.hide') : t('doc.view')} ${label}`}
+          aria-expanded={Boolean(preview)}
+          aria-label={`${preview ? t('doc.hide') : t('doc.preview')} ${label}`}
         >
-          {previewing ? t('doc.opening') : preview ? t('doc.hide') : t('doc.view')}
+          {previewing ? t('doc.opening') : preview ? t('doc.hide') : t('doc.preview')}
         </button>
-        <button className="quiet" onClick={remove} disabled={busy}>
-          {t('doc.remove')}<span className="sr-only"> {label}</span>
+        <button
+          className="quiet"
+          onClick={remove}
+          disabled={busy}
+          aria-label={`${t('doc.remove')} ${label}`}
+        >
+          {t('doc.remove')}
         </button>
       </div>
 
-      {/* alt is the document's own name. Describing the picture is not something
-          this code can do, and "UDID card" is what tells the reader it is the
-          right one. */}
+      {/* Shown in place, both kinds. Opening a tab or saving a file to check
+          you uploaded the right page is a lot of ceremony for a glance, and on
+          a phone it loses the page you were on.
+
+          referrerPolicy so the signed URL is not handed to whatever the storage
+          host logs; the frame is same-origin-free content, so it is sandboxed
+          to nothing it does not need. */}
       {preview && (
-        <img className="doc-preview" src={preview} alt={`${label} — ${doc.original_name}`} />
+        isImage ? (
+          // alt is the document's own name. Describing the picture is not
+          // something this code can do, and "UDID card" is what tells the
+          // reader it is the right one.
+          <img className="doc-preview" src={preview}
+               alt={`${label} — ${doc.original_name}`} referrerPolicy="no-referrer" />
+        ) : (
+          <iframe className="doc-preview doc-preview-page" src={preview}
+                  title={`${label} — ${doc.original_name}`}
+                  referrerPolicy="no-referrer" sandbox="" />
+        )
       )}
     </article>
   )

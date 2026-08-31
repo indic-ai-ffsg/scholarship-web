@@ -298,3 +298,40 @@ export function problemFor(question: Question, answers: Answers): string | null 
   }
   return null
 }
+
+/* The profile's own value, in the form the control and the API both want.
+ *
+ * The API's round trip is not symmetric, and this is where that bites. It
+ * returns date_of_birth as *time.Time — "2000-01-03T00:00:00Z" — and accepts it
+ * back as a string validated `datetime=2006-01-02`, which that is not. The
+ * wizard seeds its answers from the profile and re-sends every one of them on
+ * each Next, so a student who already had a date of birth got
+ * "Some of the details you entered need attention." on every step of a form
+ * they could not fix, because the offending value was one the server had just
+ * given them.
+ *
+ * It also fixes the display: <input type="date"> shows nothing at all unless
+ * the value is exactly yyyy-mm-dd, so the box appeared empty over a date the
+ * student had definitely entered.
+ */
+export function seedValue(q: Question, raw: unknown): string {
+  const s = String(raw)
+  if (q.kind === 'date') {
+    // Tolerant of both: a bare date passes through, a timestamp loses its time.
+    const m = /^(\d{4}-\d{2}-\d{2})/.exec(s)
+    return m ? m[1] : s
+  }
+  return s
+}
+
+/* Where a next step is actually done.
+ *
+ * Every step used to lead to the wizard, because every step was a wizard
+ * question. One is not: "documents" is answered by uploading a certificate and
+ * waiting for an organisation to check it, and sending a student to Question 1
+ * of 9 for that reopened nine answers they had already given, changed nothing,
+ * and left the meter where it was.
+ */
+export function stepDestination(field: string): string {
+  return field === 'documents' ? '/documents' : '/profile/setup'
+}

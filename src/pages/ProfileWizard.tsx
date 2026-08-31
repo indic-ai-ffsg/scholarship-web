@@ -7,7 +7,7 @@ import { clearDraft, readDraft, saveDraft } from '../lib/draft'
 import { safeNext } from '../lib/next'
 import {
   SCALES, SCALE_KEY, SCORE_KEY, buildQuestions, scaleOf, toPercent, today,
-  type Answers, type ScaleId,
+  seedValue, type Answers, type ScaleId,
 } from '../lib/questions'
 import { useI18n } from '../lib/i18n-context'
 import { useAnnounce } from '../lib/announce'
@@ -70,7 +70,7 @@ export default function ProfileWizard() {
 
     for (const q of questions) {
       const v = (profile as unknown as Record<string, unknown>)[q.field]
-      if (v !== null && v !== undefined && v !== '') out[q.field] = String(v)
+      if (v !== null && v !== undefined && v !== '') out[q.field] = seedValue(q, v)
     }
     return out
   }, [profile, questions])

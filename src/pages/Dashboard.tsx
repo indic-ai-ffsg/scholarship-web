@@ -4,6 +4,7 @@ import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { useI18n } from '../lib/i18n-context'
+import { stepDestination } from '../lib/questions'
 import { money, shortDate } from '../lib/format'
 import { Empty, ErrorState, Loading, Notice } from '../components/ui'
 import type { Application, Summary } from '../lib/types'
@@ -60,6 +61,9 @@ export default function Dashboard() {
   const s = summary.data
   const applications = recent.data ?? []
   const openMatches = s ? s.matches.eligible + s.matches.likely_eligible : 0
+  /* next_steps is ordered by how many schemes each missing field unlocks, so
+     the first is the highest-value thing this student could do next. */
+  const nextField = profile.next_steps?.[0]?.field ?? ''
 
   return (
     <div className="page">
@@ -104,8 +108,13 @@ export default function Dashboard() {
             </p>
           ) : null}
 
+          {/* The button goes where the step is done, and says so. "Continue
+              where you left off" is the right words for an unfinished form and
+              the wrong ones for a document somebody has to upload. */}
           <div className="actions">
-            <Link className="btn primary" to="/profile/setup">{t('profile.continue')}</Link>
+            <Link className="btn primary" to={stepDestination(nextField)}>
+              {nextField === 'documents' ? t('doc.upload') : t('profile.continue')}
+            </Link>
           </div>
         </section>
       ) : null}

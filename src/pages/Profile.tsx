@@ -28,7 +28,8 @@ import { useAuth } from '../lib/auth-context'
 import { useI18n } from '../lib/i18n-context'
 import { useAnnounce } from '../lib/announce'
 import {
-  buildQuestions, displayValue, problemFor, type Answers, type Question,
+  buildQuestions, displayValue, problemFor, seedValue, stepDestination,
+  type Answers, type Question,
 } from '../lib/questions'
 import { QuestionInput } from '../components/QuestionInput'
 import { ErrorState } from '../components/ui'
@@ -55,10 +56,11 @@ function ProfileDetails() {
   const answers: Answers = {}
   for (const q of questions) {
     const v = (profile as unknown as Record<string, unknown>)[q.field]
-    if (v !== null && v !== undefined && v !== '') answers[q.field] = String(v)
+    if (v !== null && v !== undefined && v !== '') answers[q.field] = seedValue(q, v)
   }
 
   const complete = profile.completeness_score >= 100
+  const nextField = profile.next_steps?.[0]?.field ?? ''
 
   return (
     <div className="page">
@@ -86,8 +88,17 @@ function ProfileDetails() {
               <span style={{ width: `${profile.completeness_score}%` }} />
             </div>
           </div>
+          {profile.next_steps?.length ? (
+            <p className="next">
+              <span className="mark" aria-hidden="true">→</span>
+              <span>{profile.next_steps[0].message}</span>
+            </p>
+          ) : null}
+
           <div className="actions">
-            <Link className="btn primary" to="/profile/setup">{t('profile.continue')}</Link>
+            <Link className="btn primary" to={stepDestination(nextField)}>
+              {nextField === 'documents' ? t('doc.upload') : t('profile.continue')}
+            </Link>
           </div>
         </section>
       )}

@@ -1809,6 +1809,16 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   background: var(--surface-sunken);
 }
 
+/* A document with pages needs a window rather than a fitted box: an image is
+   as tall as it is, a PDF is as tall as the reader wants to scroll. Height in
+   rem so it grows with the reader's own font size, and 70vh so it never grows
+   past the screen it has to fit inside. */
+.doc-preview-page {
+  width: 100%;
+  height: min(32rem, 70vh);
+  max-height: none;
+}
+
 /* --- my profile ---------------------------------------------------------------
  *
  * The review screen: every answer on one page, one of them editable at a time.
