@@ -100,8 +100,12 @@ ENV API_TARGET=${API_TARGET}
 # environment would rewrite nothing here (nginx's own variables are $host, not
 # ${HOST}) — but the failure mode if one ever collided is a config file that
 # still parses and quietly proxies somewhere else, so the substitution is
-# restricted to the five names the template actually uses.
-ENV NGINX_ENVSUBST_FILTER='^(API_TARGET|API_HOST|DNS_RESOLVER|LISTEN_PORT|LISTEN_IPV6)$'
+# restricted to the names the template actually uses. That list is
+# load-bearing in the other direction too: a ${NAME} in the template that is
+# absent from it is copied through verbatim, and nginx then refuses to start
+# on a directive containing a literal ${...}. Adding a variable to the
+# template means adding it here.
+ENV NGINX_ENVSUBST_FILTER='^(API_TARGET|API_HOST|DNS_RESOLVER|LISTEN_PORT|LISTEN_IPV6|RESOLVER_IPV6)$'
 
 # worker_processes auto means one worker per CPU the *host* has, which on a big
 # machine is dozens of processes serving one small static site. This makes the
