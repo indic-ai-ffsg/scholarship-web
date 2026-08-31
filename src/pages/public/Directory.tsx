@@ -4,6 +4,7 @@ import * as api from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
 import { useDebounced, useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
+import { courseChoices, disabilityChoices, stateChoices, type Choice } from '../../lib/fields'
 import { money, shortDate } from '../../lib/format'
 import { Empty, ErrorState, Field, Loading, Notice } from '../../components/ui'
 import type { Facet, Listing } from '../../lib/types'
@@ -128,21 +129,39 @@ export default function Directory() {
               </Field>
             </div>
 
-            <FacetSelect
+            {/* The three that come from the vocabulary rather than from the
+                results.
+                *
+                * These used to be facet-driven and vanished when the facet was
+                * empty — which, for disability type, was nearly always: a
+                * scheme open to every type contributes no facet row, and most
+                * are. So a scholarship site for disabled students showed no
+                * way to filter by disability, and a student in Haryana had no
+                * way to say so.
+                *
+                * They are safe to show now because the query behind them means
+                * "open to me" rather than "names me": a scheme that names no
+                * disability type, no level or no state is open to all of them
+                * and stays in the results. Without that fix these controls
+                * would quietly hide the majority of the list. */}
+            <VocabSelect
               label={t('public.filter.disability')}
-              options={facets.disability_type}
+              options={disabilityChoices()}
+              anyLabel={t('public.filter.anyDisability')}
               value={disability}
               onChange={v => setFilter('disability_type', v)}
             />
-            <FacetSelect
+            <VocabSelect
               label={t('public.filter.course')}
-              options={facets.course_level}
+              options={courseChoices()}
+              anyLabel={t('public.filter.anyCourse')}
               value={course}
               onChange={v => setFilter('course_level', v)}
             />
-            <FacetSelect
+            <VocabSelect
               label={t('public.filter.state')}
-              options={facets.state_code}
+              options={stateChoices()}
+              anyLabel={t('public.filter.allStates')}
               value={state}
               onChange={v => setFilter('state_code', v)}
             />
@@ -203,6 +222,38 @@ export default function Directory() {
         </div>
       </div>
     </div>
+  )
+}
+
+/* A filter whose options are the whole vocabulary, not the current results.
+ *
+ * The difference from FacetSelect below is what happens when nothing in the
+ * list matches: a facet-driven control disappears, and a vocabulary-driven one
+ * still offers every answer a student might have. For "what is your
+ * disability" and "which state do you live in" the second is the only sensible
+ * behaviour — the answer is a property of the student, not of the result set,
+ * and a control that vanishes because today's list is short is a control
+ * nobody can rely on. */
+function VocabSelect({
+  label, options, anyLabel, value, onChange,
+}: {
+  label: string
+  options: Choice[]
+  anyLabel: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <Field label={label} optional={false}>
+      {props => (
+        <select {...props} value={value} onChange={e => onChange(e.target.value)}>
+          <option value="">{anyLabel}</option>
+          {options.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      )}
+    </Field>
   )
 }
 

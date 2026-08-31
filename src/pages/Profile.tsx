@@ -168,9 +168,19 @@ function Row({ question, answers, verified, editing, onEdit, onDone }: {
         </dt>
         <dd>
           {shown ?? <span className="muted">{t('profile.notAnswered')}</span>}
-          <button type="button" className="quiet small" onClick={onEdit}>
+          {/* aria-label rather than a visually hidden span. Nine buttons all
+              reading "Change" is useless in a screen reader's list of controls,
+              so the question has to be in the name — but as hidden text it also
+              landed in anything copied off the page, which is how a profile
+              pasted into a message came out as "Sudip DeChange— What is your
+              name?". The label is announced and never rendered. */}
+          <button
+            type="button"
+            className="quiet small"
+            onClick={onEdit}
+            aria-label={`${shown ? t('profile.change') : t('profile.add')} — ${question.question}`}
+          >
             {shown ? t('profile.change') : t('profile.add')}
-            <span className="sr-only"> — {question.question}</span>
           </button>
         </dd>
       </div>

@@ -228,16 +228,6 @@ export default function Dashboard() {
         )}
       </section>
 
-      {/* One hand-off, not two stacked full-width buttons.
-       *
-       * "Find scholarships" was here as well as in the empty state above, and
-       * the pair of them read as the page's conclusion when the page's actual
-       * conclusion is whatever the student came to check. Editing details is
-       * reachable from the tile above, the account menu and the profile link;
-       * it does not need a full-width button of its own at the foot. */}
-      <nav className="dash-foot" aria-label={t('dash.title')}>
-        <Link className="btn" to="/profile">{t('dash.editDetails')}</Link>
-      </nav>
     </div>
   )
 }

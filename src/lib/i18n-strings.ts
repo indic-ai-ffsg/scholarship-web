@@ -54,6 +54,11 @@ export const en: Dict = {
   'public.filter.state': 'Your state',
   'public.filter.provider': 'Who offers it',
   'public.filter.any': 'Any',
+  /* Each filter says "any what", because "Any" four times over a column of
+     dropdowns tells a reader nothing about which one they are looking at. */
+  'public.filter.anyDisability': 'Any disability',
+  'public.filter.anyCourse': 'Any level of study',
+  'public.filter.allStates': 'All states',
   'public.filters': 'Filters',
   'public.clear': 'Clear',
   'public.results': 'scholarships open now',
