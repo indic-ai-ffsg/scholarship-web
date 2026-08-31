@@ -1,13 +1,38 @@
-# The portal's own CI: lint, type-check, build.
+# The portal: check → image → publish.
 #
 # This repository IS the app. web/ was split out of the platform tree into
-# github.com/indic-ai-ffsg/scholarship-web, so this file sits at the root
-# beside package.json and every `run` step already starts in the right
-# directory. The platform tree's copy of this app runs the same commands from
-# web.yml with `defaults.run.working-directory: web`; here that setting would
-# be wrong, and would break every step rather than relocate it.
+# github.com/indic-ai-ffsg/scholarship-web, so this file sits at the root beside
+# package.json and every `run` step already starts in the right directory. The
+# platform tree's web.yml runs the same commands with
+# `defaults.run.working-directory: web`; here that setting would be wrong, and
+# would break every step rather than relocate it.
 #
-# Deliberately absent, for three different reasons:
+# Three stages, each gating the next: no image is built from a tree that does
+# not lint and compile, and nothing is published that has not been started and
+# exercised as a container first.
+#
+#   check    eslint, the TypeScript project build, and the Vite bundle
+#   image    the container image — built with the defaults, started, and put
+#            through scripts/smoke-image.sh
+#   publish  main only: rebuilt with the real configuration, re-checked against
+#            it, then pushed to Docker Hub
+#
+# Why `publish` is a separate job rather than one job with an `if`, and why
+# these are not four workflow files: `production` is a protected environment,
+# and a job that names it waits for its reviewers. Keeping the environment out
+# of the first two stages means a pull request gets full lint, build and
+# container feedback without anyone being asked to approve anything, and the
+# approval is required exactly where it matters — the push. Separate workflow
+# files cannot do this: one workflow cannot gate another except through
+# `workflow_run`, which fires only after a completed run on the default branch,
+# reports nothing on the pull request, and cannot carry an environment approval
+# back to the thing being approved.
+#
+# There is no `init` stage. Jobs do not share a filesystem, so a job that only
+# checked out and installed would hand the next job nothing — every stage below
+# installs what it needs anyway.
+#
+# Deliberately absent:
 #
 #   check:contrast, check:responsive  run `python3 ../tools/...`, and tools/ is
 #     not in this repository — it belongs to the platform tree. In a standalone
@@ -17,15 +42,8 @@
 #     all three apps, not this one.
 #
 #   check:routes  probes a running API for every path the portal calls, which
-#     needs Postgres, Redis, the API and the workers stood up. That belongs on
-#     a developer's machine (`cd backend && make dev`).
-#
-#   check:image, and publishing  the image is built, smoke-tested against its
-#     configured API and pushed from the platform tree's web.yml, behind its
-#     protected `production` environment. Nothing here logs in to a registry,
-#     so this workflow needs no secrets and names no environment — which is the
-#     point: a pull request gets full lint and build feedback without anyone
-#     being asked to approve anything.
+#     needs Postgres, Redis, the API and the workers stood up. That belongs on a
+#     developer's machine (`cd backend && make dev`).
 
 name: ci
 
@@ -47,6 +65,10 @@ permissions:
   contents: read
 
 jobs:
+
+  # ===========================================================================
+  # Stage 1 — check
+  # ===========================================================================
 
   check:
     name: check
@@ -80,24 +102,298 @@ jobs:
       - name: Report bundle sizes
         run: ls -lh dist/assets/
 
-      # This bundle is NOT the one the image ships, and that is deliberate
-      # rather than a gap to close.
-      #
-      # .env is committed to this repository and `vite build` reads it with no
-      # flag, so the artifact below carries the values in it: API version v1 and
-      # the scholarship-adb48 Firebase project. Both are public by design — a
-      # Firebase web apiKey identifies a project without authorising anything,
-      # and phone sign-in is gated by the authorised-domain list and reCAPTCHA
-      # on Google's side.
-      #
-      # The image never sees that file: .dockerignore excludes .env from the
-      # build context on purpose, and the Dockerfile takes the same values as
-      # build arguments instead. So this job proves the code compiles and
-      # bundles. It does not prove the published image was pointed at the right
-      # API or the right Firebase project — web.yml's smoke test is what checks
-      # that, against the image it is about to push.
+      # This bundle is NOT the one the image ships, and that is deliberate.
+      # `vite build` here reads the committed .env with no flag; the image never
+      # sees that file, because .dockerignore excludes it from the build context
+      # on purpose and the Dockerfile takes the same values as build arguments
+      # instead. The two agree today — stage 3 is what proves it for the artefact
+      # that actually gets pushed.
       - uses: actions/upload-artifact@v4
         with:
           name: web-dist
           path: dist/
           retention-days: 7
+
+  # ===========================================================================
+  # Stage 2 — image
+  # ===========================================================================
+  #
+  # Built with the image's own defaults and no secrets, so this stage runs on
+  # every pull request without touching the protected environment. It proves the
+  # Dockerfile, the nginx template and the entrypoint work; the address they are
+  # pointed at and the Firebase project they carry are stage 3's business.
+
+  image:
+    name: image
+    needs: check
+    runs-on: ubuntu-latest
+    env:
+      TAG: sp-web:ci-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # load: true, so the image lands in the runner's daemon and can actually
+      # be run. That restricts the build to one platform — an image cannot be
+      # loaded as a manifest list — which is the right trade here: an image that
+      # was never started is not a passing result.
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          tags: ${{ env.TAG }}
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The same script a developer runs (`npm run check:image`), rather than a
+      # list of inline `docker run` steps, so that a failure here is reproducible
+      # with one command instead of being read out of this log.
+      - name: Smoke test
+        run: sh scripts/smoke-image.sh "$TAG"
+
+  # ===========================================================================
+  # Stage 3 — publish
+  # ===========================================================================
+
+  publish:
+    name: publish
+    needs: image
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    # Holds DOCKER_USERNAME and DOCKER_PASSWORD. Its deployment branch rules and
+    # reviewers apply on top of the `if` above, so the protection survives
+    # someone editing this file.
+    environment: production
+
+    # Declared here, not at workflow level: the `secrets` context is not
+    # available in a workflow-level `env` block — only `github`, `vars` and
+    # `inputs` are — so a secret-derived image name has to be scoped to the job.
+    #
+    # A Docker Hub personal namespace IS the account name, so DOCKER_USERNAME is
+    # the right namespace whenever the image belongs to the pushing account. Set
+    # the repository variable IMAGE_NAME to `namespace/name` to override — an
+    # organisation-owned image needs it, because there the pushing account and
+    # the namespace are different names. Being a variable rather than a secret
+    # also keeps the tag readable in the log instead of printing ***.
+    env:
+      IMAGE: ${{ vars.IMAGE_NAME || format('{0}/sp-web', secrets.DOCKER_USERNAME) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # The build configuration comes from the committed .env, not from eight
+      # more environment secrets, and that is a deliberate difference from the
+      # platform tree's web.yml.
+      #
+      # .env is tracked in this repository and is what `npm run dev` and stage 1
+      # already build against. Copying the same values into secrets would create
+      # a second source of truth that drifts silently — the failure being a
+      # published image that disagrees with the tree it was built from, which
+      # nothing would report. Nothing in it is a credential: a Firebase web
+      # apiKey identifies a project without authorising anything, phone sign-in
+      # is gated by the authorised-domain list and reCAPTCHA on Google's side,
+      # and the API address is public. web.yml masks these because they reach it
+      # as secrets; here they are in the repository, so printing them is honest
+      # and makes this log readable.
+      #
+      # Read with grep rather than `.` so a stray line in .env cannot execute as
+      # shell, and so a value containing spaces or `#` survives intact.
+      - name: Read the build configuration from .env
+        run: |
+          set -eu
+
+          [ -f .env ] || {
+            echo "::error title=.env is missing::This workflow builds the image from the \
+          committed .env. Restore it, or switch the build-args below to secrets."
+            exit 1
+          }
+
+          # First match wins, matching how Vite itself resolves a repeated key.
+          get() { grep -m1 "^$1=" .env | cut -d= -f2- || true; }
+
+          fail=0
+          missing=''
+          present=0
+
+          version=$(get VITE_API_VERSION)
+          target=$(get VITE_API_TARGET)
+
+          if [ -z "$version" ]; then
+            echo "::error title=VITE_API_VERSION is not set in .env::It must match \
+          API_VERSION on the server — the portal builds every request path from it, and an \
+          empty value ships a build that calls /api/ with no version at all. api.ts reads \
+          \`?? 'v1'\`, which an empty string satisfies, so this fails as a 404 on every \
+          request rather than as a build error."
+            fail=1
+          fi
+
+          case "$target" in
+            http://*|https://*) ;;
+            "")
+              echo "::error title=VITE_API_TARGET is not set in .env::Give it as the API's \
+          address including its scheme, for example https://sship-api.indic-ai.org."
+              fail=1
+              ;;
+            *)
+              echo "::error title=VITE_API_TARGET has no scheme::The container's entrypoint \
+          rejects a target without one, so the image would fail to start. Give it as \
+          http:// or https://."
+              fail=1
+              ;;
+          esac
+
+          # Name and value passed separately, and never joined into a single
+          # word: a value that picked up a stray space would otherwise split and
+          # be counted as a missing setting with a nonsense name.
+          count() {
+            if [ -n "$2" ]; then
+              present=$((present + 1))
+            else
+              missing="$missing $1"
+            fi
+          }
+
+          for k in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN \
+                   VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET \
+                   VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID; do
+            count "$k" "$(get "$k")"
+          done
+
+          # All six or none. None is a legitimate build — the public site works
+          # and src/lib/firebase.ts reports that sign-in is not configured — so
+          # it is a warning. A partial set is always a mistake: initializeApp
+          # accepts it, the SMS request fails inside Google's SDK, and what the
+          # student sees is a code that never arrives.
+          if [ "$present" -eq 6 ]; then
+            echo "all six Firebase settings are present"
+          elif [ "$present" -eq 0 ]; then
+            echo "::warning title=Firebase sign-in is not configured::None of the six \
+          VITE_FIREBASE_* keys is set in .env. The public site will work and students will \
+          not be able to sign in — the portal reports that rather than failing silently."
+          else
+            echo "::error title=The Firebase configuration is incomplete::Set$missing in \
+          .env, or none of the six. A partial configuration is accepted by initializeApp \
+          and then fails inside Google's SDK when the code is requested, which reaches the \
+          student as an SMS that never arrives."
+            fail=1
+          fi
+
+          [ "$fail" -eq 0 ] || exit 1
+
+          # A trailing slash becomes a double slash in every proxied path. The
+          # entrypoint strips it too — this is here so the value the smoke test
+          # asserts on is the value the container will derive its Host header
+          # from.
+          while [ "${target%/}" != "$target" ]; do target=${target%/}; done
+
+          {
+            echo "API_VERSION=$version"
+            echo "API_TARGET=$target"
+            for k in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN \
+                     VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET \
+                     VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID; do
+              echo "$k=$(get "$k")"
+            done
+          } >> "$GITHUB_ENV"
+
+          echo "building $version against $target"
+
+      # Same build as stage 2, with the real configuration. The VITE_* arguments
+      # are compiled into the bundle by Vite and cannot be changed afterwards.
+      # API_TARGET only moves the image's default: 16-api-target.envsh reads it
+      # at container start, so the same image can be pointed at another API
+      # without a rebuild. It is recorded in the image's config, which for a
+      # public repository means visible — an address is fine there, and so is a
+      # Firebase web configuration. A credential would not be, and nothing here
+      # takes one.
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          build-args: |
+            VITE_API_VERSION=${{ env.API_VERSION }}
+            API_TARGET=${{ env.API_TARGET }}
+            VITE_FIREBASE_API_KEY=${{ env.VITE_FIREBASE_API_KEY }}
+            VITE_FIREBASE_AUTH_DOMAIN=${{ env.VITE_FIREBASE_AUTH_DOMAIN }}
+            VITE_FIREBASE_PROJECT_ID=${{ env.VITE_FIREBASE_PROJECT_ID }}
+            VITE_FIREBASE_STORAGE_BUCKET=${{ env.VITE_FIREBASE_STORAGE_BUCKET }}
+            VITE_FIREBASE_MESSAGING_SENDER_ID=${{ env.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+            VITE_FIREBASE_APP_ID=${{ env.VITE_FIREBASE_APP_ID }}
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Stage 2 checked the image against its defaults. This checks the thing
+      # that is actually about to be published: that the bundle calls
+      # /api/{the configured version}, that it carries the configured Firebase
+      # project, and that the container proxies to the configured address. A
+      # wrong version or a mistyped host is otherwise a deployment that starts
+      # cleanly and fails on its first request.
+      - name: Smoke test
+        env:
+          EXPECT_API_VERSION: ${{ env.API_VERSION }}
+          EXPECT_API_TARGET: ${{ env.API_TARGET }}
+          EXPECT_FIREBASE_PROJECT: ${{ env.VITE_FIREBASE_PROJECT_ID }}
+        run: sh scripts/smoke-image.sh "$IMAGE:$GITHUB_SHA"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push
+        # `denied: requested access to the resource is denied` arrives AFTER a
+        # successful login, so it never means the credentials are wrong. It
+        # means the namespace does not exist, or the account cannot write to it.
+        # The registry's message names neither, so this one does.
+        run: |
+          set -eu -o pipefail
+
+          # The commit tag is the one to deploy from — it names exactly one
+          # build. `latest` moves, which is convenient for a pull and useless
+          # for knowing what is running.
+          docker tag "$IMAGE:$GITHUB_SHA" "$IMAGE:latest"
+
+          if ! docker push "$IMAGE:$GITHUB_SHA"; then
+            echo "::error title=Push denied::The registry refused the write. The \
+          credentials authenticated, so the destination is what to check: the namespace \
+          must exist on Docker Hub and the account must be able to write to it. It \
+          defaults to DOCKER_USERNAME; set the repository variable IMAGE_NAME to \
+          'namespace/name' if the image belongs to an organisation instead. Also confirm \
+          DOCKER_PASSWORD is a token with Read & Write scope — a read-only token logs in \
+          successfully and then fails exactly like this."
+            exit 1
+          fi
+          docker push "$IMAGE:latest"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Published"
+            echo
+            echo '```'
+            echo "$IMAGE:$GITHUB_SHA"
+            echo "$IMAGE:latest"
+            echo '```'
+            echo
+            echo "Built for \`$API_VERSION\`, default API \`$API_TARGET\`."
+            echo "API_TARGET is read at container start, so the same image can be"
+            echo "pointed elsewhere without a rebuild:"
+            echo
+            echo '```sh'
+            echo "docker run -e API_TARGET=https://… $IMAGE:$GITHUB_SHA"
+            echo '```'
+            echo
+            echo "The domain this is served from must be listed under"
+            echo "Authentication > Settings > Authorized domains in Firebase,"
+            echo "or phone sign-in fails with auth/captcha-check-failed."
+          } >> "$GITHUB_STEP_SUMMARY"
