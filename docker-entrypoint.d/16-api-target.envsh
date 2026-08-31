@@ -142,7 +142,33 @@ else
     LISTEN_IPV6="${LISTEN_IPV6-}"
 fi
 
-export API_TARGET API_HOST DNS_RESOLVER LISTEN_PORT LISTEN_IPV6
+# --- whether the resolver may answer with AAAA -------------------------------
+#
+# The same test as above, for a different reason. nginx asks for both A and AAAA
+# by default and prefers the AAAA when it gets one, which on an IPv4-only
+# network is at best a wasted lookup — so this used to be pinned off. Railway
+# inverts the situation: the private network is IPv6-only and a
+# *.railway.internal name publishes AAAA and no A, so ipv6=off makes every
+# proxied request fail to resolve. Nothing about that is visible from outside,
+# because the static site is served from disk and keeps working.
+#
+# A container that has an IPv6 stack is the one that might need AAAA, so derive
+# it from that rather than naming a platform here. RESOLVER_IPV6=off opts out.
+if [ -f /proc/net/if_inet6 ]; then
+    : "${RESOLVER_IPV6:=on}"
+else
+    : "${RESOLVER_IPV6:=off}"
+fi
+
+case "$RESOLVER_IPV6" in
+    on|off) ;;
+    *)
+        echo "16-api-target: RESOLVER_IPV6 must be on or off, got '$RESOLVER_IPV6'" >&2
+        exit 1
+        ;;
+esac
+
+export API_TARGET API_HOST DNS_RESOLVER LISTEN_PORT LISTEN_IPV6 RESOLVER_IPV6
 
 # Printed because a portal that cannot reach its API is the failure this image is
 # most likely to be deployed with, and the first question is always which
@@ -153,4 +179,4 @@ else
     echo "16-api-target: listening on $LISTEN_PORT (IPv4 only, no /proc/net/if_inet6)"
 fi
 echo "16-api-target: proxying /api to $API_TARGET (Host: $API_HOST)"
-echo "16-api-target: resolver: $DNS_RESOLVER ($resolver_source)"
+echo "16-api-target: resolver: $DNS_RESOLVER ($resolver_source), AAAA $RESOLVER_IPV6"

@@ -155,7 +155,17 @@ server {
     # --network has no resolver on 127.0.0.11, and every proxied request answers
     # 502 with "no resolver defined" or a resolution timeout in the error log.
     # Point DNS_RESOLVER at a real resolver in that case.
-    resolver ${DNS_RESOLVER} valid=10s ipv6=off;
+    #
+    # Whether AAAA may be returned is derived rather than pinned, because the
+    # right answer inverts between platforms and being wrong is silent either
+    # way. On an IPv4-only compose network, asking for AAAA is a wasted lookup
+    # that can also select an address nothing listens on. Railway is the exact
+    # opposite: its private network is IPv6-only and a *.railway.internal name
+    # has no A record at all, so ipv6=off there fails every proxied request at
+    # resolution while the static site carries on serving — which reads as the
+    # API being down when the API is healthy. The entrypoint switches on whether
+    # this container actually has an IPv6 stack.
+    resolver ${DNS_RESOLVER} valid=10s ipv6=${RESOLVER_IPV6};
 
     location /api/ {
         # With a variable in proxy_pass, nginx no longer appends the request URI
