@@ -91,9 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     ;(async () => {
       try {
-        const res = await api.request<Envelope<LoginResult>>('/auth/refresh', {
-          method: 'POST', raw: true,
-        })
+        // Through the shared refresh, never directly: StrictMode mounts this
+        // effect twice, and two refreshes with one cookie is a replay to the
+        // server, which revokes the whole family. See api.refreshSession.
+        const res = await api.refreshSession<Envelope<LoginResult>>()
+        if (!res) throw new Error('no session')
         if (!cancelled) await applySession(res.data)
       } catch {
         if (!cancelled) setState(s => ({ ...s, status: 'anonymous' }))
@@ -251,10 +253,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const refreshProfile = useCallback(async () => {
     try {
-      const res = await api.request<Envelope<LoginResult>>('/auth/refresh', {
-        method: 'POST', raw: true,
-      })
-      api.setAccessToken(res.data.token.access_token)
+      // Shared, for the same reason: this runs right after a profile save, and
+      // landing beside the bootstrap's refresh would end the session.
+      // refreshSession sets the access token itself.
+      const res = await api.refreshSession<Envelope<LoginResult>>()
+      if (!res) throw new Error('no session')
 
       const profile = await loadProfile()
       setState(s => ({

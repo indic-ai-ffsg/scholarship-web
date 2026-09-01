@@ -124,17 +124,34 @@ async function send<T>(path: string, opts: RequestOptions = {}): Promise<T> {
  * use and treats a replayed one as theft, revoking the whole family. Racing
  * refreshes would sign the operator out for no reason. */
 
-let refreshing: Promise<string | null> | null = null
+let refreshing: Promise<unknown | null> | null = null
 
-async function refresh(): Promise<string | null> {
+/* Every refresh in this application, deduped.
+ *
+ * Sharing the in-flight promise is not an optimisation, it is the difference
+ * between staying signed in and being thrown out. The server rotates the
+ * refresh token on every use and treats an already-rotated one as replay —
+ * identity.Refresh revokes the whole family and denylists every token the
+ * account holds, because a replay is either a race or a theft and it cannot
+ * tell which.
+ *
+ * So two refreshes with the same cookie end the session. The retry path below
+ * has always shared this promise; the session bootstrap and refreshProfile in
+ * auth.tsx did not — they called /auth/refresh directly. React's StrictMode
+ * runs an effect twice in development, and a profile save triggers a refresh
+ * that can land beside one, either of which is two refreshes with one cookie.
+ *
+ * Returns the whole envelope rather than the token, because the callers need
+ * the account and its contexts too.
+ */
+export async function refreshSession<T>(): Promise<T | null> {
   refreshing ??= (async () => {
     try {
       const res = await send<Envelope<{ token: { access_token: string } }>>(
         '/auth/refresh', { method: 'POST', raw: true },
       )
-      const token = res.data.token.access_token
-      setAccessToken(token)
-      return token
+      setAccessToken(res.data.token.access_token)
+      return res
     } catch {
       return null
     } finally {
@@ -144,7 +161,12 @@ async function refresh(): Promise<string | null> {
     }
   })()
 
-  return refreshing
+  return refreshing as Promise<T | null>
+}
+
+async function refresh(): Promise<string | null> {
+  const res = await refreshSession<Envelope<{ token: { access_token: string } }>>()
+  return res ? res.data.token.access_token : null
 }
 
 export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
