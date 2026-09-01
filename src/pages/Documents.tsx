@@ -279,7 +279,7 @@ function DocumentCard({
 
       <div className="row" style={{ margin: '0.75rem 0 0' }}>
         <button
-          className="quiet"
+          className="quiet destructive"
           onClick={remove}
           disabled={busy}
           aria-label={`${t('doc.remove')} ${label}`}

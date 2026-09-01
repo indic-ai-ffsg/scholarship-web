@@ -651,6 +651,20 @@ button.primary, .btn.primary {
 button.primary:hover:not(:disabled), .btn.primary:hover { filter: brightness(1.12); }
 button.quiet { border-color: transparent; background: transparent; color: var(--accent); }
 button.quiet:hover:not(:disabled) { background: var(--accent-weak); }
+
+/* A quiet button that removes something.
+ *
+ * Green is this product's yes: it is the accent, it is the eligible state, and
+ * it is on every button that moves a student forward. "Remove" wearing it made
+ * deleting a disability certificate look like the same kind of act as sending
+ * an application. Danger red is the one colour here that already means "this
+ * takes something away", and it is 6.7:1 on the card, so it is legible as text
+ * rather than merely different.
+ *
+ * Still quiet: no border, no fill until it is hovered. The button is not
+ * shouting for attention, it is telling the truth about what it does. */
+button.quiet.destructive { color: var(--danger); }
+button.quiet.destructive:hover:not(:disabled) { background: var(--danger-weak); }
 button.wide { width: 100%; }
 
 input, select, textarea {

@@ -105,7 +105,7 @@ export default function Helpers() {
                 <strong>{l.student_name}</strong>
                 <div className="muted">{l.relationship}</div>
                 <button
-                  className="quiet"
+                  className="quiet destructive"
                   onClick={() => act(`/me/guardians/${l.link_id}`, 'DELETE',
                     t('helpers.removed'), 'warn')}
                 >
@@ -145,7 +145,7 @@ export default function Helpers() {
                   </div>
                   {l.status !== 'ENDED' && (
                     <button
-                      className="quiet"
+                      className="quiet destructive"
                       onClick={() => act(`/me/guardians/${l.link_id}`, 'DELETE',
                         t('helpers.removed'), 'warn')}
                     >
