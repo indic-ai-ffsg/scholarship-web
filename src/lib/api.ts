@@ -6,9 +6,15 @@
  */
 
 import type { ApiErrorBody, Envelope } from './types'
+import { setting } from './runtime-config'
 
-/** Must match API_VERSION on the server; see .env.example. */
-const VERSION = import.meta.env.VITE_API_VERSION ?? 'v1'
+/* Must match API_VERSION on the server; see .env.example.
+ *
+ * Read at container start rather than baked in, so one image can be pointed at
+ * an API on a different version without a rebuild — the same property
+ * API_TARGET has always had. 'v1' remains the default because every deployment
+ * so far is on it, and a missing value should not produce requests to /api//. */
+const VERSION = setting('API_VERSION') || 'v1'
 const BASE = `/api/${VERSION}`
 
 /** A failure the API described, as against a network or parsing failure. */

@@ -30,16 +30,6 @@ services:
     # to run the published image should `docker compose pull` first.
     build:
       context: .
-      args:
-        # Must match API_VERSION on the server. Baked into the bundle by Vite,
-        # so this is a build input and not an environment variable below.
-        VITE_API_VERSION: ${API_VERSION:-v1}
-
-        # MSG91's OTP widget, likewise baked in. Left unset, the image serves
-        # every public page and the sign-in screen says it is not configured —
-        # see the Dockerfile.
-        VITE_MSG91_WIDGET_ID: ${VITE_MSG91_WIDGET_ID:-}
-        VITE_MSG91_TOKEN_AUTH: ${VITE_MSG91_TOKEN_AUTH:-}
 
     environment:
       # Where the API is: scheme://host[:port], no trailing path. Read at
@@ -50,6 +40,19 @@ services:
       # if this container shares a network with it — see the networks note at
       # the bottom of this file. Deployed, this is the API's public address.
       API_TARGET: ${API_TARGET:-http://api:8080}
+
+      # Must match API_VERSION on the server. Read at container start like
+      # everything else here — the entrypoint writes it into /config.js, which
+      # the bundle loads before it runs. It was a build argument until it became
+      # clear that the side which knows the value is the side running the
+      # container, not the side building it.
+      API_VERSION: ${API_VERSION:-v1}
+
+      # MSG91's OTP widget. Unset, the stack serves every public page and the
+      # sign-in screen says outright that it is not configured, which is the
+      # right default for a local stack that has no reason to send SMS.
+      MSG91_WIDGET_ID: ${MSG91_WIDGET_ID:-}
+      MSG91_TOKEN_AUTH: ${MSG91_TOKEN_AUTH:-}
 
       # Passed through only if it is set. Left empty, the container reads its
       # own /etc/resolv.conf, which on this network is Docker's embedded DNS —

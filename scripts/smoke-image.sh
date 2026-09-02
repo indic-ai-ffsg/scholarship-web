@@ -134,49 +134,15 @@ else
     fi
 fi
 
-# --- 3. the bundle was built with what it was meant to be built with ---------
-#
-# Vite folds `/api/${VERSION}` into a literal at minification, so the path the
-# portal calls is greppable in the bundle. If this ever fails right after a
-# toolchain upgrade, check that first — a minifier that stops folding the
-# template literal breaks the assertion, not the image.
-
-echo
-echo "bundle"
-if docker run --rm --entrypoint sh "$IMAGE" -c \
-        "grep -rlF '/api/${EXPECT_API_VERSION}' /usr/share/nginx/html/assets >/dev/null"; then
-    pass "calls /api/$EXPECT_API_VERSION"
-else
-    fail "no asset references /api/$EXPECT_API_VERSION — VITE_API_VERSION did not reach the build"
-fi
-
-# Phone sign-in, when the caller says this image is meant to have it.
-#
-# A build argument that fails to arrive produces an image that is perfect
-# everywhere a smoke test usually looks — every public page renders, nginx
-# proxies correctly, the API version is right — and cannot sign anybody in. That
-# is not hypothetical: it shipped, and the first report of it was a student on a
-# sign-in screen, not a red build.
-#
-# Opt-in via EXPECT_MSG91_WIDGET because an image built without the id is a
-# legitimate one; only a build that was *given* the value has been promised it.
-if [ -n "${EXPECT_MSG91_WIDGET:-}" ]; then
-    if docker run --rm --entrypoint sh "$IMAGE" -c \
-            "grep -rlF '${EXPECT_MSG91_WIDGET}' /usr/share/nginx/html/assets >/dev/null"; then
-        pass "carries the MSG91 widget id"
-    else
-        fail "the widget id did not reach the bundle — this image cannot sign anybody in by mobile"
-    fi
-else
-    echo "  - phone sign-in not asserted (EXPECT_MSG91_WIDGET unset)"
-fi
-
 # --- 4. it serves ------------------------------------------------------------
 
 echo
 echo "serving on :$PORT"
 docker run -d --name "$NAME" -p "127.0.0.1:${PORT}:80" \
-    -e API_TARGET="$EXPECT_API_TARGET" "$IMAGE" >/dev/null
+    -e API_TARGET="$EXPECT_API_TARGET" \
+    -e API_VERSION="$EXPECT_API_VERSION" \
+    -e MSG91_WIDGET_ID="${EXPECT_MSG91_WIDGET:-}" \
+    "$IMAGE" >/dev/null
 
 base="http://127.0.0.1:${PORT}"
 up=0
@@ -198,6 +164,67 @@ fi
 pass "answers /nginx-alive"
 
 status() { curl -s -o /dev/null -w '%{http_code}' "$base$1"; }
+
+# --- the configuration reached the browser -----------------------------------
+#
+# This is the assertion the image most needs and did not have.
+#
+# Nothing about a deployment is compiled into the bundle any more: the container
+# writes /config.js at start-up and index.html loads it first. That is a better
+# design and it is also a new way to fail silently — a broken entrypoint, a
+# missing execute bit, an nginx location that shadows the file, and the portal
+# comes up looking perfect with every setting reading as unset. The symptom is a
+# sign-in screen that refuses everyone, which is exactly what shipped when this
+# configuration travelled by build argument instead.
+#
+# So: ask the running container what it published, over HTTP, the way a browser
+# will.
+
+echo
+echo "runtime configuration"
+
+config=$(curl -s "$base/config.js" || true)
+
+if [ -z "$config" ]; then
+    fail "/config.js is empty or missing — the bundle will read every setting as unset"
+else
+    pass "/config.js is served"
+fi
+
+# It must never be cached: it is not fingerprinted and it is rewritten on every
+# start, so a cached copy is how a browser keeps yesterday's configuration and
+# an operator concludes that setting the variable does nothing.
+if curl -sI "$base/config.js" | grep -qi 'cache-control:.*no-store'; then
+    pass "/config.js is not cacheable"
+else
+    fail "/config.js may be cached — a configuration change would not reach a returning visitor"
+fi
+
+# index.html has to load it, and before the module bundle. Module scripts are
+# deferred, so any position in the document works; its absence does not.
+if printf '%s' "$(curl -s "$base/")" | grep -qF 'src="/config.js"'; then
+    pass "index.html loads /config.js"
+else
+    fail "index.html does not load /config.js — nothing will populate window.__ENV__"
+fi
+
+if printf '%s' "$config" | grep -qF "\"API_VERSION\": \"${EXPECT_API_VERSION}\""; then
+    pass "publishes API_VERSION=$EXPECT_API_VERSION"
+else
+    fail "API_VERSION did not reach /config.js"
+fi
+
+# Opt-in: an image run without a widget id is legitimate — the public site is
+# unaffected — so only a container that was given one is held to having it.
+if [ -n "${EXPECT_MSG91_WIDGET:-}" ]; then
+    if printf '%s' "$config" | grep -qF "\"MSG91_WIDGET_ID\": \"${EXPECT_MSG91_WIDGET}\""; then
+        pass "publishes the MSG91 widget id"
+    else
+        fail "the widget id did not reach /config.js — this container cannot sign anybody in by mobile"
+    fi
+else
+    echo "  - phone sign-in not asserted (EXPECT_MSG91_WIDGET unset)"
+fi
 
 # Every screen has a real URL here — the portal routes with BrowserRouter, so a
 # student can bookmark /scholarships/x, reload it, or open it from a WhatsApp

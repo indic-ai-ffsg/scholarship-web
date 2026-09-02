@@ -39,6 +39,8 @@
  * transient error.
  */
 
+import { setting } from './runtime-config'
+
 /** The widget's callback shape. `message` carries the access token. */
 interface WidgetResult {
   type?: string
@@ -59,12 +61,16 @@ declare global {
   }
 }
 
-const WIDGET_ID = import.meta.env.VITE_MSG91_WIDGET_ID
+/* Read through runtime-config rather than import.meta.env, so the value can
+ * come from the container's environment. A build argument could only be changed
+ * by rebuilding the image, which is not where anyone deploying this knows the
+ * answer. See src/lib/runtime-config.ts. */
+const widgetId = () => setting('MSG91_WIDGET_ID')
 /* MSG91's script takes a `tokenAuth` alongside the widget id. Treated as
- * optional here because a widget can be configured without one, and a hard
+ * optional because a widget can be configured without one, and a hard
  * requirement would refuse a deployment that works — but if the widget fails to
  * initialise, an absent tokenAuth is the first thing to check. */
-const TOKEN_AUTH = import.meta.env.VITE_MSG91_TOKEN_AUTH
+const tokenAuth = () => setting('MSG91_TOKEN_AUTH')
 const SCRIPT_SRC = 'https://verify.msg91.com/otp-provider.js'
 
 /** Raised when the deployment has no widget configured. Distinct from every
@@ -73,7 +79,7 @@ export class NotConfiguredError extends Error {
   constructor() {
     super(
       'Phone sign-in is not configured for this deployment: '
-      + 'VITE_MSG91_WIDGET_ID was not set when this app was built.',
+      + 'MSG91_WIDGET_ID is not set on the container.',
     )
     this.name = 'NotConfiguredError'
   }
@@ -81,7 +87,7 @@ export class NotConfiguredError extends Error {
 
 /** Whether sign-in can work at all. */
 export function configured(): boolean {
-  return Boolean(WIDGET_ID)
+  return Boolean(widgetId())
 }
 
 /* One load and one initialisation, however many times a student retries.
@@ -100,8 +106,9 @@ function load(): Promise<void> {
       // Loud, and named, so a deploy without the value is diagnosable from the
       // console rather than from a student's report.
       console.error(
-        '[otp] VITE_MSG91_WIDGET_ID is not set. Phone sign-in cannot work in '
-        + 'this build. It is a build-time value: set it and rebuild the image.',
+        '[otp] MSG91_WIDGET_ID is not set, so phone sign-in cannot work. It is '
+        + 'read at container start: set it on the service and restart. No '
+        + 'rebuild is needed. Under `npm run dev` it comes from .env instead.',
       )
       reject(new NotConfiguredError())
       return
@@ -118,7 +125,7 @@ function load(): Promise<void> {
         return
       }
       const config: Record<string, unknown> = {
-        widgetId: WIDGET_ID,
+        widgetId: widgetId(),
         /* Gives us sendOtp/verifyOtp/retryOtp instead of the widget rendering
            its own dialog. The portal owns its sign-in screen — it is where a
            student who cannot see well meets this platform, and it is built to
@@ -128,7 +135,8 @@ function load(): Promise<void> {
         success: () => {},
         failure: () => {},
       }
-      if (TOKEN_AUTH) config.tokenAuth = TOKEN_AUTH
+      const auth = tokenAuth()
+      if (auth) config.tokenAuth = auth
 
       window.initSendOTP(config)
       resolve()

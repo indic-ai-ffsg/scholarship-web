@@ -108,6 +108,18 @@ server {
         try_files $uri =404;
     }
 
+    # config.js must never be cached either, and for a sharper reason than
+    # index.html: it is written fresh at every container start, and it is not
+    # fingerprinted, so a cached copy is how a browser keeps using the
+    # configuration from before a change was made. Someone setting a widget id
+    # on the service and reloading would see no difference and reasonably
+    # conclude the setting does not work.
+    location = /config.js {
+        add_header Cache-Control "no-store";
+        default_type application/javascript;
+        try_files $uri =404;
+    }
+
     # index.html must never be cached: it names the fingerprinted bundles, so a
     # stale copy pins the browser to asset filenames that no longer exist.
     #

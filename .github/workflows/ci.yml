@@ -103,11 +103,13 @@ jobs:
         run: ls -lh dist/assets/
 
       # This bundle is NOT the one the image ships, and that is deliberate.
-      # `vite build` here reads the committed .env with no flag; the image never
-      # sees that file, because .dockerignore excludes it from the build context
-      # on purpose and the Dockerfile takes the same values as build arguments
-      # instead. The two agree today — stage 3 is what proves it for the artefact
-      # that actually gets pushed.
+      #
+      # Nothing configures this build: .env is private and absent here, so every
+      # VITE_ value compiles to undefined. That is fine for what this stage is
+      # for — it type-checks, lints and proves the tree builds. It is emphatically
+      # not a build to judge the portal by, and a widget id would not be in it.
+      # Stage 3 builds the artefact that gets pushed, with the real
+      # configuration, and asserts the values arrived.
       - uses: actions/upload-artifact@v4
         with:
           name: web-dist
@@ -187,81 +189,63 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      # The build configuration comes from the committed .env, not from eight
-      # more environment secrets, and that is a deliberate difference from the
-      # platform tree's web.yml.
+      # There is almost nothing left to configure at build time, and that is
+      # the point.
       #
-      # .env is tracked in this repository and is what `npm run dev` and stage 1
-      # already build against. Copying the same values into secrets would create
-      # a second source of truth that drifts silently — the failure being a
-      # published image that disagrees with the tree it was built from, which
-      # nothing would report. Nothing in it is a credential at all now that
-      # phone sign-in runs through the API,
-      # and the API address is public. web.yml masks these because they reach it
-      # as secrets; here they are in the repository, so printing them is honest
-      # and makes this log readable.
+      # This step used to read a committed .env and exit 1 without one. When
+      # .env was untracked for being private, every push failed here, no image
+      # was built, and redeploying quietly served the previous image — a failed
+      # workflow is a red mark on a commit nobody is watching, and a redeploy of
+      # an unchanged tag looks exactly like a successful one. What reached a
+      # student was a portal that would not sign them in, days after it was
+      # supposedly fixed.
+      #
+      # The values now travel with the container instead of the bundle, so the
+      # service that runs the image is what configures it. All that is left here
+      # is the image's *defaults* — what it does when run with no environment at
+      # all, as `docker run` and compose do.
       #
       # Read with grep rather than `.` so a stray line in .env cannot execute as
       # shell, and so a value containing spaces or `#` survives intact.
-      - name: Read the build configuration from .env
+      - name: Resolve the image defaults
+        env:
+          GH_API_VERSION: ${{ vars.API_VERSION }}
+          GH_API_TARGET: ${{ vars.API_TARGET }}
         run: |
           set -eu
 
-          [ -f .env ] || {
-            echo "::error title=.env is missing::This workflow builds the image from the \
-          committed .env. Restore it, or switch the build-args below to secrets."
-            exit 1
+          # A repository variable, then a .env on disk, then the built-in
+          # default. CI has no .env; the lookup is kept so that running this
+          # logic locally behaves the way a developer expects.
+          get() {
+            eval "gh=\${GH_$1-}"
+            if [ -n "${gh:-}" ]; then
+              printf '%s' "$gh"
+              return 0
+            fi
+            [ -f .env ] || return 0
+            grep -m1 "^VITE_$1=" .env | cut -d= -f2- || true
           }
 
-          # First match wins, matching how Vite itself resolves a repeated key.
-          get() { grep -m1 "^$1=" .env | cut -d= -f2- || true; }
+          version=$(get API_VERSION)
+          target=$(get API_TARGET)
 
-          fail=0
-
-          version=$(get VITE_API_VERSION)
-          target=$(get VITE_API_TARGET)
-
-          if [ -z "$version" ]; then
-            echo "::error title=VITE_API_VERSION is not set in .env::It must match \
-          API_VERSION on the server — the portal builds every request path from it, and an \
-          empty value ships a build that calls /api/ with no version at all. api.ts reads \
-          \`?? 'v1'\`, which an empty string satisfies, so this fails as a 404 on every \
-          request rather than as a build error."
-            fail=1
-          fi
+          # Defaults rather than errors. Neither is baked into the bundle any
+          # more, so a wrong one here is corrected by an environment variable on
+          # the service rather than by rebuilding — which makes failing the
+          # build over it the wrong trade.
+          : "${version:=v1}"
+          : "${target:=http://api:8080}"
 
           case "$target" in
             http://*|https://*) ;;
-            "")
-              echo "::error title=VITE_API_TARGET is not set in .env::Give it as the API's \
-          address including its scheme, for example https://sship-api.indic-ai.org."
-              fail=1
-              ;;
             *)
-              echo "::error title=VITE_API_TARGET has no scheme::The container's entrypoint \
+              echo "::error title=API_TARGET has no scheme::The container's entrypoint \
           rejects a target without one, so the image would fail to start. Give it as \
           http:// or https://."
-              fail=1
+              exit 1
               ;;
           esac
-
-          # The widget id, or nothing. Nothing is a legitimate build — every
-          # public page works and the sign-in screen says outright that it is not
-          # set up — so this warns rather than failing.
-          #
-          # It warns at all because its absence has shipped: the value was unset,
-          # the bundle compiled it as undefined, and a student got a generic
-          # "try again later" from a page that could never have worked. A build
-          # log that says so is cheaper than that round trip.
-          if [ -n "$(get VITE_MSG91_WIDGET_ID)" ]; then
-            echo "phone sign-in: widget id present"
-          else
-            echo "::warning title=Phone sign-in is not configured::\
-          VITE_MSG91_WIDGET_ID is not set in .env, so this image cannot sign anyone in \
-          by mobile. The public site is unaffected and the sign-in screen says so plainly."
-          fi
-
-          [ "$fail" -eq 0 ] || exit 1
 
           # A trailing slash becomes a double slash in every proxied path. The
           # entrypoint strips it too — this is here so the value the smoke test
@@ -272,32 +256,29 @@ jobs:
           {
             echo "API_VERSION=$version"
             echo "API_TARGET=$target"
-            for k in VITE_MSG91_WIDGET_ID VITE_MSG91_TOKEN_AUTH; do
-              echo "$k=$(get "$k")"
-            done
           } >> "$GITHUB_ENV"
 
-          echo "building $version against $target"
+          echo "image defaults: $version, API at $target"
+          echo "phone sign-in is configured on the service (MSG91_WIDGET_ID), not here"
 
-      # Same build as stage 2, with the real configuration. The VITE_* arguments
-      # are compiled into the bundle by Vite and cannot be changed afterwards.
-      # API_TARGET only moves the image's default: 16-api-target.envsh reads it
-      # at container start, so the same image can be pointed at another API
-      # without a rebuild. It is recorded in the image's config, which for a
-      # public repository means visible — an address is fine there. A credential
-      # would not be, and nothing here takes one: the MSG91 authkey lives in the
-      # API's environment and never reaches a build argument, an image layer or
-      # a bundle.
+      # Same build as stage 2. Both arguments only move the image's *defaults*:
+      # the entrypoint reads API_TARGET and API_VERSION at container start, so
+      # anything set on the service wins and the same image serves any
+      # deployment without a rebuild.
+      #
+      # They are recorded in the image's config, which for a public repository
+      # means visible — an address and a version string are fine there. A
+      # credential would not be, and nothing here takes one: the MSG91 authkey
+      # lives in the API's environment and never reaches a build argument, an
+      # image layer or a bundle.
       - name: Build
         uses: docker/build-push-action@v6
         with:
           context: .
           tags: ${{ env.IMAGE }}:${{ github.sha }}
           build-args: |
-            VITE_API_VERSION=${{ env.API_VERSION }}
+            API_VERSION=${{ env.API_VERSION }}
             API_TARGET=${{ env.API_TARGET }}
-            VITE_MSG91_WIDGET_ID=${{ env.VITE_MSG91_WIDGET_ID }}
-            VITE_MSG91_TOKEN_AUTH=${{ env.VITE_MSG91_TOKEN_AUTH }}
           load: true
           push: false
           cache-from: type=gha
@@ -313,7 +294,10 @@ jobs:
         env:
           EXPECT_API_VERSION: ${{ env.API_VERSION }}
           EXPECT_API_TARGET: ${{ env.API_TARGET }}
-          EXPECT_MSG91_WIDGET: ${{ env.VITE_MSG91_WIDGET_ID }}
+          # Synthetic on purpose. This asserts that a widget id set on the
+          # container reaches /config.js and therefore the browser — the path
+          # that was broken — without CI ever holding the real one.
+          EXPECT_MSG91_WIDGET: smoke-test-widget-id
         run: sh scripts/smoke-image.sh "$IMAGE:$GITHUB_SHA"
 
       - name: Log in to Docker Hub
@@ -365,7 +349,10 @@ jobs:
             echo "docker run -e API_TARGET=https://… $IMAGE:$GITHUB_SHA"
             echo '```'
             echo
-            echo "The domain this is served from must be listed against the"
+            echo "Phone sign-in is configured on the service, not in this image:"
+            echo "set MSG91_WIDGET_ID and restart. No rebuild is needed."
+            echo
+            echo "The domain this is served from must also be listed against the"
             echo "widget in the MSG91 dashboard, and the API must have"
             echo "MSG91_AUTHKEY set to redeem the token the widget returns."
           } >> "$GITHUB_STEP_SUMMARY"

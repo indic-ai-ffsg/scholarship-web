@@ -33,24 +33,23 @@ COPY . .
 # bundle and cannot be changed by an environment variable on the running
 # container. It must match API_VERSION on the server; a mismatch sends every
 # request to a path the API does not serve.
-ARG VITE_API_VERSION=v1
-ENV VITE_API_VERSION=${VITE_API_VERSION}
-
-# MSG91's OTP widget — the portal's only front door for students.
+# Nothing about a deployment is compiled in.
 #
-# Baked in for the same reason as the version above: Vite folds import.meta.env
-# into the bundle. Public by design — they identify the widget and let it send a
-# code, and nothing more. See src/lib/otp.ts, which also says what must NOT go
-# here.
+# There were three build arguments here — the API version and MSG91's widget id
+# and token — because Vite folds import.meta.env into the bundle, and that is
+# the only way to reach it at build time. The trouble is that CI builds this
+# image and Railway runs it, and Railway is the side that knows what the values
+# should be. Setting the widget id on the service did nothing at all, through
+# several rounds of setting it and redeploying, while the portal told every
+# student that sign-in was "not set up on this site yet".
 #
-# The defaults are empty, which is a working image with sign-in switched off:
-# every public page — the landing page, the directory, the eligibility check —
-# works without them, and the sign-in screen says plainly that it is not
-# configured rather than failing as though the network were down.
-ARG VITE_MSG91_WIDGET_ID=
-ARG VITE_MSG91_TOKEN_AUTH=
-ENV VITE_MSG91_WIDGET_ID=${VITE_MSG91_WIDGET_ID} \
-    VITE_MSG91_TOKEN_AUTH=${VITE_MSG91_TOKEN_AUTH}
+# So the container publishes its own configuration instead: 17-runtime-config
+# writes /config.js from the environment at start-up and index.html loads it
+# before the bundle. One image, configured where it runs — which is what
+# API_TARGET below has always done, now extended to the JavaScript.
+#
+# A developer still gets .env, through the build-time fallback in
+# src/lib/runtime-config.ts; it just is not how the image is configured.
 
 # VITE_API_TARGET is deliberately not set. It configures the Vite dev and
 # preview proxy, and neither of those runs in this image — nginx does the
@@ -116,6 +115,20 @@ ENV NGINX_ENTRYPOINT_WORKER_PROCESSES_AUTOTUNE=1
 # and no error, which would leave the template rendered from an empty
 # environment.
 COPY --chmod=0755 docker-entrypoint.d/16-api-target.envsh /docker-entrypoint.d/
+
+# Writes /config.js from the environment, so the bundle can read values that were
+# not known when it was compiled. Same --chmod reason as above: a *.envsh without
+# the execute bit is skipped with a log line and no error, and the portal would
+# come up with every setting reading as unset.
+#
+# The defaults are empty, which is a working image with sign-in switched off:
+# every public page — the landing page, the directory, the eligibility check —
+# serves normally, and the sign-in screen says plainly that it is not configured
+# rather than failing as though the network were down.
+ENV API_VERSION=v1
+ENV MSG91_WIDGET_ID=
+ENV MSG91_TOKEN_AUTH=
+COPY --chmod=0755 docker-entrypoint.d/17-runtime-config.envsh /docker-entrypoint.d/
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 

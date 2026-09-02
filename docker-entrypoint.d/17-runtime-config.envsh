@@ -1,0 +1,66 @@
+#!/bin/sh
+# Publish the container's configuration to the browser.
+#
+# The bundle is compiled once, in CI, and cannot contain anything that differs
+# between deployments. Anything the JavaScript needs to know about *this*
+# container therefore has to arrive after the build — so this writes it to
+# /config.js, which index.html loads before the bundle.
+#
+# Sourced by the nginx image's entrypoint (*.envsh files are, *.sh are executed),
+# which is why nothing here calls `exit`: that would terminate the entrypoint
+# rather than this script, and take the container with it. Nothing here needs to.
+#
+# 17 places it after 16-api-target.envsh and before 20-envsubst-on-templates.sh,
+# though it has no ordering requirement against either — it writes a static file
+# and touches no nginx configuration.
+
+set -eu
+
+_html="${NGINX_HTML_DIR:-/usr/share/nginx/html}"
+
+# JSON string escaping, for values this script does not control.
+#
+# A widget id is hex and an API version is 'v1', so in practice nothing needs
+# escaping — but "in practice" is not a guarantee about an environment variable
+# somebody sets by hand. A stray double quote would otherwise close the string
+# and produce a config.js that is a syntax error, which takes the entire portal
+# down: the script tag fails, the bundle still loads, and every setting reads as
+# unset. Backslash first, or it would escape the escapes.
+_json() {
+    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+}
+
+{
+    echo '/* Generated at container start. Edits here are lost on restart. */'
+    echo 'window.__ENV__ = {'
+    for _name in API_VERSION MSG91_WIDGET_ID MSG91_TOKEN_AUTH; do
+        eval "_value=\${$_name-}"
+        # Unset and empty are both written through as "". runtime-config.ts
+        # treats an empty string as absent, so a variable cleared on the service
+        # behaves the same as one that was never added — rather than the app
+        # falling back to a stale build-time value the operator cannot see.
+        printf '  "%s": "%s",\n' "$_name" "$(_json "${_value:-}")"
+    done
+    echo '}'
+} > "$_html/config.js"
+
+# Say what was published, without printing the values: they are not secret, but
+# a start-up log that echoes configuration invites the habit of putting things
+# there that are. The names and whether each is set is what a deploy needs.
+_report=''
+for _name in API_VERSION MSG91_WIDGET_ID MSG91_TOKEN_AUTH; do
+    eval "_value=\${$_name-}"
+    if [ -n "${_value:-}" ]; then
+        _report="$_report $_name=set"
+    else
+        _report="$_report $_name=unset"
+    fi
+done
+echo "17-runtime-config: wrote $_html/config.js —$_report"
+
+if [ -z "${MSG91_WIDGET_ID:-}" ]; then
+    echo "17-runtime-config: phone sign-in is off (MSG91_WIDGET_ID is unset). \
+Public pages are unaffected; the sign-in screen says so plainly." >&2
+fi
+
+unset _html _name _value _report

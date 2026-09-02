@@ -24,6 +24,16 @@
          mark on the field it was drawn for; it matches manifest.webmanifest,
          and the two have to be changed together. -->
     <meta name="theme-color" content="#0b0e14" />
+
+    <!-- Written by the container at start-up from its own environment, and
+         loaded before the bundle so window.__ENV__ exists by the time any of it
+         runs. Classic (non-module) and undeferred on purpose: module scripts are
+         deferred, so this is guaranteed to have executed first.
+
+         It is a real file in public/ as well, holding an empty object, so that
+         `npm run dev` does not 404 here and falls through to .env instead. See
+         src/lib/runtime-config.ts. -->
+    <script src="/config.js"></script>
   </head>
   <body>
     <div id="root">
