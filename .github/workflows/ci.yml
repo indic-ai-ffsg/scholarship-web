@@ -121,7 +121,7 @@ jobs:
   # Built with the image's own defaults and no secrets, so this stage runs on
   # every pull request without touching the protected environment. It proves the
   # Dockerfile, the nginx template and the entrypoint work; the address they are
-  # pointed at and the MSG91 widget they carry are stage 3's business.
+  # pointed at is stage 3's business.
 
   image:
     name: image
@@ -195,9 +195,8 @@ jobs:
       # already build against. Copying the same values into secrets would create
       # a second source of truth that drifts silently — the failure being a
       # published image that disagrees with the tree it was built from, which
-      # nothing would report. Nothing in it is a credential: the widget id and
-      # its token identify the OTP widget and let it send a code, phone sign-in
-      # is gated by the origin allow-list on MSG91's side,
+      # nothing would report. Nothing in it is a credential at all now that
+      # phone sign-in runs through the API,
       # and the API address is public. web.yml masks these because they reach it
       # as secrets; here they are in the repository, so printing them is honest
       # and makes this log readable.
@@ -259,29 +258,12 @@ jobs:
             fi
           }
 
-          for k in VITE_MSG91_WIDGET_ID VITE_MSG91_TOKEN_AUTH; do
-            count "$k" "$(get "$k")"
-          done
-
-          # Both or neither. Neither is a legitimate build — the public site
-          # works and src/lib/otp.ts reports that sign-in is not configured — so
-          # it is a warning. One of the two is always a mistake: the widget
-          # initialises on a partial config and then refuses to send, and what
-          # the student sees is a code that never arrives.
-          if [ "$present" -eq 2 ]; then
-            echo "both MSG91 settings are present"
-          elif [ "$present" -eq 0 ]; then
-            echo "::warning title=Phone sign-in is not configured::Neither \
-          VITE_MSG91_WIDGET_ID nor VITE_MSG91_TOKEN_AUTH is set in .env. The public site \
-          will work and students will not be able to sign in — the portal reports that \
-          rather than failing silently."
-          else
-            echo "::error title=The MSG91 configuration is incomplete::Set$missing in \
-          .env, or none of the six. A partial configuration is accepted by initializeApp \
-          and then fails inside Google's SDK when the code is requested, which reaches the \
-          student as an SMS that never arrives."
-            fail=1
-          fi
+          # Phone sign-in is checked nowhere here any more, and that is not a
+          # gap. It used to need two values compiled into this bundle, so a
+          # partial pair was a portal that could not sign anybody in and CI was
+          # the only thing that would notice. The exchange runs through the API
+          # now: the provider is configured on the server, and the API refuses
+          # to start in production without it.
 
           [ "$fail" -eq 0 ] || exit 1
 
@@ -294,9 +276,6 @@ jobs:
           {
             echo "API_VERSION=$version"
             echo "API_TARGET=$target"
-            for k in VITE_MSG91_WIDGET_ID VITE_MSG91_TOKEN_AUTH; do
-              echo "$k=$(get "$k")"
-            done
           } >> "$GITHUB_ENV"
 
           echo "building $version against $target"
@@ -306,10 +285,10 @@ jobs:
       # API_TARGET only moves the image's default: 16-api-target.envsh reads it
       # at container start, so the same image can be pointed at another API
       # without a rebuild. It is recorded in the image's config, which for a
-      # public repository means visible — an address is fine there, and so is a
-      # widget id. A credential would not be, and nothing here takes one: the
-      # MSG91 authkey lives in the API's environment and never reaches a build
-      # argument, an image layer or a bundle.
+      # public repository means visible — an address is fine there. A credential
+      # would not be, and nothing here takes one: the MSG91 authkey lives in the
+      # API's environment and never reaches a build argument, an image layer or
+      # a bundle.
       - name: Build
         uses: docker/build-push-action@v6
         with:
@@ -318,8 +297,6 @@ jobs:
           build-args: |
             VITE_API_VERSION=${{ env.API_VERSION }}
             API_TARGET=${{ env.API_TARGET }}
-            VITE_MSG91_WIDGET_ID=${{ env.VITE_MSG91_WIDGET_ID }}
-            VITE_MSG91_TOKEN_AUTH=${{ env.VITE_MSG91_TOKEN_AUTH }}
           load: true
           push: false
           cache-from: type=gha
@@ -327,15 +304,14 @@ jobs:
 
       # Stage 2 checked the image against its defaults. This checks the thing
       # that is actually about to be published: that the bundle calls
-      # /api/{the configured version}, that it carries the configured MSG91
-      # widget, and that the container proxies to the configured address. A
+      # /api/{the configured version} and that the container proxies to the
+      # configured address. There is no provider value to assert on any more. A
       # wrong version or a mistyped host is otherwise a deployment that starts
       # cleanly and fails on its first request.
       - name: Smoke test
         env:
           EXPECT_API_VERSION: ${{ env.API_VERSION }}
           EXPECT_API_TARGET: ${{ env.API_TARGET }}
-          EXPECT_MSG91_WIDGET: ${{ env.VITE_MSG91_WIDGET_ID }}
         run: sh scripts/smoke-image.sh "$IMAGE:$GITHUB_SHA"
 
       - name: Log in to Docker Hub
@@ -387,7 +363,6 @@ jobs:
             echo "docker run -e API_TARGET=https://… $IMAGE:$GITHUB_SHA"
             echo '```'
             echo
-            echo "The domain this is served from must be listed against the"
-            echo "widget in the MSG91 dashboard, or the widget refuses to"
-            echo "initialise and no code is ever sent."
+            echo "The API must have MSG91_AUTHKEY set, or phone sign-in"
+            echo "refuses: the OTP exchange runs through it, not this bundle."
           } >> "$GITHUB_STEP_SUMMARY"

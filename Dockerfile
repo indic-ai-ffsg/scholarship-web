@@ -1,17 +1,14 @@
-# check=skip=SecretsUsedInArgOrEnv
+# This image takes no credential-shaped build argument at all.
 #
-# The line above must be the first in the file — a parser directive is only read
-# before any other content — so the reason for it is here: BuildKit lints every
-# ARG or ENV whose name looks like a credential, and VITE_MSG91_TOKEN_AUTH
-# below trips it. It is not one: it identifies the OTP widget and authorises it
-# to send a code, and it is served to every visitor in the bundle either way.
-# A warning on every build teaches people to skim warnings, which is a worse
-# position than this one line.
+# It carried one — a widget token for the provider script that used to run in
+# the page — and a parser directive on this first line to stop BuildKit warning
+# about it. Both are gone: phone sign-in runs through the API now, so there is
+# nothing here for that lint to catch and no reason to switch it off.
 #
-# The value that IS a credential — MSG91_AUTHKEY — is not here and must never
-# be. It authorises sending SMS and email on the whole account; it belongs to
-# the API's environment, and the lint this directive silences is exactly the
-# thing that would catch it if somebody added it to the block below.
+# MSG91_AUTHKEY is the value that IS a credential. It authorises sending SMS and
+# email on the whole account, it belongs to the API's environment, and it must
+# never appear in a build argument, an image layer or a bundle. The lint that
+# would catch it is back on.
 
 # The student portal and public site, built to static files and served by nginx.
 #
@@ -39,29 +36,12 @@ COPY . .
 ARG VITE_API_VERSION=v1
 ENV VITE_API_VERSION=${VITE_API_VERSION}
 
-# MSG91 phone sign-in — the portal's only front door for students, and the one
-# thing here that the admin panel's image has no equivalent of.
+# Phone sign-in takes no build argument.
 #
-# These are baked in for the same reason as the version above: Vite folds
-# import.meta.env into the bundle. They are public by design — the widget id and
-# its token identify the widget and let it send a code, and nothing else. See
-# the header comment in src/lib/otp.ts, which also says what must NOT be put
-# here. So an image carrying them is not a leaked credential, and the layer
-# history being readable on a public registry costs nothing.
-#
-# The defaults are empty, which is a working image with sign-in switched off:
-# src/lib/otp.ts checks both when somebody first tries to sign in and reports
-# that the deployment is not configured, rather than throwing during module load
-# and rendering a blank page. Every public page — the landing page, the
-# directory, the eligibility check — works without them, which is why an unset
-# value is a warning in CI and not a build failure.
-#
-# The domain the image is served from must be listed against the widget in the
-# MSG91 dashboard, or the widget refuses to initialise there.
-ARG VITE_MSG91_WIDGET_ID=
-ARG VITE_MSG91_TOKEN_AUTH=
-ENV VITE_MSG91_WIDGET_ID=${VITE_MSG91_WIDGET_ID} \
-    VITE_MSG91_TOKEN_AUTH=${VITE_MSG91_TOKEN_AUTH}
+# It took two — a widget id and its token — for a provider script that ran in the
+# page. The exchange now runs through the API, so the provider is configured on
+# the server and this image carries nothing about it. An image built with no
+# secrets at all is a smaller thing to reason about on a public registry.
 
 # VITE_API_TARGET is deliberately not set. It configures the Vite dev and
 # preview proxy, and neither of those runs in this image — nginx does the

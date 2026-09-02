@@ -35,11 +35,9 @@ services:
         # so this is a build input and not an environment variable below.
         VITE_API_VERSION: ${API_VERSION:-v1}
 
-        # MSG91 phone sign-in, likewise baked in. Left unset, the image serves
-        # every public page and reports that sign-in is not configured when a
-        # student tries to use it — see the Dockerfile.
-        VITE_MSG91_WIDGET_ID: ${VITE_MSG91_WIDGET_ID:-}
-        VITE_MSG91_TOKEN_AUTH: ${VITE_MSG91_TOKEN_AUTH:-}
+        # Phone sign-in needs nothing here: the OTP exchange runs through the
+        # API, so the provider is configured on the server and never in this
+        # bundle. See .env.example.
 
     environment:
       # Where the API is: scheme://host[:port], no trailing path. Read at

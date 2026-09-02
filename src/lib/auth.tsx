@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   /** Whether a code exchange is in flight, held between the two steps. */
-  const pending = useRef<otp.PendingCode | null>(null)
+  const pending = useRef<{ phone: string } | null>(null)
   /** The number the code went to, so a resend does not ask for it again. */
   const pendingPhone = useRef<string | null>(null)
 
@@ -70,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // a shared family handset. MSG91 holds nothing between calls, so this is a
     // no-op today — kept because the guarantee belongs to this file rather than
     // to whichever provider is behind it.
-    await otp.forgetSession()
     pending.current = null
     pendingPhone.current = null
 
@@ -122,25 +121,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     /* The screen gets a sentence a student can act on; the console gets what
      * actually happened.
      *
-     * Under Firebase these were two generic codes whose real cause hid in
-     * `serverResponse`, and swallowing it turned every sign-in problem into the
-     * same unactionable sentence. MSG91 returns prose instead, so the raw
-     * message is the detail — logged as it arrives, and never shown, because it
-     * names a company this audience has not heard of. */
-    const detail = err as { code?: string; customData?: { serverResponse?: unknown } }
-    if (detail?.code || err instanceof Error) {
-      console.error('[auth] sign-in failed', {
-        code: detail?.code,
-        message: err instanceof Error ? err.message : String(err),
-        serverResponse: detail?.customData?.serverResponse,
-        origin: window.location.origin,
-      })
-    }
+     * This once had to dig a Firebase failure out of `customData.serverResponse`,
+     * because the SDK reported almost everything as one of two generic codes.
+     * Nothing here talks to a provider any more — the only errors that reach
+     * this function are our API's, which already carry a sentence written for a
+     * student, or a network failure, which carries none.
+     */
+    console.error('[auth] sign-in failed', {
+      message: err instanceof Error ? err.message : String(err),
+      status: err instanceof api.ApiError ? err.status : undefined,
+    })
 
-    const message =
-      err instanceof api.ApiError ? err.message
-      : err instanceof Error && err.message ? providerMessage(err)
-      : fallback
+    /* An ApiError's message is the server's own words. They are written for the
+     * person reading them — "That code was not accepted. Check it, or ask for a
+     * new one." — and passing them through is what keeps the wording in one
+     * place instead of two that drift. Anything else is a network fault, which
+     * gets the caller's fallback. */
+    const message = err instanceof api.ApiError ? err.message : fallback
     setState(s => ({ ...s, error: message }))
     throw err
   }, [])
@@ -155,20 +152,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setState(s => ({ ...s, error: null }))
     try {
-      /* The fork, asked before the code is sent: is this number already
-       * registered? Only a label for what the next screen says — the server
-       * decides the branch again for itself when the token is exchanged, so
-       * nothing depends on this answer still being true a minute later. */
-      const known = await api.post<{ exists: boolean }>('/auth/phone/lookup', {
-        phone: e164,
-      })
-
-      pending.current = await otp.sendCode(e164)
+      /* One call: it sends the code AND says whether the number is already
+       * registered, which used to be a separate /auth/phone/lookup first. The
+       * fork is only a label for what the next screen says — the server decides
+       * the branch again for itself when the code is presented — so nothing
+       * depends on this answer still being true a minute later. */
+      const sent = await otp.sendCode(e164)
+      pending.current = { phone: e164 }
       pendingPhone.current = e164
       setState(s => ({
         ...s,
         status: 'awaiting_code',
-        pendingCode: { phone: e164, returning: known.data.exists },
+        pendingCode: { phone: e164, returning: sent.returning },
       }))
     } catch (err) {
       fail(err, 'We could not send a code just now. Please try again.')
@@ -180,9 +175,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setState(s => ({ ...s, error: null }))
     try {
-      const idToken = await otp.confirmCode(code)
+      /* The number goes up with the code. The server checks the pair with the
+       * provider — this app never sees or holds a code, and could not verify
+       * one if it did. */
       const res = await api.post<PhoneSignInResult>('/auth/phone', {
-        id_token: idToken,
+        phone: pendingPhone.current,
+        code,
       })
       await applySession(res.data, res.data.created)
     } catch (err) {
@@ -195,11 +193,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setState(s => ({ ...s, error: null }))
     try {
-      /* A dedicated retry rather than sending again from scratch. Under
-         Firebase a resend meant tearing down the reCAPTCHA widget and building
-         another, because its token was spent; MSG91 keeps the exchange open and
-         repeats the code on the same one. */
-      await otp.resendCode()
+      // The same endpoint as the first send: the server's cooldown decides
+      // whether this is a resend or a refusal, so the rule lives in one place.
+      await otp.resendCode(pendingPhone.current)
     } catch (err) {
       fail(err, 'We could not send another code just now.')
     }
@@ -214,7 +210,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await api.logout()
     api.setAccessToken(null)
-    await otp.forgetSession()
 
     /* The drafts go with the session.
      *
@@ -285,47 +280,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-/* The provider's messages, in words a student can act on.
- *
- * Kept across the move from Firebase, because the reason for it did not change:
- * the raw text is written for whoever is holding the console. Firebase said
- * "auth/too-many-requests"; MSG91 says "Max limit reached". Neither tells
- * somebody trying to sign in what to do next, and both name a product this
- * audience has never heard of.
- *
- * Matched on substrings rather than codes — MSG91 returns prose where Firebase
- * returned an identifier — and case-folded, because the same condition has been
- * seen capitalised two ways. Anything unrecognised falls through to a general
- * sentence rather than showing the raw string: a message naming a third party is
- * worse than one that simply says to try again.
- */
-function providerMessage(err: Error): string {
-  const text = (err.message || '').toLowerCase()
-
-  const has = (...needles: string[]) => needles.some(n => text.includes(n))
-
-  if (has('invalid otp', 'otp not match', 'incorrect otp', 'wrong otp')) {
-    return 'That code is not correct. Check the message and try again.'
-  }
-  if (has('expired')) {
-    return 'That code has expired. Ask for a new one.'
-  }
-  if (has('invalid number', 'invalid mobile', 'invalid identifier')) {
-    return 'That mobile number is not one we can send a code to.'
-  }
-  if (has('max limit', 'too many', 'limit reached', 'rate limit')) {
-    return 'Too many attempts. Please wait a few minutes and try again.'
-  }
-  if (has('insufficient', 'balance', 'quota')) {
-    return 'We cannot send codes at the moment. Please try again later.'
-  }
-  if (has('network', 'could not be reached', 'did not load', 'failed to fetch')) {
-    return 'We could not reach the network. Check your connection and try again.'
-  }
-  if (has('not ready', 'must be set at build time')) {
-    // A misconfiguration rather than anything the student did. They still get a
-    // sentence they can act on; the specifics are in the console for us.
-    return 'Sign-in is unavailable just now. Please try again shortly.'
-  }
-  return 'Something went wrong. Please try again.'
-}
