@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   /** Whether a code exchange is in flight, held between the two steps. */
-  const pending = useRef<{ phone: string } | null>(null)
+  const pending = useRef<otp.PendingCode | null>(null)
   /** The number the code went to, so a resend does not ask for it again. */
   const pendingPhone = useRef<string | null>(null)
 
@@ -132,12 +132,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status: err instanceof api.ApiError ? err.status : undefined,
     })
 
-    /* An ApiError's message is the server's own words. They are written for the
-     * person reading them — "That code was not accepted. Check it, or ask for a
-     * new one." — and passing them through is what keeps the wording in one
-     * place instead of two that drift. Anything else is a network fault, which
-     * gets the caller's fallback. */
-    const message = err instanceof api.ApiError ? err.message : fallback
+    /* Three kinds of failure, and they must not be told apart wrongly.
+     *
+     * An ApiError carries the server's own words, written for the person
+     * reading them — "That code was not accepted. Check it, or ask for a new
+     * one." Passing them through keeps the wording in one place.
+     *
+     * A NotConfiguredError is OURS: the build has no widget id, so no code will
+     * ever be sent however many times the student tries. Saying "try again"
+     * there is a lie that costs somebody an afternoon, so it says outright that
+     * the service is not set up. This exact case shipped once, reported as a
+     * transient error, and nobody could tell from the screen.
+     *
+     * Anything else is a network fault and gets the caller's fallback. */
+    const message =
+      err instanceof api.ApiError ? err.message
+      : err instanceof otp.NotConfiguredError
+        ? 'Sign-in by mobile is not set up on this site yet. Please tell us if you see this.'
+        : fallback
     setState(s => ({ ...s, error: message }))
     throw err
   }, [])
@@ -152,18 +164,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setState(s => ({ ...s, error: null }))
     try {
-      /* One call: it sends the code AND says whether the number is already
-       * registered, which used to be a separate /auth/phone/lookup first. The
-       * fork is only a label for what the next screen says — the server decides
-       * the branch again for itself when the code is presented — so nothing
-       * depends on this answer still being true a minute later. */
-      const sent = await otp.sendCode(e164)
-      pending.current = { phone: e164 }
+      /* The fork, asked before the code is sent: is this number already
+       * registered? Only a label for what the next screen says — the server
+       * decides the branch again for itself when the token is exchanged, so
+       * nothing depends on this answer still being true a minute later. */
+      const known = await api.post<{ exists: boolean }>('/auth/phone/lookup', {
+        phone: e164,
+      })
+
+      pending.current = await otp.sendCode(e164)
       pendingPhone.current = e164
       setState(s => ({
         ...s,
         status: 'awaiting_code',
-        pendingCode: { phone: e164, returning: sent.returning },
+        pendingCode: { phone: e164, returning: known.data.exists },
       }))
     } catch (err) {
       fail(err, 'We could not send a code just now. Please try again.')
@@ -175,12 +189,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setState(s => ({ ...s, error: null }))
     try {
-      /* The number goes up with the code. The server checks the pair with the
-       * provider — this app never sees or holds a code, and could not verify
-       * one if it did. */
+      /* The widget checks the code and hands back a signed token; the API
+       * exchanges that token for a session. This app never sees the code after
+       * it is typed and could not verify one if it did. */
+      const idToken = await otp.confirmCode(code)
       const res = await api.post<PhoneSignInResult>('/auth/phone', {
-        phone: pendingPhone.current,
-        code,
+        id_token: idToken,
       })
       await applySession(res.data, res.data.created)
     } catch (err) {
@@ -193,9 +207,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setState(s => ({ ...s, error: null }))
     try {
-      // The same endpoint as the first send: the server's cooldown decides
-      // whether this is a resend or a refusal, so the rule lives in one place.
-      await otp.resendCode(pendingPhone.current)
+      // The widget's own retry: it keeps the exchange open and repeats the code
+      // on it, rather than starting a new one.
+      await otp.resendCode()
     } catch (err) {
       fail(err, 'We could not send another code just now.')
     }

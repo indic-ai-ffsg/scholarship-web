@@ -36,12 +36,21 @@ COPY . .
 ARG VITE_API_VERSION=v1
 ENV VITE_API_VERSION=${VITE_API_VERSION}
 
-# Phone sign-in takes no build argument.
+# MSG91's OTP widget — the portal's only front door for students.
 #
-# It took two — a widget id and its token — for a provider script that ran in the
-# page. The exchange now runs through the API, so the provider is configured on
-# the server and this image carries nothing about it. An image built with no
-# secrets at all is a smaller thing to reason about on a public registry.
+# Baked in for the same reason as the version above: Vite folds import.meta.env
+# into the bundle. Public by design — they identify the widget and let it send a
+# code, and nothing more. See src/lib/otp.ts, which also says what must NOT go
+# here.
+#
+# The defaults are empty, which is a working image with sign-in switched off:
+# every public page — the landing page, the directory, the eligibility check —
+# works without them, and the sign-in screen says plainly that it is not
+# configured rather than failing as though the network were down.
+ARG VITE_MSG91_WIDGET_ID=
+ARG VITE_MSG91_TOKEN_AUTH=
+ENV VITE_MSG91_WIDGET_ID=${VITE_MSG91_WIDGET_ID} \
+    VITE_MSG91_TOKEN_AUTH=${VITE_MSG91_TOKEN_AUTH}
 
 # VITE_API_TARGET is deliberately not set. It configures the Vite dev and
 # preview proxy, and neither of those runs in this image — nginx does the

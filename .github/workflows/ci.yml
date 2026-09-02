@@ -258,12 +258,22 @@ jobs:
             fi
           }
 
-          # Phone sign-in is checked nowhere here any more, and that is not a
-          # gap. It used to need two values compiled into this bundle, so a
-          # partial pair was a portal that could not sign anybody in and CI was
-          # the only thing that would notice. The exchange runs through the API
-          # now: the provider is configured on the server, and the API refuses
-          # to start in production without it.
+          for k in VITE_MSG91_WIDGET_ID; do
+            count "$k" "$(get "$k")"
+          done
+
+          # The widget id or nothing. Nothing is a legitimate build — the public
+          # site works and the sign-in screen says it is not configured — so it
+          # is a warning. Its absence shipped once and reached students as a
+          # generic "try again later", which is the reason this check exists.
+          if [ "$present" -eq 1 ]; then
+            echo "the MSG91 widget id is present"
+          else
+            echo "::warning title=Phone sign-in is not configured::\
+          VITE_MSG91_WIDGET_ID is not set in .env. The public site will work and \
+          students will not be able to sign in — the portal says so plainly rather \
+          than failing silently."
+          fi
 
           [ "$fail" -eq 0 ] || exit 1
 
@@ -276,6 +286,9 @@ jobs:
           {
             echo "API_VERSION=$version"
             echo "API_TARGET=$target"
+            for k in VITE_MSG91_WIDGET_ID VITE_MSG91_TOKEN_AUTH; do
+              echo "$k=$(get "$k")"
+            done
           } >> "$GITHUB_ENV"
 
           echo "building $version against $target"
@@ -297,6 +310,8 @@ jobs:
           build-args: |
             VITE_API_VERSION=${{ env.API_VERSION }}
             API_TARGET=${{ env.API_TARGET }}
+            VITE_MSG91_WIDGET_ID=${{ env.VITE_MSG91_WIDGET_ID }}
+            VITE_MSG91_TOKEN_AUTH=${{ env.VITE_MSG91_TOKEN_AUTH }}
           load: true
           push: false
           cache-from: type=gha
@@ -363,6 +378,7 @@ jobs:
             echo "docker run -e API_TARGET=https://… $IMAGE:$GITHUB_SHA"
             echo '```'
             echo
-            echo "The API must have MSG91_AUTHKEY set, or phone sign-in"
-            echo "refuses: the OTP exchange runs through it, not this bundle."
+            echo "The domain this is served from must be listed against the"
+            echo "widget in the MSG91 dashboard, and the API must have"
+            echo "MSG91_AUTHKEY set to redeem the token the widget returns."
           } >> "$GITHUB_STEP_SUMMARY"
