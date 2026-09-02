@@ -150,13 +150,26 @@ else
     fail "no asset references /api/$EXPECT_API_VERSION — VITE_API_VERSION did not reach the build"
 fi
 
-# Nothing to assert about phone sign-in.
+# Phone sign-in, when the caller says this image is meant to have it.
 #
-# This checked that the bundle carried the OTP widget id it was built with,
-# because a build argument that failed to arrive produced an image serving every
-# public page perfectly that could not sign anybody in. The exchange runs through
-# the API now — the provider is configured on the server — so there is no
-# build-time value left to go missing here.
+# A build argument that fails to arrive produces an image that is perfect
+# everywhere a smoke test usually looks — every public page renders, nginx
+# proxies correctly, the API version is right — and cannot sign anybody in. That
+# is not hypothetical: it shipped, and the first report of it was a student on a
+# sign-in screen, not a red build.
+#
+# Opt-in via EXPECT_MSG91_WIDGET because an image built without the id is a
+# legitimate one; only a build that was *given* the value has been promised it.
+if [ -n "${EXPECT_MSG91_WIDGET:-}" ]; then
+    if docker run --rm --entrypoint sh "$IMAGE" -c \
+            "grep -rlF '${EXPECT_MSG91_WIDGET}' /usr/share/nginx/html/assets >/dev/null"; then
+        pass "carries the MSG91 widget id"
+    else
+        fail "the widget id did not reach the bundle — this image cannot sign anybody in by mobile"
+    fi
+else
+    echo "  - phone sign-in not asserted (EXPECT_MSG91_WIDGET unset)"
+fi
 
 # --- 4. it serves ------------------------------------------------------------
 

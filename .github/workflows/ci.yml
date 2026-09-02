@@ -217,8 +217,6 @@ jobs:
           get() { grep -m1 "^$1=" .env | cut -d= -f2- || true; }
 
           fail=0
-          missing=''
-          present=0
 
           version=$(get VITE_API_VERSION)
           target=$(get VITE_API_TARGET)
@@ -247,32 +245,20 @@ jobs:
               ;;
           esac
 
-          # Name and value passed separately, and never joined into a single
-          # word: a value that picked up a stray space would otherwise split and
-          # be counted as a missing setting with a nonsense name.
-          count() {
-            if [ -n "$2" ]; then
-              present=$((present + 1))
-            else
-              missing="$missing $1"
-            fi
-          }
-
-          for k in VITE_MSG91_WIDGET_ID; do
-            count "$k" "$(get "$k")"
-          done
-
-          # The widget id or nothing. Nothing is a legitimate build — the public
-          # site works and the sign-in screen says it is not configured — so it
-          # is a warning. Its absence shipped once and reached students as a
-          # generic "try again later", which is the reason this check exists.
-          if [ "$present" -eq 1 ]; then
-            echo "the MSG91 widget id is present"
+          # The widget id, or nothing. Nothing is a legitimate build — every
+          # public page works and the sign-in screen says outright that it is not
+          # set up — so this warns rather than failing.
+          #
+          # It warns at all because its absence has shipped: the value was unset,
+          # the bundle compiled it as undefined, and a student got a generic
+          # "try again later" from a page that could never have worked. A build
+          # log that says so is cheaper than that round trip.
+          if [ -n "$(get VITE_MSG91_WIDGET_ID)" ]; then
+            echo "phone sign-in: widget id present"
           else
             echo "::warning title=Phone sign-in is not configured::\
-          VITE_MSG91_WIDGET_ID is not set in .env. The public site will work and \
-          students will not be able to sign in — the portal says so plainly rather \
-          than failing silently."
+          VITE_MSG91_WIDGET_ID is not set in .env, so this image cannot sign anyone in \
+          by mobile. The public site is unaffected and the sign-in screen says so plainly."
           fi
 
           [ "$fail" -eq 0 ] || exit 1
@@ -327,6 +313,7 @@ jobs:
         env:
           EXPECT_API_VERSION: ${{ env.API_VERSION }}
           EXPECT_API_TARGET: ${{ env.API_TARGET }}
+          EXPECT_MSG91_WIDGET: ${{ env.VITE_MSG91_WIDGET_ID }}
         run: sh scripts/smoke-image.sh "$IMAGE:$GITHUB_SHA"
 
       - name: Log in to Docker Hub
