@@ -121,7 +121,7 @@ jobs:
   # Built with the image's own defaults and no secrets, so this stage runs on
   # every pull request without touching the protected environment. It proves the
   # Dockerfile, the nginx template and the entrypoint work; the address they are
-  # pointed at and the Firebase project they carry are stage 3's business.
+  # pointed at and the MSG91 widget they carry are stage 3's business.
 
   image:
     name: image
@@ -195,9 +195,9 @@ jobs:
       # already build against. Copying the same values into secrets would create
       # a second source of truth that drifts silently — the failure being a
       # published image that disagrees with the tree it was built from, which
-      # nothing would report. Nothing in it is a credential: a Firebase web
-      # apiKey identifies a project without authorising anything, phone sign-in
-      # is gated by the authorised-domain list and reCAPTCHA on Google's side,
+      # nothing would report. Nothing in it is a credential: the widget id and
+      # its token identify the OTP widget and let it send a code, phone sign-in
+      # is gated by the origin allow-list on MSG91's side,
       # and the API address is public. web.yml masks these because they reach it
       # as secrets; here they are in the repository, so printing them is honest
       # and makes this log readable.
@@ -259,25 +259,24 @@ jobs:
             fi
           }
 
-          for k in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN \
-                   VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET \
-                   VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID; do
+          for k in VITE_MSG91_WIDGET_ID VITE_MSG91_TOKEN_AUTH; do
             count "$k" "$(get "$k")"
           done
 
-          # All six or none. None is a legitimate build — the public site works
-          # and src/lib/firebase.ts reports that sign-in is not configured — so
-          # it is a warning. A partial set is always a mistake: initializeApp
-          # accepts it, the SMS request fails inside Google's SDK, and what the
-          # student sees is a code that never arrives.
-          if [ "$present" -eq 6 ]; then
-            echo "all six Firebase settings are present"
+          # Both or neither. Neither is a legitimate build — the public site
+          # works and src/lib/otp.ts reports that sign-in is not configured — so
+          # it is a warning. One of the two is always a mistake: the widget
+          # initialises on a partial config and then refuses to send, and what
+          # the student sees is a code that never arrives.
+          if [ "$present" -eq 2 ]; then
+            echo "both MSG91 settings are present"
           elif [ "$present" -eq 0 ]; then
-            echo "::warning title=Firebase sign-in is not configured::None of the six \
-          VITE_FIREBASE_* keys is set in .env. The public site will work and students will \
-          not be able to sign in — the portal reports that rather than failing silently."
+            echo "::warning title=Phone sign-in is not configured::Neither \
+          VITE_MSG91_WIDGET_ID nor VITE_MSG91_TOKEN_AUTH is set in .env. The public site \
+          will work and students will not be able to sign in — the portal reports that \
+          rather than failing silently."
           else
-            echo "::error title=The Firebase configuration is incomplete::Set$missing in \
+            echo "::error title=The MSG91 configuration is incomplete::Set$missing in \
           .env, or none of the six. A partial configuration is accepted by initializeApp \
           and then fails inside Google's SDK when the code is requested, which reaches the \
           student as an SMS that never arrives."
@@ -295,9 +294,7 @@ jobs:
           {
             echo "API_VERSION=$version"
             echo "API_TARGET=$target"
-            for k in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN \
-                     VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET \
-                     VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID; do
+            for k in VITE_MSG91_WIDGET_ID VITE_MSG91_TOKEN_AUTH; do
               echo "$k=$(get "$k")"
             done
           } >> "$GITHUB_ENV"
@@ -310,8 +307,9 @@ jobs:
       # at container start, so the same image can be pointed at another API
       # without a rebuild. It is recorded in the image's config, which for a
       # public repository means visible — an address is fine there, and so is a
-      # Firebase web configuration. A credential would not be, and nothing here
-      # takes one.
+      # widget id. A credential would not be, and nothing here takes one: the
+      # MSG91 authkey lives in the API's environment and never reaches a build
+      # argument, an image layer or a bundle.
       - name: Build
         uses: docker/build-push-action@v6
         with:
@@ -320,12 +318,8 @@ jobs:
           build-args: |
             VITE_API_VERSION=${{ env.API_VERSION }}
             API_TARGET=${{ env.API_TARGET }}
-            VITE_FIREBASE_API_KEY=${{ env.VITE_FIREBASE_API_KEY }}
-            VITE_FIREBASE_AUTH_DOMAIN=${{ env.VITE_FIREBASE_AUTH_DOMAIN }}
-            VITE_FIREBASE_PROJECT_ID=${{ env.VITE_FIREBASE_PROJECT_ID }}
-            VITE_FIREBASE_STORAGE_BUCKET=${{ env.VITE_FIREBASE_STORAGE_BUCKET }}
-            VITE_FIREBASE_MESSAGING_SENDER_ID=${{ env.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-            VITE_FIREBASE_APP_ID=${{ env.VITE_FIREBASE_APP_ID }}
+            VITE_MSG91_WIDGET_ID=${{ env.VITE_MSG91_WIDGET_ID }}
+            VITE_MSG91_TOKEN_AUTH=${{ env.VITE_MSG91_TOKEN_AUTH }}
           load: true
           push: false
           cache-from: type=gha
@@ -333,15 +327,15 @@ jobs:
 
       # Stage 2 checked the image against its defaults. This checks the thing
       # that is actually about to be published: that the bundle calls
-      # /api/{the configured version}, that it carries the configured Firebase
-      # project, and that the container proxies to the configured address. A
+      # /api/{the configured version}, that it carries the configured MSG91
+      # widget, and that the container proxies to the configured address. A
       # wrong version or a mistyped host is otherwise a deployment that starts
       # cleanly and fails on its first request.
       - name: Smoke test
         env:
           EXPECT_API_VERSION: ${{ env.API_VERSION }}
           EXPECT_API_TARGET: ${{ env.API_TARGET }}
-          EXPECT_FIREBASE_PROJECT: ${{ env.VITE_FIREBASE_PROJECT_ID }}
+          EXPECT_MSG91_WIDGET: ${{ env.VITE_MSG91_WIDGET_ID }}
         run: sh scripts/smoke-image.sh "$IMAGE:$GITHUB_SHA"
 
       - name: Log in to Docker Hub
@@ -393,7 +387,7 @@ jobs:
             echo "docker run -e API_TARGET=https://… $IMAGE:$GITHUB_SHA"
             echo '```'
             echo
-            echo "The domain this is served from must be listed under"
-            echo "Authentication > Settings > Authorized domains in Firebase,"
-            echo "or phone sign-in fails with auth/captcha-check-failed."
+            echo "The domain this is served from must be listed against the"
+            echo "widget in the MSG91 dashboard, or the widget refuses to"
+            echo "initialise and no code is ever sent."
           } >> "$GITHUB_STEP_SUMMARY"

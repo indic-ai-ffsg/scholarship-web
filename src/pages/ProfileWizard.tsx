@@ -23,16 +23,25 @@ import { ChoiceGroup, Field, Notice, Progress } from '../components/ui'
  * makes people abandon. Each answer is written to the device before it is sent,
  * so a failed request costs nothing.
  *
- * Every question is required. Questions after the name used to be skippable, on
- * the argument that an incomplete profile still matches some schemes and that
- * being blocked at question three by a certificate that is at home is how
- * somebody never comes back. That is now handled by the draft rather than by
- * the skip: every answer is on the device the moment it is typed, and the
- * wizard reopens at the first unanswered question, so leaving to fetch a
- * document costs the student their place in the queue and nothing else. What
- * skipping cost was worse and less visible — a profile missing an income or a
- * percentage is silently ineligible for the schemes that filter on them, and
- * the student is never told which answer was the one that lost them a match.
+ * Every question is required except the two that mark themselves optional.
+ * Questions after the name used to be skippable, on the argument that an
+ * incomplete profile still matches some schemes and that being blocked at
+ * question three by a certificate that is at home is how somebody never comes
+ * back. That is now handled by the draft rather than by the skip: every answer
+ * is on the device the moment it is typed, and the wizard reopens at the first
+ * unanswered question, so leaving to fetch a document costs the student their
+ * place in the queue and nothing else. What skipping cost was worse and less
+ * visible — a profile missing an income or a percentage is silently ineligible
+ * for the schemes that filter on them, and the student is never told which
+ * answer was the one that lost them a match.
+ *
+ * That argument only reaches questions a student can answer. The UDID number
+ * and the institution can both be answered with nothing — a card that has not
+ * been issued, a college not started — and neither is scored or filtered on, so
+ * neither costs a match. They say so on their own faces rather than silently:
+ * the button reads Skip, not Next, so the student is told the question is
+ * optional at the moment it would otherwise stop them. See Question.optional in
+ * lib/questions.
  */
 export default function ProfileWizard() {
   const { t } = useI18n()
@@ -90,7 +99,12 @@ export default function ProfileWizard() {
   const [step, setStep] = useState(() => {
     const draft = readDraft<Answers>('profile', ownerId)
     const initial = draft ? { ...seeded, ...draft.value } : seeded
-    const gap = questions.findIndex(q => !initial[q.field])
+    /* An unanswered optional question is not a gap. Counting it as one would
+       reopen the wizard on the UDID question every single time for every
+       student who does not have a card — the one question they have already
+       decided they cannot answer, presented to them as the thing standing
+       between them and a finished profile. */
+    const gap = questions.findIndex(q => !q.optional && !initial[q.field])
     return gap === -1 ? 0 : gap
   })
 
@@ -208,7 +222,7 @@ export default function ProfileWizard() {
        * — numeric(5,2) in the database, *float64 on the API struct. Sent as the
        * string "79.8" the body fails to decode before any handler sees it, and
        * the student is told "We could not read that request" at the moment they
-       * press Finish, with no clue which of nine answers was wrong. */
+       * press Finish, with no clue which answer was wrong. */
       payload[q.field] = q.kind === 'number' || q.kind === 'marks' ? Number(v) : v
     }
 
@@ -362,7 +376,17 @@ export default function ProfileWizard() {
             </div>
           </>
         ) : (
-          <Field label={question.question} error={numberError ?? undefined} required>
+          <Field
+            label={question.question}
+            error={numberError ?? undefined}
+            required={!question.optional}
+            /* The button below already says Skip, and Field's own "(optional)"
+               beside the label would say it a second time in the same eyeful.
+               required=false is still what has to reach the input, so that the
+               control is not announced as a required field a screen reader
+               will then insist on. */
+            optional={false}
+          >
             {props => (
               <input
                 {...props}
@@ -393,9 +417,19 @@ export default function ProfileWizard() {
           <button
             className="primary"
             onClick={next}
-            disabled={busy || !value || Boolean(numberError)}
+            disabled={busy || (!value && !question.optional) || Boolean(numberError)}
           >
-            {busy ? t('profile.saved') : isLast ? t('profile.finish') : t('profile.next')}
+            {busy ? t('profile.saved')
+              : isLast ? t('profile.finish')
+              /* Skip rather than Next, and only while the box is empty. It is
+                 the only place a student is told this question can be left —
+                 a button that reads Next over an empty box says nothing about
+                 whether an answer was expected, and somebody without a UDID
+                 card is left guessing whether pressing it loses them
+                 something. Typing anything turns it back into Next, because at
+                 that point it is not a skip. */
+              : question.optional && !value ? t('profile.skip')
+              : t('profile.next')}
           </button>
         </div>
       </div>

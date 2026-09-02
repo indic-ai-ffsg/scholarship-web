@@ -358,15 +358,15 @@ interchangeable:
 | Setting | Read | Why it has to be there |
 |---|---|---|
 | `VITE_API_VERSION` | at build | Vite substitutes `import.meta.env` into the bundle, so the version every request path is built from is fixed when the image is built. It cannot be changed on a running container. Must match `API_VERSION` on the server |
-| `VITE_FIREBASE_*` | at build | The six values phone sign-in needs, baked in the same way. Public by design — a web `apiKey` identifies a project without authorising anything; see `src/lib/firebase.ts`. All six or none: a partial set is accepted by `initializeApp` and then fails inside Google's SDK, which reaches the student as a code that never arrives |
+| `VITE_MSG91_WIDGET_ID`, `VITE_MSG91_TOKEN_AUTH` | at build | What phone sign-in needs, baked in the same way. Public by design — they identify the OTP widget and let it send a code; see `src/lib/otp.ts`, which also names the value that must NOT go here. Both or neither: a partial set initialises and then refuses to send, which reaches the student as a code that never arrives |
 | `API_TARGET` | at container start | nginx's proxy target. Deliberately *not* baked in, so one image serves any environment. `scheme://host[:port]`; a trailing slash is stripped, a missing scheme is refused by name, and a path is prefixed to every proxied request and logged as such |
 
-An image built with no Firebase configuration is a legitimate thing to ship —
+An image built with no MSG91 configuration is a legitimate thing to ship —
 every public page works and sign-in reports that the deployment is not
 configured, rather than failing silently. Wherever it *is* configured, the
-domain the portal is served from must be listed under Authentication → Settings
-→ Authorized domains in the Firebase console, or every code request fails with
-`auth/captcha-check-failed` no matter what was built in.
+domain the portal is served from must be listed against the widget in the MSG91
+dashboard, or the widget refuses to initialise there and no code is ever sent,
+no matter what was built in.
 
 `API_TARGET` defaults to `http://api:8080` — the API's service name on the
 platform stack's compose network, which is what makes the root compose file work
@@ -418,7 +418,7 @@ runs **check → image → publish**:
 |---|---|---|
 | `check` | eslint, `tsc -b`, the Vite build, and keeps `dist/` as an artifact | everything |
 | `image` | builds the image with its defaults, starts it, and runs `scripts/smoke-image.sh` against it | everything |
-| `publish` | rebuilds with the production version, address and Firebase project, re-runs the smoke test, pushes `:{sha}` and `:latest` to Docker Hub | `main` |
+| `publish` | rebuilds with the production version, address and MSG91 widget, re-runs the smoke test, pushes `:{sha}` and `:latest` to Docker Hub | `main` |
 
 Only `publish` names the `production` environment. That is deliberate: a job
 naming a protected environment waits for its reviewers, so keeping it out of the
@@ -440,13 +440,13 @@ The environment (Settings → Environments → production) holds:
 | `DOCKER_PASSWORD` | an access token with **Read & Write** scope. A read-only token logs in successfully and then fails on push |
 | `VITE_API_VERSION` | the build argument above |
 | `VITE_API_TARGET` | the address baked in as the image's default `API_TARGET` |
-| `VITE_FIREBASE_*` | the six sign-in values, all six or none |
+| `VITE_MSG91_*` | the two sign-in values, both or neither |
 
 The first two are checked before anything is built, because both fail quietly:
 an empty `VITE_API_VERSION` overrides the Dockerfile's default with an empty
 string and ships a portal calling `/api/`, and an address without a scheme is a
-target nginx rejects. The Firebase six are counted rather than validated — none
-is a warning and the build goes ahead, a partial set is an error. The image is
+target nginx rejects. The two MSG91 values are counted rather than validated —
+neither is a warning and the build goes ahead, one of the two is an error. The image is
 pushed as `${DOCKER_USERNAME}/sp-web`; set the repository **variable**
 `IMAGE_NAME` to `namespace/name` for an organisation-owned image, where the
 pushing account and the namespace are different names.
@@ -456,7 +456,7 @@ publish is reproducible with one command. It asserts what a broken build of this
 image actually looks like — none of which is a build failure: the config
 template rendered with the address it was given, an address nginx would reject is
 refused by name at start-up, the bundle calls the API version and carries the
-Firebase project it was built for, a deep link reloads as the app rather than a
+OTP widget it was built for, a deep link reloads as the app rather than a
 404 while a root-level file is still served rather than swallowed by that rule,
 `/api` is proxied rather than answered by the app, a missing fingerprinted asset
 is a 404 rather than HTML served where JavaScript was asked for, and a

@@ -15,10 +15,10 @@ import react from '@vitejs/plugin-react'
 
 /* Tunnelled hosts are allowed through the dev server's host check.
  *
- * Firebase phone auth will only run on a domain listed in the project's
- * authorised domains, and a tunnel is the usual way to give a local dev server
- * one without exposing it. Vite blocks any Host header it does not recognise,
- * so without this the tunnel answers "Blocked request" and the sign-in flow is
+ * MSG91's OTP widget will only run on an origin listed against the widget in
+ * the dashboard, and a tunnel is the usual way to give a local dev server one
+ * without exposing it. Vite blocks any Host header it does not recognise, so
+ * without this the tunnel answers "Blocked request" and the sign-in flow is
  * never reached.
  *
  * A leading dot matches subdomains, so this covers whichever tunnel gets
@@ -35,9 +35,9 @@ export default defineConfig(({ mode, command }) => {
    * for a production build — which proxies nothing, because in the image nginx
    * does that job instead. Guarding on it is what lets the two deliberate
    * decisions either side of this file coexist: .dockerignore keeps .env out of
-   * the build context, and the Dockerfile passes VITE_API_VERSION and the six
-   * Firebase values as build arguments but pointedly not this one, since the
-   * dev and preview proxies it configures never run there.
+   * the build context, and the Dockerfile passes VITE_API_VERSION and the two
+   * MSG91 values as build arguments but pointedly not this one, since the dev
+   * and preview proxies it configures never run there.
    *
    * Thrown unconditionally, as it was, that guard fails the image build on a
    * variable the image has no use for — and it fails it opaquely: the symptom

@@ -28,19 +28,13 @@ import { Navigate, useLocation } from 'react-router-dom'
 
 import { useAuth } from '../lib/auth-context'
 import { useI18n } from '../lib/i18n-context'
-import { formatE164 } from '../lib/firebase'
+import { formatE164 } from '../lib/otp'
 import { safeNext } from '../lib/next'
 import { Field, Notice } from '../components/ui'
 
-/* The element the invisible reCAPTCHA binds to. Firebase needs a stable id and
- * an element that stays mounted for as long as a code request may be in
- * flight, which is why it lives at the top of this component rather than beside
- * whichever button happens to be on screen. */
-const RECAPTCHA_ID = 'firebase-recaptcha'
-
 /* Long enough that an SMS has a fair chance of arriving before the button
  * tempts anyone, short enough not to strand somebody whose message never came.
- * Firebase applies its own per-number limits underneath regardless. */
+ * The provider applies its own per-number limits underneath regardless. */
 const RESEND_SECONDS = 30
 
 const CODE_LENGTH = 6
@@ -149,7 +143,7 @@ export default function SignIn() {
 
     setBusy(true)
     try {
-      await requestCode(phone, RECAPTCHA_ID)
+      await requestCode(phone)
       setResentAt(Date.now())
     } catch {
       /* the provider holds the message */
@@ -178,7 +172,7 @@ export default function SignIn() {
     setBusy(true)
     setResent(false)
     try {
-      await resendCode(RECAPTCHA_ID)
+      await resendCode()
       setResentAt(Date.now())
       setResent(true)
     } catch {
@@ -216,9 +210,6 @@ export default function SignIn() {
         </p>
 
         {error && <Notice tone="danger">{error}</Notice>}
-
-        {/* Bound by Firebase; renders nothing until Google decides to challenge. */}
-        <div id={RECAPTCHA_ID} />
 
         {!awaitingCode ? (
           <form onSubmit={sendCode} noValidate>

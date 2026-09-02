@@ -1,22 +1,22 @@
 /* My profile — what a student sees after they have finished registering.
  *
  * This screen exists because "My profile" used to open the wizard, and the
- * wizard opens on "Question 1 of 9". That is the right shape exactly once, for
- * somebody who has just registered and has nine answers to give. It is the
+ * wizard opens on "Question 1 of 11". That is the right shape exactly once, for
+ * somebody who has just registered and has every answer still to give. It is the
  * wrong shape forever afterwards: a student who moved house and wants to change
  * their state should not be walked through their disability certificate, their
- * income and their marks to get there, and a screen that says "Question 1 of 9"
+ * income and their marks to get there, and a screen that says "Question 1 of 11"
  * to a person whose profile has been complete for six months is telling them
  * they have not started.
  *
- * So the wizard keeps the nine questions and moves to /profile/setup, and this
+ * So the wizard keeps the questions and moves to /profile/setup, and this
  * is what /profile means now: everything they have told us, in one list, with
  * one answer editable at a time.
  *
  * One at a time rather than one big form with a Save at the bottom, and that is
- * the same argument the wizard makes for its own shape. Nine controls live at
+ * the same argument the wizard makes for its own shape. Eleven controls live at
  * once is the form this product exists not to be; it also makes every save a
- * nine-field PATCH, so a stale tab quietly overwrites what was changed on a
+ * whole-profile PATCH, so a stale tab quietly overwrites what was changed on a
  * phone an hour ago. Editing one row sends one field.
  */
 
@@ -38,7 +38,7 @@ export default function Profile() {
   const { profile } = useAuth()
 
   /* Nothing to review yet. The wizard is the whole of the answer for somebody
-     with no profile, so they are sent there rather than shown nine empty rows
+     with no profile, so they are sent there rather than shown a list of empty rows
      and asked to edit each one. */
   if (!profile) return <Navigate to="/profile/setup" replace />
 
@@ -147,7 +147,8 @@ function Row({ question, answers, verified, editing, onEdit, onDone }: {
     setBusy(true)
     setError(null)
     try {
-      /* One field, not nine. The marks question still sends one — the scale and
+      /* One field, not the whole profile. The marks question still sends one —
+         the scale and
          the number it was typed on live only in the draft; academic_percentage
          is the profile field, and the control has already converted to it. */
       await api.request('/me/profile', {
@@ -179,7 +180,7 @@ function Row({ question, answers, verified, editing, onEdit, onDone }: {
         </dt>
         <dd>
           {shown ?? <span className="muted">{t('profile.notAnswered')}</span>}
-          {/* aria-label rather than a visually hidden span. Nine buttons all
+          {/* aria-label rather than a visually hidden span. Eleven buttons all
               reading "Change" is useless in a screen reader's list of controls,
               so the question has to be in the name — but as hidden text it also
               landed in anything copied off the page, which is how a profile

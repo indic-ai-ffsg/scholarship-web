@@ -86,8 +86,8 @@ export default function App() {
         <Route path="/dashboard" element={<RequireProfile><Dashboard /></RequireProfile>} />
         {/* Two screens, and which one you get depends on whether you have
             finished rather than on which link you pressed. /profile is the
-            review; the nine questions live at /profile/setup, because
-            "Question 1 of 9" is the right thing to show somebody exactly once
+            review; the questions live at /profile/setup, because
+            "Question 1 of 11" is the right thing to show somebody exactly once
             and the wrong thing to show them ever after. */}
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/profile/setup" element={<RequireAuth><ProfileWizard /></RequireAuth>} />

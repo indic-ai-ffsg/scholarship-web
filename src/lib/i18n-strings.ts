@@ -286,6 +286,9 @@ export const en: Dict = {
   'profile.savedLocally': 'Saved on this device. It will sync when you are back online.',
   'profile.back': 'Back',
   'profile.next': 'Next',
+  /* Shown instead of Next on an optional question with an empty box. "Skip"
+     alone read as discarding something; this says what actually happens. */
+  'profile.skip': 'Skip for now',
   'profile.finish': 'Finish',
   'profile.step': 'Question {n} of {total}',
   'profile.done.title': 'Your profile is ready',

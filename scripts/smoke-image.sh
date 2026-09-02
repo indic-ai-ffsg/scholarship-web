@@ -6,7 +6,7 @@
 #
 #   EXPECT_API_VERSION      the version the bundle should call    (default v1)
 #   EXPECT_API_TARGET       the API the container should proxy to (default http://api:8080)
-#   EXPECT_FIREBASE_PROJECT the Firebase project the bundle should carry (optional)
+#   EXPECT_MSG91_WIDGET   the OTP widget id the bundle should carry (optional)
 #   PORT                    host port to publish on               (default 18173)
 #
 # CI runs exactly this, rather than a list of inline `docker run` steps, so that
@@ -20,7 +20,7 @@
 #   * the config template rendered, and rendered with the address it was given
 #   * an address nginx would reject is refused at start-up, by name
 #   * the bundle calls the API version it was built for
-#   * the bundle carries the Firebase project it was built for, when one was given
+#   * the bundle carries the OTP widget it was built for, when one was given
 #   * a deep link reloads as the app, not as a 404
 #   * a root-level static file is still served rather than swallowed by that rule
 #   * /api is proxied rather than swallowed by the single-page fallback
@@ -33,7 +33,7 @@ set -eu
 IMAGE=${1:-${WEB_IMAGE:-indicsign/sp-web:local}}
 EXPECT_API_VERSION=${EXPECT_API_VERSION:-v1}
 EXPECT_API_TARGET=${EXPECT_API_TARGET:-http://api:8080}
-EXPECT_FIREBASE_PROJECT=${EXPECT_FIREBASE_PROJECT:-}
+EXPECT_MSG91_WIDGET=${EXPECT_MSG91_WIDGET:-}
 PORT=${PORT:-18173}
 
 NAME="sp-web-smoke-$$"
@@ -153,20 +153,20 @@ else
     fail "no asset references /api/$EXPECT_API_VERSION — VITE_API_VERSION did not reach the build"
 fi
 
-# Firebase is how every student signs in, and a build argument that failed to
-# arrive produces an image that serves every public page perfectly and cannot
-# sign anybody in. Checked only when the caller says which project to expect,
+# The OTP widget is how every student signs in, and a build argument that failed
+# to arrive produces an image that serves every public page perfectly and cannot
+# sign anybody in. Checked only when the caller says which widget to expect,
 # because an image built without one is a legitimate thing to ship — see the
 # Dockerfile.
-if [ -n "$EXPECT_FIREBASE_PROJECT" ]; then
+if [ -n "$EXPECT_MSG91_WIDGET" ]; then
     if docker run --rm --entrypoint sh "$IMAGE" -c \
-            "grep -rlF '$EXPECT_FIREBASE_PROJECT' /usr/share/nginx/html/assets >/dev/null"; then
-        pass "carries the Firebase project $EXPECT_FIREBASE_PROJECT"
+            "grep -rlF '$EXPECT_MSG91_WIDGET' /usr/share/nginx/html/assets >/dev/null"; then
+        pass "carries the MSG91 widget $EXPECT_MSG91_WIDGET"
     else
-        fail "no asset mentions $EXPECT_FIREBASE_PROJECT — the Firebase build arguments did not reach the build"
+        fail "no asset mentions $EXPECT_MSG91_WIDGET — the MSG91 build arguments did not reach the build"
     fi
 else
-    echo "  skip  no EXPECT_FIREBASE_PROJECT given (sign-in not checked)"
+    echo "  skip  no EXPECT_MSG91_WIDGET given (sign-in not checked)"
 fi
 
 # --- 4. it serves ------------------------------------------------------------

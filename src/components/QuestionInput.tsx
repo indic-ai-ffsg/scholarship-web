@@ -129,7 +129,11 @@ export function QuestionInput({
       label={label ?? question.question}
       hint={label ? question.help : undefined}
       error={numberProblem(question, value) ?? undefined}
-      required
+      /* Field draws "(optional)" beside the label when this is false, which is
+         the only place the profile view can say so: it has no Skip button to
+         put the word on, and a row somebody may leave blank forever should not
+         look like one they have failed to fill in. */
+      required={!question.optional}
     >
       {props => (
         <input

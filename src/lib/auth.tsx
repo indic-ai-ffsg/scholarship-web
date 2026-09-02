@@ -3,7 +3,7 @@
  * Three differences from the admin panel, all deliberate.
  *
  * There is no password. A student signs in with their mobile number and a code
- * Firebase sends to it; the same number and the same code register an account
+ * MSG91 sends to it; the same number and the same code register an account
  * that does not exist yet. One door, two outcomes — which is why there is no
  * separate registration call in here to go looking for.
  *
@@ -28,7 +28,7 @@ import {
 import * as api from './api'
 import { AuthContext, type AuthApi, type AuthState } from './auth-context'
 import { clearAllDrafts } from './draft'
-import * as firebase from './firebase'
+import * as otp from './otp'
 import type { Envelope, LoginResult, Profile } from './types'
 
 /** /auth/phone answers with a LoginResult plus which branch it took. */
@@ -44,8 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error: null,
   })
 
-  /** The Firebase handle for the code in flight, held between the two steps. */
-  const pending = useRef<firebase.PendingCode | null>(null)
+  /** Whether a code exchange is in flight, held between the two steps. */
+  const pending = useRef<otp.PendingCode | null>(null)
   /** The number the code went to, so a resend does not ask for it again. */
   const pendingPhone = useRef<string | null>(null)
 
@@ -65,10 +65,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ) => {
     api.setAccessToken(result.token.access_token)
 
-    // The platform's session exists now, so the Firebase one has done its job.
-    // Left behind, it is a second signed-in identity on what is very often a
-    // shared family handset.
-    await firebase.forgetFirebaseSession()
+    // The platform's session exists now, so the provider's has done its job.
+    // Left behind, it would be a second signed-in identity on what is very often
+    // a shared family handset. MSG91 holds nothing between calls, so this is a
+    // no-op today — kept because the guarantee belongs to this file rather than
+    // to whichever provider is behind it.
+    await otp.forgetSession()
     pending.current = null
     pendingPhone.current = null
 
@@ -120,11 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     /* The screen gets a sentence a student can act on; the console gets what
      * actually happened.
      *
-     * Firebase's phone-auth failures are nearly all reported as one of two
-     * generic codes, and the reason they differ is carried in `serverResponse`
-     * — CAPTCHA_CHECK_FAILED, RECAPTCHA_NOT_ENABLED, INVALID_APP_CREDENTIAL and
-     * so on all arrive looking identical otherwise. Swallowing that turns every
-     * sign-in problem into the same unactionable sentence. */
+     * Under Firebase these were two generic codes whose real cause hid in
+     * `serverResponse`, and swallowing it turned every sign-in problem into the
+     * same unactionable sentence. MSG91 returns prose instead, so the raw
+     * message is the detail — logged as it arrives, and never shown, because it
+     * names a company this audience has not heard of. */
     const detail = err as { code?: string; customData?: { serverResponse?: unknown } }
     if (detail?.code || err instanceof Error) {
       console.error('[auth] sign-in failed', {
@@ -137,14 +139,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const message =
       err instanceof api.ApiError ? err.message
-      : err instanceof Error && err.message ? firebaseMessage(err)
+      : err instanceof Error && err.message ? providerMessage(err)
       : fallback
     setState(s => ({ ...s, error: message }))
     throw err
   }, [])
 
-  const requestCode = useCallback(async (phone: string, containerId: string) => {
-    const e164 = firebase.toE164(phone)
+  const requestCode = useCallback(async (phone: string) => {
+    const e164 = otp.toE164(phone)
     if (!e164) {
       const message = 'Enter a 10-digit Indian mobile number.'
       setState(s => ({ ...s, error: message }))
@@ -161,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phone: e164,
       })
 
-      pending.current = await firebase.sendCode(e164, containerId)
+      pending.current = await otp.sendCode(e164)
       pendingPhone.current = e164
       setState(s => ({
         ...s,
@@ -169,8 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pendingCode: { phone: e164, returning: known.data.exists },
       }))
     } catch (err) {
-      // sendCode tears the widget down on its own way out, so there is nothing
-      // to clean up here.
       fail(err, 'We could not send a code just now. Please try again.')
     }
   }, [fail])
@@ -180,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setState(s => ({ ...s, error: null }))
     try {
-      const idToken = await firebase.confirmCode(pending.current, code)
+      const idToken = await otp.confirmCode(code)
       const res = await api.post<PhoneSignInResult>('/auth/phone', {
         id_token: idToken,
       })
@@ -190,15 +190,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [applySession, fail])
 
-  const resendCode = useCallback(async (containerId: string) => {
-    const phone = pendingPhone.current
-    if (!phone) return
+  const resendCode = useCallback(async () => {
+    if (!pendingPhone.current) return
 
     setState(s => ({ ...s, error: null }))
     try {
-      // sendCode builds a fresh widget every time, which is exactly what a
-      // resend needs: the previous request's token is spent.
-      pending.current = await firebase.sendCode(phone, containerId)
+      /* A dedicated retry rather than sending again from scratch. Under
+         Firebase a resend meant tearing down the reCAPTCHA widget and building
+         another, because its token was spent; MSG91 keeps the exchange open and
+         repeats the code on the same one. */
+      await otp.resendCode()
     } catch (err) {
       fail(err, 'We could not send another code just now.')
     }
@@ -207,14 +208,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const cancelCode = useCallback(() => {
     pending.current = null
     pendingPhone.current = null
-    firebase.resetRecaptcha()
     setState(s => ({ ...s, status: 'anonymous', pendingCode: null, error: null }))
   }, [])
 
   const signOut = useCallback(async () => {
     await api.logout()
     api.setAccessToken(null)
-    await firebase.forgetFirebaseSession()
+    await otp.forgetSession()
 
     /* The drafts go with the session.
      *
@@ -222,7 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      * written and was never called from here, so signing out left the wizard's
      * saved answers in localStorage: disability type, disability percentage,
      * family income, UDID number. This app already treats the handset as shared
-     * — it is why the Firebase session is torn down two lines above — and a
+     * — it is why the provider session is torn down two lines above — and a
      * half-finished profile is the most sensitive thing it holds.
      *
      * Both keys, because the wizard writes under the profile id once there is
@@ -285,36 +285,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-/* Firebase error codes, in words a student can act on.
+/* The provider's messages, in words a student can act on.
  *
- * The raw messages are written for the developer holding the console —
- * "auth/too-many-requests" tells somebody trying to sign in nothing about what
- * to do next, and the untranslated fallbacks name Firebase, which is not a
- * product this audience has heard of.
+ * Kept across the move from Firebase, because the reason for it did not change:
+ * the raw text is written for whoever is holding the console. Firebase said
+ * "auth/too-many-requests"; MSG91 says "Max limit reached". Neither tells
+ * somebody trying to sign in what to do next, and both name a product this
+ * audience has never heard of.
+ *
+ * Matched on substrings rather than codes — MSG91 returns prose where Firebase
+ * returned an identifier — and case-folded, because the same condition has been
+ * seen capitalised two ways. Anything unrecognised falls through to a general
+ * sentence rather than showing the raw string: a message naming a third party is
+ * worse than one that simply says to try again.
  */
-function firebaseMessage(err: Error): string {
-  const code = (err as Error & { code?: string }).code ?? ''
+function providerMessage(err: Error): string {
+  const text = (err.message || '').toLowerCase()
 
-  switch (code) {
-    case 'auth/invalid-verification-code':
-      return 'That code is not correct. Check the message and try again.'
-    case 'auth/code-expired':
-      return 'That code has expired. Ask for a new one.'
-    case 'auth/invalid-phone-number':
-      return 'That mobile number is not one we can send a code to.'
-    case 'auth/too-many-requests':
-      return 'Too many attempts from this device. Please wait a few minutes and try again.'
-    case 'auth/quota-exceeded':
-      return 'We cannot send codes at the moment. Please try again later.'
-    case 'auth/captcha-check-failed':
-    case 'auth/invalid-app-credential':
-      // Almost always a spent or rejected reCAPTCHA rather than anything to do
-      // with the app's credentials, whatever the code name suggests. Asking for
-      // a fresh code rebuilds the widget, which is the actual remedy.
-      return 'That attempt could not be verified. Please ask for a new code.'
-    case 'auth/network-request-failed':
-      return 'We could not reach the network. Check your connection and try again.'
-    default:
-      return err.message || 'Something went wrong. Please try again.'
+  const has = (...needles: string[]) => needles.some(n => text.includes(n))
+
+  if (has('invalid otp', 'otp not match', 'incorrect otp', 'wrong otp')) {
+    return 'That code is not correct. Check the message and try again.'
   }
+  if (has('expired')) {
+    return 'That code has expired. Ask for a new one.'
+  }
+  if (has('invalid number', 'invalid mobile', 'invalid identifier')) {
+    return 'That mobile number is not one we can send a code to.'
+  }
+  if (has('max limit', 'too many', 'limit reached', 'rate limit')) {
+    return 'Too many attempts. Please wait a few minutes and try again.'
+  }
+  if (has('insufficient', 'balance', 'quota')) {
+    return 'We cannot send codes at the moment. Please try again later.'
+  }
+  if (has('network', 'could not be reached', 'did not load', 'failed to fetch')) {
+    return 'We could not reach the network. Check your connection and try again.'
+  }
+  if (has('not ready', 'must be set at build time')) {
+    // A misconfiguration rather than anything the student did. They still get a
+    // sentence they can act on; the specifics are in the console for us.
+    return 'Sign-in is unavailable just now. Please try again shortly.'
+  }
+  return 'Something went wrong. Please try again.'
 }

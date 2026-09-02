@@ -18,7 +18,7 @@ import type { CheckResult, CheckedScheme } from '../../lib/types'
  * The order is the argument. The report's own reasoning for the four states of
  * Table 4.2 — that "no" and "not yet" are different answers and only one of them
  * is actionable — applies twice as hard to somebody who has not registered:
- * asking a student to fill in nine questions, upload a disability certificate
+ * asking a student to fill in eleven questions, upload a disability certificate
  * and wait for a verification before finding out that nothing is open to them is
  * how a platform loses the people it exists for.
  *

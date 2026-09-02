@@ -35,15 +35,11 @@ services:
         # so this is a build input and not an environment variable below.
         VITE_API_VERSION: ${API_VERSION:-v1}
 
-        # Firebase phone sign-in, likewise baked in. Left unset, the image
-        # serves every public page and reports that sign-in is not configured
-        # when a student tries to use it — see the Dockerfile.
-        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-}
-        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN:-}
-        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID:-}
-        VITE_FIREBASE_STORAGE_BUCKET: ${VITE_FIREBASE_STORAGE_BUCKET:-}
-        VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID:-}
-        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID:-}
+        # MSG91 phone sign-in, likewise baked in. Left unset, the image serves
+        # every public page and reports that sign-in is not configured when a
+        # student tries to use it — see the Dockerfile.
+        VITE_MSG91_WIDGET_ID: ${VITE_MSG91_WIDGET_ID:-}
+        VITE_MSG91_TOKEN_AUTH: ${VITE_MSG91_TOKEN_AUTH:-}
 
     environment:
       # Where the API is: scheme://host[:port], no trailing path. Read at
@@ -73,9 +69,9 @@ services:
       # Something that terminates TLS belongs in front of this — a reverse proxy
       # on the host, or a tunnel — and it reaches the portal on loopback.
       #
-      # Firebase is the second reason. Phone sign-in runs reCAPTCHA, which needs
-      # the page's origin to be one of the project's authorised domains, and a
-      # bare host:port over HTTP will not be one.
+      # The OTP widget is the second reason. MSG91 refuses to initialise it on
+      # an origin that is not listed against the widget, and a bare host:port
+      # over HTTP will not be one.
       #
       # Set WEB_BIND=0.0.0.0 only when whatever terminates TLS is on another
       # machine and the link between them is trusted.

@@ -32,20 +32,21 @@ export interface AuthState {
 
 export interface AuthApi extends AuthState {
   /**
-   * Asks Firebase to send a code to the number.
+   * Asks the provider to send a code to the number.
    *
-   * `recaptchaContainerId` is the id of an element on the page for the
-   * invisible reCAPTCHA widget to bind to; Firebase will not send an SMS
-   * without one.
+   * Took a second argument under the previous provider: the id of a DOM node for
+   * an invisible reCAPTCHA, which it would not send an SMS without. MSG91 does
+   * its abuse control server-side, so there is no widget to bind and no element
+   * for the page to carry.
    *
-   * Rejects with a message fit to show when the number is malformed or when
-   * Firebase refuses — too many requests from this device, most often.
+   * Rejects with a message fit to show when the number is malformed or when the
+   * provider refuses — too many requests, most often.
    */
-  requestCode(phone: string, recaptchaContainerId: string): Promise<void>
+  requestCode(phone: string): Promise<void>
   /** Checks the code and exchanges the resulting token for a session. */
   submitCode(code: string): Promise<void>
   /** Sends another code to the same number. */
-  resendCode(recaptchaContainerId: string): Promise<void>
+  resendCode(): Promise<void>
   /** Abandons the code step and returns to the number entry. */
   cancelCode(): void
   signOut(): Promise<void>

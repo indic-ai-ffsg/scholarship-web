@@ -1,7 +1,7 @@
-/* The nine questions a student profile is made of.
+/* The questions a student profile is made of.
  *
  * Extracted from the wizard because there are now two screens asking them: the
- * wizard, which walks a new student through all nine one at a time, and the
+ * wizard, which walks a new student through all of them one at a time, and the
  * profile view, where somebody who finished months ago changes the one answer
  * that has since changed. Two copies of this list would drift, and the way it
  * would show is a value editable on one screen and not the other — or worse,
@@ -28,6 +28,21 @@ export interface Question {
   kind: 'text' | 'number' | 'date' | 'choice' | 'marks'
   options?: Option[]
   placeholder?: string
+  /* Answerable with nothing, and the wizard lets the student walk past it.
+   *
+   * The default is the opposite, and the argument for that is in ProfileWizard:
+   * a skipped answer is a scheme silently lost, and the student is never told
+   * which one it was. It does not hold for a question a student may have no
+   * answer to. Nobody can invent a UDID number they have not been issued, and a
+   * student between school and college has no institution to name — and a
+   * required question they cannot answer is not a prompt, it is a wall across
+   * question four of eleven.
+   *
+   * Both of these are safe to leave: neither is scored by compute_completeness
+   * (0031, 0036), so skipping one still reaches 100%, and no scheme filters on
+   * either — they identify a student and corroborate what they claimed, which
+   * is work that happens after a match, not before one. */
+  optional?: boolean
   /* The range the API will accept, for the number questions.
    *
    * It mattered less when a question could be skipped: a student who typed 400
@@ -44,7 +59,7 @@ export interface Question {
    * disability_percent is *int in profile.UpsertInput. A student who types 40.5
    * sends 40.5, and Go fails to decode the body before any handler or validator
    * runs — so the reply is the generic "We could not read that request", naming
-   * no field, at the end of a nine-question form. Rounding it quietly would be
+   * no field, at the end of the whole form. Rounding it quietly would be
    * worse: that is their certificate's number, and it is not ours to adjust. */
   integer?: boolean
   /* How the stored value reads back on the profile view. The wizard never needs
@@ -186,6 +201,15 @@ export function buildQuestions(): Question[] {
       outOfRange: 'A certificate percentage is between 0 and 100.',
     },
     {
+      /* Asked here because it comes off the same document as the two answers
+         above it, and a student reading their card has it in their hand. */
+      field: 'udid_number',
+      kind: 'text',
+      optional: true,
+      question: 'What is your UDID number?',
+      help: 'The number on your UDID (Unique Disability ID) card. Leave it if you have not been issued one — it changes nothing about what you qualify for, and you can add it later.',
+    },
+    {
       field: 'date_of_birth',
       kind: 'date',
       question: 'When were you born?',
@@ -196,6 +220,18 @@ export function buildQuestions(): Question[] {
       kind: 'choice',
       question: 'What are you studying?',
       options: courseChoices(),
+    },
+    {
+      /* Free text rather than a chooser, and that is not laziness. The
+         `institution` table an id would point at is curated by nobody — no
+         importer, no search endpoint, no screen that lists one — so a picker
+         here would be a picker over an empty list. See migration 0036. */
+      field: 'institution_name',
+      kind: 'text',
+      optional: true,
+      question: 'Where do you study?',
+      help: 'The name of your school, college or university, as it is written on your bonafide certificate. Leave it if you have not started yet.',
+      placeholder: 'Name of your school or college',
     },
     {
       field: 'state_code',
@@ -328,9 +364,9 @@ export function seedValue(q: Question, raw: unknown): string {
  *
  * Every step used to lead to the wizard, because every step was a wizard
  * question. One is not: "documents" is answered by uploading a certificate and
- * waiting for an organisation to check it, and sending a student to Question 1
- * of 9 for that reopened nine answers they had already given, changed nothing,
- * and left the meter where it was.
+ * waiting for an organisation to check it, and sending a student to the first
+ * question for that reopened every answer they had already given, changed
+ * nothing, and left the meter where it was.
  */
 export function stepDestination(field: string): string {
   return field === 'documents' ? '/documents' : '/profile/setup'
