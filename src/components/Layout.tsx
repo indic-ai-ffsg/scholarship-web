@@ -305,6 +305,37 @@ function SiteFooter() {
             height="130"
             className="footer-logo"
           />
+
+          {/* The funder, under the foundation's own mark and labelled.
+            *
+            * The label is the load-bearing part. A second logo sitting bare
+            * beneath the first reads as a second owner, and "whose platform is
+            * this" is the one question this footer exists to answer for
+            * somebody about to hand over a disability certificate. "Supported
+            * by" says what HSBC is and, just as usefully, what they are not.
+            *
+            * alt names the bank rather than being empty, which is the opposite
+            * of the rule the brand mark above follows: that one sits beside real
+            * text saying the same word, and this one does not. It is also not a
+            * link — there is no address to send anybody to — so nothing else on
+            * the page would announce it.
+            *
+            * The file is the supplied artwork, unresized and unrecoloured. It is
+            * somebody else's trademark: scaling it in CSS is ordinary use, and
+            * re-encoding a copy of it into this repository is not ours to do.
+            * Lazy, because it is four screens below the fold on a phone. */}
+          <p className="footer-sponsor">
+            <span className="label">{t('footer.sponsor')}</span>
+            <img
+              src="/hsbc_logo.png"
+              alt="HSBC"
+              width="1280"
+              height="345"
+              loading="lazy"
+              decoding="async"
+              className="sponsor-logo"
+            />
+          </p>
         </div>
 
         {/* The accounts at the far side, level with the top of the logo. */}

@@ -36,6 +36,9 @@ export const en: Dict = {
   'nav.account': 'My account',
   'nav.register': 'Sign up',
   'footer.social': 'Indic AI elsewhere',
+  /* Names the relationship rather than leaving a second mark to imply one.
+     See .footer-sponsor in styles.css. */
+  'footer.sponsor': 'Supported by',
   'footer.copyright': 'Copyright © {year} Indic AI | All rights reserved',
   /* One door, so one word for it. "Login" told a first-time student they
      were in the wrong place, and "Register" told a returning one the same;
@@ -49,7 +52,7 @@ export const en: Dict = {
      is the more distinct phrasing and this is the line to change. It is also the
      heading on the page it opens — see auth.title — because a destination
      that repeats the button confirms you arrived where you meant to. */
-  'nav.signin': 'Sign in or sign up',
+  'nav.signin': 'Sign in or Sign Up',
   'nav.signout': 'Sign out',
   'nav.skip': 'Skip to main content',
 

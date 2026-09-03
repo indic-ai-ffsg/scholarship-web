@@ -351,6 +351,21 @@ main { scroll-margin-top: 5rem; }
 .site-footer p { margin: 0; }
 .footer-logo { filter: saturate(1.1); }
 
+/* The funder, under the foundation's own mark.
+ *
+ * A block rather than a line, so the label sits above the logo instead of
+ * beside it: at 7.5rem the mark is wider than the two words, and a wrapped
+ * "Supported / by HSBC" is the kind of ragged pair that reads as a mistake.
+ *
+ * No filter here, deliberately, unlike .footer-logo directly above. Nudging the
+ * saturation of our own artwork is a liberty we can take with our own artwork.
+ * HSBC's red is specified by HSBC, and a stylesheet is not the place to have an
+ * opinion about somebody else's trademark. Nothing recolours it, and the width
+ * is set in rem with height:auto so it can only ever scale, never distort. */
+.footer-sponsor { display: grid; gap: 0.5rem; justify-items: start; }
+.footer-sponsor .label { font-size: var(--step--1); color: var(--text-muted); }
+.sponsor-logo { width: 7.5rem; height: auto; }
+
 /* The notice, centred under both columns, because it belongs to neither: it is
  * about the whole site rather than about the block above it. Under a rule, so it
  * reads as the foot of the footer rather than the end of a paragraph. */
