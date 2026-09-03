@@ -41,10 +41,16 @@
 
 import { setting } from './runtime-config'
 
-/** The widget's callback shape. `message` carries the access token. */
+/** The widget's callback shape. `message` carries the access token.
+ *
+ * The error fields are not decoration. MSG91 answers a failed send on the
+ * SUCCESS callback, carrying hasError/status/errors — see `settle` below. */
 interface WidgetResult {
   type?: string
   message: string
+  hasError?: boolean
+  status?: string
+  errors?: unknown
 }
 
 type Success = (data: WidgetResult) => void
@@ -98,6 +104,15 @@ export function configured(): boolean {
  */
 let ready: Promise<void> | null = null
 
+/* How long to wait for MSG91 to attach its methods, and how often to look.
+ *
+ * The timeout is generous because the alternative to waiting is an error, and
+ * a student on a train is not misconfigured. The poll is short because the
+ * usual answer arrives in about a fifth of a second and every one of these
+ * intervals is a student watching a button do nothing. */
+const READY_TIMEOUT_MS = 15_000
+const READY_POLL_MS = 50
+
 function load(): Promise<void> {
   if (ready) return ready
 
@@ -139,7 +154,41 @@ function load(): Promise<void> {
       if (auth) config.tokenAuth = auth
 
       window.initSendOTP(config)
-      resolve()
+
+      /* initSendOTP returns before the methods it promises exist.
+       *
+       * It fetches the widget's own configuration first — GET
+       * control.msg91.com/api/v5/widget/getWidgetProcess — and attaches
+       * sendOtp/verifyOtp/retryOtp only once that answers. Measured at 202ms
+       * from this machine; a student on mobile data will wait longer.
+       *
+       * Resolving here handed sendCode an undefined window.sendOtp, so the
+       * first press of "Send code" after every page load rejected with "the
+       * verification widget is not ready" — which reached the student as the
+       * generic "We could not send a code just now. Please try again."
+       * Pressing it again worked, because by then the fetch had landed and
+       * `ready` was already resolved. An error that clears itself on a retry
+       * is exactly the kind that gets read as a flaky network and chased in
+       * the wrong place; this one cost an evening.
+       *
+       * Polling rather than a fixed delay, because 200ms is one measurement on
+       * one connection and any constant picked from it is either too short for
+       * a student on a slow phone or a pause everyone else pays for. */
+      const deadline = Date.now() + READY_TIMEOUT_MS
+      const settleWhenExposed = () => {
+        if (typeof window.sendOtp === 'function') {
+          resolve()
+          return
+        }
+        if (Date.now() >= deadline) {
+          // Cleared so this is retryable rather than poisoning the session.
+          ready = null
+          reject(new Error('The verification widget did not become ready.'))
+          return
+        }
+        setTimeout(settleWhenExposed, READY_POLL_MS)
+      }
+      settleWhenExposed()
     }
 
     if (existing && window.initSendOTP) {
@@ -163,6 +212,39 @@ function load(): Promise<void> {
   return ready
 }
 
+/* Decides whether a widget callback is actually a success.
+ *
+ * MSG91 does not reserve the failure callback for failures. A send refused by
+ * its own backend arrives on the SUCCESS callback carrying
+ *
+ *   {"errors":"Trying to access array offset on value of type null",
+ *    "hasError":true,"status":"fail","duration":"39ms"}
+ *
+ * and no `message` at all. Taking that at face value resolved sendCode, moved
+ * the student to "enter the code we sent you", and started a sixty-second
+ * resend countdown for an SMS that was never sent — the worst shape a failure
+ * can take here, because the screen asserts something happened and the student
+ * waits for it, then blames the network or their own phone.
+ *
+ * So the envelope is inspected rather than trusted, and anything that says it
+ * failed is rejected however it arrived. */
+function settle(
+  data: WidgetResult,
+  resolve: (token: string) => void,
+  reject: (err: Error) => void,
+) {
+  if (data?.hasError || data?.status === 'fail') {
+    const detail = typeof data.errors === 'string' ? data.errors : data.message
+    reject(new Error(
+      detail
+        ? `The verification service refused to send the code: ${detail}`
+        : 'The verification service refused to send the code.',
+    ))
+    return
+  }
+  resolve(data.message)
+}
+
 /* The widget's methods are callback-based; everything else here is async.
  * `failure` hands back the same shape as success, so the message is carried
  * through as an Error for the caller to surface. */
@@ -175,11 +257,8 @@ function call(
       reject(new Error('The verification widget is not ready.'))
       return
     }
-    fn(
-      arg,
-      data => resolve(data.message),
-      err => reject(new Error(err?.message || 'That could not be completed.')),
-    )
+    fn(arg, data => settle(data, resolve, reject), err =>
+      reject(new Error(err?.message || 'That could not be completed.')))
   })
 }
 
@@ -213,7 +292,8 @@ export async function resendCode(): Promise<void> {
     // student who is deaf is worse than useless.
     window.retryOtp(
       null,
-      data => resolve(data.message),
+      // Same envelope, same trap: a refused resend arrives here, not below.
+      data => settle(data, resolve, reject),
       err => reject(new Error(err?.message || 'We could not send another code.')),
     )
   })
