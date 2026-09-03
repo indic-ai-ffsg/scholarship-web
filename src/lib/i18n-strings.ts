@@ -34,7 +34,7 @@ export const en: Dict = {
   'nav.privacy': 'My data',
   'nav.helpers': 'People helping me',
   'nav.account': 'My account',
-  'nav.register': 'Register',
+  'nav.register': 'Sign up',
   /* The foundation's own words, supplied by the foundation. Reproduced as
    * given — this is the organisation describing itself, and quietly editing an
    * organisation's description of itself is not a typographic decision. */
@@ -43,10 +43,17 @@ export const en: Dict = {
   'footer.copyright': 'Copyright © {year} Indic AI | All rights reserved',
   /* One door, so one word for it. "Login" told a first-time student they
      were in the wrong place, and "Register" told a returning one the same;
-     naming both is the only label that turns nobody away. It is also the
+     naming both is the only label that turns nobody away.
+
+     "Sign up" rather than "register" because it is the wording people have met
+     everywhere else, and familiarity is worth more here than precision. The
+     cost is real and worth writing down: it differs from "sign in" by one
+     short word, and in/up pairs are a known confusion for readers with
+     dyslexia. If that ever shows up in testing, "Sign in or create account"
+     is the more distinct phrasing and this is the line to change. It is also the
      heading on the page it opens — see auth.title — because a destination
      that repeats the button confirms you arrived where you meant to. */
-  'nav.signin': 'Sign in or register',
+  'nav.signin': 'Sign in or sign up',
   'nav.signout': 'Sign out',
   'nav.skip': 'Skip to main content',
 
@@ -229,7 +236,7 @@ export const en: Dict = {
      someone who already has an account (Check.tsx: "Already have an
      account?"). The page heading is auth.title, which has to speak to both. */
   'auth.signin': 'Login',
-  'auth.title': 'Sign in or register',
+  'auth.title': 'Sign in or sign up',
   'auth.register': 'Create your account',
   'auth.phone': 'Mobile number',
   'auth.phoneHint': 'We will send a 6-digit code to this number by SMS. The same number signs you in every time.',
