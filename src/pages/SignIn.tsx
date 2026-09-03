@@ -28,7 +28,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 
 import { useAuth } from '../lib/auth-context'
 import { useI18n } from '../lib/i18n-context'
-import { formatE164 } from '../lib/otp'
+import { formatE164, type Channel } from '../lib/otp'
 import { safeNext } from '../lib/next'
 import { Field, Notice } from '../components/ui'
 
@@ -81,6 +81,9 @@ export default function SignIn() {
   const [busy, setBusy] = useState(false)
   const [resentAt, setResentAt] = useState<number | null>(null)
   const [resent, setResent] = useState(false)
+  /* Which way the last code was sent, so the confirmation can name it —
+     "sent on WhatsApp" is the only way to know the choice took effect. */
+  const [sentVia, setSentVia] = useState<Channel>('sms')
   const [secondsLeft, setSecondsLeft] = useState(0)
 
   const phoneInput = useRef<HTMLInputElement | null>(null)
@@ -168,12 +171,17 @@ export default function SignIn() {
     }
   }
 
-  async function resend() {
+  /* One handler for all three channels.
+   *
+   * `channel` undefined is a plain repeat on whichever was used, which is SMS,
+   * and is what the bare "send it again" button asks for. */
+  async function resend(channel?: Channel) {
     setBusy(true)
     setResent(false)
     try {
-      await resendCode()
+      await resendCode(channel)
       setResentAt(Date.now())
+      setSentVia(channel ?? 'sms')
       setResent(true)
     } catch {
       /* the provider holds the message */
@@ -344,19 +352,62 @@ export default function SignIn() {
                 changes nothing a screen reader can hear, and the second press
                 that follows is a second SMS the student did not need. */}
             <p className="auth-sent" role="status">
-              {resent ? t('auth.resent') : ''}
+              {resent ? t(`auth.resentVia.${sentVia}`) : ''}
             </p>
 
-            <div className="auth-foot">
-              <span className="muted">{t('auth.noCode')}</span>
-              <button
-                type="button"
-                className="quiet"
-                onClick={resend}
-                disabled={busy || secondsLeft > 0}
-              >
-                {secondsLeft > 0 ? t('auth.resendIn', { n: secondsLeft }) : t('auth.resend')}
-              </button>
+            {/* Three ways to receive the code, offered side by side rather than
+                escalated through.
+                
+                Not a fallback chain, because there is no order that is right
+                for everybody: a deaf student needs voice never rather than
+                third, someone on a feature phone cannot use WhatsApp at all,
+                and a student whose SMS is being silently dropped by their
+                operator needs WhatsApp first rather than after two more
+                failures. The only person who knows which of these arrives is
+                holding the phone, so all three are equal options and none is
+                pre-selected.
+                
+                They share the resend countdown. It is one exchange on MSG91's
+                side whichever road the code takes, and the timer exists to stop
+                a student sending four messages while the first is still in
+                flight — a purpose that does not change when the second one is
+                a phone call. */}
+            <div className="auth-retry">
+              <span className="muted" id="retry-label">{t('auth.noCode')}</span>
+
+              <div className="auth-channels" role="group" aria-labelledby="retry-label">
+                <button
+                  type="button"
+                  className="quiet"
+                  onClick={() => resend('sms')}
+                  disabled={busy || secondsLeft > 0}
+                >
+                  {t('auth.viaSms')}
+                </button>
+                <button
+                  type="button"
+                  className="quiet"
+                  onClick={() => resend('whatsapp')}
+                  disabled={busy || secondsLeft > 0}
+                >
+                  {t('auth.viaWhatsapp')}
+                </button>
+                <button
+                  type="button"
+                  className="quiet"
+                  onClick={() => resend('voice')}
+                  disabled={busy || secondsLeft > 0}
+                >
+                  {t('auth.viaVoice')}
+                </button>
+              </div>
+
+              {/* The countdown, once, for the group — rather than repeated
+                  inside three buttons that would then all say the same thing
+                  and read as three separate waits to a screen reader. */}
+              {secondsLeft > 0 && (
+                <p className="muted auth-wait">{t('auth.resendIn', { n: secondsLeft })}</p>
+              )}
             </div>
           </form>
         )}

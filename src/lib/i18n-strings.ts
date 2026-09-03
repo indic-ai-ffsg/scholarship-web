@@ -274,10 +274,19 @@ export const en: Dict = {
   'auth.codeTitle': 'Enter the code we sent',
   'auth.code': '6-digit code',
   'auth.codeHint': 'The message usually arrives within a few seconds.',
-  'auth.noCode': 'No message yet?',
+  'auth.noCode': 'No message yet? Try another way:',
   'auth.verify': 'Verify',
   'auth.resend': 'Send it again',
   'auth.resent': 'Sent. It can take a moment to arrive.',
+  /* Three ways to receive the code, and three confirmations that name the one
+     used. "Sent." alone cannot tell a student whether their choice of WhatsApp
+     took effect, which leaves them watching the wrong app. */
+  'auth.viaSms': 'Send by SMS',
+  'auth.viaWhatsapp': 'Send on WhatsApp',
+  'auth.viaVoice': 'Call me with the code',
+  'auth.resentVia.sms': 'Sent by SMS. It can take a moment to arrive.',
+  'auth.resentVia.whatsapp': 'Sent on WhatsApp. Check WhatsApp for the message.',
+  'auth.resentVia.voice': 'Calling you now with the code. Answer to hear it.',
   /* On the button itself, so the wait is read where the press would be —
      and short, because a sentence on a button wraps to three lines on a
      phone. */

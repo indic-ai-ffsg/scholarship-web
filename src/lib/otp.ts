@@ -279,19 +279,46 @@ export async function sendCode(e164: string): Promise<PendingCode> {
   return { phone: e164 }
 }
 
-/** Sends another code for the same number. */
-export async function resendCode(): Promise<void> {
+/* The channels a code can arrive on.
+ *
+ * MSG91's codes, not ours: SMS 11, VOICE 4, EMAIL 3, WHATSAPP 12. They have to
+ * be configured as retry processes on the widget before any of them will send —
+ * ours has SMS, WhatsApp and Voice, so EMAIL is left out of the union rather
+ * than offered and refused. */
+export const CHANNELS = {
+  sms: '11',
+  whatsapp: '12',
+  voice: '4',
+} as const
+
+export type Channel = keyof typeof CHANNELS
+
+/* Sends another code for the same number, optionally on a different channel.
+ *
+ * `channel` undefined repeats whichever was used, which is SMS.
+ *
+ * The choice belongs to the student and must never be made for them. A voice
+ * call to a student who is deaf is worse than useless — it looks like the
+ * platform tried and they failed — and WhatsApp is silently useless to anyone
+ * on a feature phone. So this takes an argument instead of getting clever, and
+ * the screen offers all three as equal options rather than escalating through
+ * them: the person holding the phone is the only one who knows which of these
+ * they can actually receive.
+ *
+ * The other direction matters too. When SMS does not arrive — and on Indian
+ * networks under DLT it sometimes does not, for reasons no error reports —
+ * WhatsApp is the difference between signing in and giving up. Without this
+ * the only recourse was pressing "send it again" and hoping the same road
+ * worked the second time. */
+export async function resendCode(channel?: Channel): Promise<void> {
   await load()
   await new Promise<string>((resolve, reject) => {
     if (!window.retryOtp) {
       reject(new Error('The verification widget is not ready.'))
       return
     }
-    // A null channel repeats whichever was used, which is SMS. Naming one would
-    // choose voice or WhatsApp on the student's behalf — and a voice call to a
-    // student who is deaf is worse than useless.
     window.retryOtp(
-      null,
+      channel ? CHANNELS[channel] : null,
       // Same envelope, same trap: a refused resend arrives here, not below.
       data => settle(data, resolve, reject),
       err => reject(new Error(err?.message || 'We could not send another code.')),

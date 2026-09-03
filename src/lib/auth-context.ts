@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import type * as otp from './otp'
 
 import type { Context, Profile } from './types'
 
@@ -46,7 +47,7 @@ export interface AuthApi extends AuthState {
   /** Checks the code and exchanges the resulting token for a session. */
   submitCode(code: string): Promise<void>
   /** Sends another code to the same number. */
-  resendCode(): Promise<void>
+  resendCode(channel?: otp.Channel): Promise<void>
   /** Abandons the code step and returns to the number entry. */
   cancelCode(): void
   signOut(): Promise<void>

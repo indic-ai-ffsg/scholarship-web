@@ -202,14 +202,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [applySession, fail])
 
-  const resendCode = useCallback(async () => {
+  const resendCode = useCallback(async (channel?: otp.Channel) => {
     if (!pendingPhone.current) return
 
     setState(s => ({ ...s, error: null }))
     try {
       // The widget's own retry: it keeps the exchange open and repeats the code
-      // on it, rather than starting a new one.
-      await otp.resendCode()
+      // on it, rather than starting a new one. The channel, when given, is the
+      // student's choice of how it should reach them.
+      await otp.resendCode(channel)
     } catch (err) {
       fail(err, 'We could not send another code just now.')
     }

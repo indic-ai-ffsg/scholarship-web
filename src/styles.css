@@ -2197,6 +2197,35 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
   color: var(--accent); font-weight: 600; font-size: var(--step--1);
 }
 
+/* The three ways to receive a code.
+ *
+ * A column on a phone and a row where there is room, because these are three
+ * full sentences ("Call me with the code") rather than three words, and three
+ * sentences squeezed onto one line at 320px wrap into an unreadable thicket.
+ * Each stays a 48px target in both directions.
+ *
+ * Not styled as primary actions: the student has already been given a code by
+ * whatever route the widget chose, and these are the recovery path. Making them
+ * loud would suggest the first attempt had failed before it has had time to
+ * arrive. */
+.auth-retry { display: grid; gap: 0.5rem; margin-block-start: 0.5rem; }
+.auth-channels { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.auth-channels > button {
+  flex: 1 1 auto;
+  min-height: 48px;
+  /* min-width rather than a fixed basis: the longest of the three sets the
+     shared width, so they do not stagger as the label lengths change with
+     translation. */
+  min-width: 10rem;
+}
+@media (max-width: 30rem) {
+  /* One per row below 480px. Three of these side by side at that width leaves
+     each about 100px, which wraps "Call me with the code" onto four lines. */
+  .auth-channels { flex-direction: column; }
+  .auth-channels > button { min-width: 0; }
+}
+.auth-wait { margin: 0; font-size: var(--step--1); }
+
 .auth-foot {
   display: flex; align-items: center; justify-content: center;
   gap: 0.5rem; flex-wrap: wrap;
