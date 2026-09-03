@@ -213,7 +213,7 @@ export default function SignIn() {
 
         {!awaitingCode ? (
           <form onSubmit={sendCode} noValidate>
-            <h1>{t('auth.signin')}</h1>
+            <h1>{t('auth.title')}</h1>
             <p className="auth-lede">{t('auth.oneDoor')}</p>
 
             <Field

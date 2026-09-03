@@ -446,7 +446,6 @@ main { scroll-margin-top: 5rem; }
 /* The returning visitor's way in. Outlined rather than filled: it has to be
  * easy to find and must not compete with the one action the site is asking a
  * first-time reader to take. */
-.masthead a.login { border: 2px solid var(--border-strong); font-weight: 600; }
 
 /* --- the bar's menu -------------------------------------------------------------
  *

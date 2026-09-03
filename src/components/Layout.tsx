@@ -183,13 +183,23 @@ export default function Layout() {
           {signedIn
             ? <AccountMenu onSignOut={signOut} />
             : (
-              /* Two actions, ranked. Register is filled because it is what the
-                 site is asking a first-time visitor to do; login is what
-                 somebody who has already done it comes back for, and needs to
-                 be findable rather than loud. */
+              /* One action, because there is one flow behind it.
+                 
+                 This was two — an outlined "Login" beside a filled "Register" —
+                 and they went to the same screen, because a mobile number and a
+                 code do both jobs and an unknown number is registered on the way
+                 through. Two doors onto one room is not a richer choice, it is a
+                 question the visitor cannot answer: a new student pressed the
+                 loud "Register" and arrived at a card headed "Login", and the
+                 line below it had to talk them out of the contradiction the
+                 heading had just created.
+                 
+                 So: one button, filled, naming both audiences, and the page it
+                 opens repeats the same words back. /register stays alive as a
+                 redirect — it is printed on outreach material — but it is no
+                 longer a second thing to press. */
               <div className="nav-end">
-                <NavLink to="/signin" className="login">{t('nav.signin')}</NavLink>
-                <NavLink to="/register" className="signin">{t('nav.register')}</NavLink>
+                <NavLink to="/signin" className="signin">{t('nav.signin')}</NavLink>
               </div>
             )}
         </div>

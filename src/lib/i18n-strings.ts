@@ -41,7 +41,12 @@ export const en: Dict = {
   'footer.about': 'Indic AI is a Non-profit enhancing, Ability into Distinction for “People with Disabilities” to realise their potential, become active participants in the economy & fulfill their dreams. Our venture has also been selected by IIM- Bangalore for NSRCEL social incubation programme among 9 other esteemed organizations aiming to bring a change in the society.',
   'footer.social': 'Indic AI elsewhere',
   'footer.copyright': 'Copyright © {year} Indic AI | All rights reserved',
-  'nav.signin': 'Login',
+  /* One door, so one word for it. "Login" told a first-time student they
+     were in the wrong place, and "Register" told a returning one the same;
+     naming both is the only label that turns nobody away. It is also the
+     heading on the page it opens — see auth.title — because a destination
+     that repeats the button confirms you arrived where you meant to. */
+  'nav.signin': 'Sign in or register',
   'nav.signout': 'Sign out',
   'nav.skip': 'Skip to main content',
 
@@ -220,7 +225,11 @@ export const en: Dict = {
   'dash.expiringBody': 'Replace it now and it stays valid for every application you make.',
   'dash.expiringAction': 'Check documents',
 
+  /* Still "Login" because this one is a link inside a sentence addressed to
+     someone who already has an account (Check.tsx: "Already have an
+     account?"). The page heading is auth.title, which has to speak to both. */
   'auth.signin': 'Login',
+  'auth.title': 'Sign in or register',
   'auth.register': 'Create your account',
   'auth.phone': 'Mobile number',
   'auth.phoneHint': 'We will send a 6-digit code to this number by SMS. The same number signs you in every time.',
