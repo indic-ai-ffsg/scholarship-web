@@ -338,11 +338,11 @@ main { scroll-margin-top: 5rem; }
   display: flex; flex-wrap: wrap; align-items: flex-start;
   gap: 1.5rem 3rem;
 }
-/* The logo, then the foundation in its own words. Capped so the sentences stay
- * at a length that can be tracked back to the start of the next line — the
- * paragraph would otherwise run the full width of a monitor. */
+/* The logo alone now the description has gone. The width cap and the grid gap
+ * are kept rather than simplified to a bare block: this column is one of two in
+ * a flex row, and the basis is what decides when the footer wraps to a single
+ * column on a narrow screen. */
 .footer-brand { flex: 1 1 22rem; max-width: 40rem; display: grid; gap: 0.75rem; justify-items: start; }
-.footer-about { font-size: var(--step--1); margin: 0; }
 .footer-logo {
   /* The intrinsic ratio is preserved by height:auto, so the image cannot
    * squash when the row wraps. */

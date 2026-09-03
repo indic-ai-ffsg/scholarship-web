@@ -305,12 +305,6 @@ function SiteFooter() {
             height="130"
             className="footer-logo"
           />
-          {/* The foundation in its own words. A student handing over a
-              disability certificate and a family income figure is entitled to
-              know whose platform they are on, and a public service with no
-              visible owner reads as a scam — which is the first thing this
-              audience has been warned about. */}
-          <p className="muted footer-about">{t('footer.about')}</p>
         </div>
 
         {/* The accounts at the far side, level with the top of the logo. */}

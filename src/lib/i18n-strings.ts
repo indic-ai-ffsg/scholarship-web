@@ -35,10 +35,6 @@ export const en: Dict = {
   'nav.helpers': 'People helping me',
   'nav.account': 'My account',
   'nav.register': 'Sign up',
-  /* The foundation's own words, supplied by the foundation. Reproduced as
-   * given — this is the organisation describing itself, and quietly editing an
-   * organisation's description of itself is not a typographic decision. */
-  'footer.about': 'Indic AI is a Non-profit enhancing, Ability into Distinction for “People with Disabilities” to realise their potential, become active participants in the economy & fulfill their dreams. Our venture has also been selected by IIM- Bangalore for NSRCEL social incubation programme among 9 other esteemed organizations aiming to bring a change in the society.',
   'footer.social': 'Indic AI elsewhere',
   'footer.copyright': 'Copyright © {year} Indic AI | All rights reserved',
   /* One door, so one word for it. "Login" told a first-time student they
