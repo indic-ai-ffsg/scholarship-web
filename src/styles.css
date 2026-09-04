@@ -646,7 +646,15 @@ button, .btn, .chip-link, input, select, textarea {
     border-color 120ms ease-out,
     box-shadow 120ms ease-out,
     transform 120ms ease-out,
-    filter 120ms ease-out;
+    filter 120ms ease-out,
+    /* opacity and colour, so a control becoming available is something you see
+     * happen. Disabled here is opacity: 0.55, and neither that nor a text
+     * colour was in this list — so "send it again" and the verify button
+     * snapped from unavailable to available in one frame, at the two moments a
+     * student is watching them most closely: the resend timer running out and
+     * the sixth digit landing. */
+    opacity 120ms ease-out,
+    color 120ms ease-out;
 }
 /* Not .quiet: it has no border and no ground of its own, and a floating shadow
  * under a bare word reads as a rendering fault rather than as a button. */
@@ -2126,9 +2134,17 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   font-size: var(--step-2); font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-/* Progress, said twice: the digit is in the box, and the box has changed. The
- * colour is not carrying this on its own. */
-.code-boxes .box.filled { border-color: var(--accent); }
+/* A filled box is deliberately NOT blue.
+ *
+ * It was, as a second signal beside the digit, on the reasoning that colour
+ * should not carry progress alone. The reasoning was right and the conclusion
+ * was wrong: a blue border on every filled box, another on the next one, and a
+ * 3px blue ring around the whole group left the code field three blues deep
+ * and reading as an error state rather than as a form. The digit is the
+ * signal, and a digit is text — so this now depends on colour not at all,
+ * which is a stronger position than the one the blue was defending.
+ *
+ * Blue means one thing in this group: the box you are typing into. */
 
 /* On a 320px phone a box is 36px across, and 56px of height on 36px of width
  * reads as a slot rather than as a box. */
@@ -2136,14 +2152,28 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   .code-boxes .box { height: 3rem; }
 }
 
-/* Where the next digit will go. Only while the field has focus — a caret
- * blinking in a form nobody is typing in is a form that looks focused and is
- * not. */
+/* The box you are typing into, and the only blue in the group.
+ *
+ * It carries the focus indicator for the whole control, which is why there is
+ * no longer a ring around .code-boxes. One input sits behind the six boxes and
+ * .next is where its caret is, so marking that box marks focus — a 3px blue
+ * edge on one box out of six is unmissable without ringing the group to say
+ * it.
+ *
+ * That holds only while .next always exists. SignIn.tsx clamps it to the last
+ * box for exactly this reason: under the old `i === code.length` a complete
+ * code matched no box at all, and with the group ring gone focus would have
+ * disappeared on the sixth digit.
+ *
+ * Behind :has(input:focus), because a caret blinking in a form nobody is
+ * typing in is a form that looks focused and is not. */
 .code-boxes:has(input:focus) .box.next {
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
-.code-boxes:has(input:focus) .box.next::after {
+/* Never a caret over a digit. With a complete code .next is the sixth box,
+ * which is filled, and a bar through the 6 reads as a strikethrough. */
+.code-boxes:has(input:focus) .box.next:not(.filled)::after {
   content: '';
   width: 2px; height: 1.75rem;
   background: var(--accent);
@@ -2177,9 +2207,13 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
  * otherwise drag a blue block over the boxes. */
 .code-boxes input::selection { background: transparent; }
 
-/* One ring, round the group, at the 3px the rest of the site uses. */
+/* The input's ring is suppressed and NOT replaced by one on the group.
+ *
+ * It used to be a 3px ring at outline-offset 4px around all six boxes, to
+ * match the rest of the site. On any other control that is right; here it drew
+ * a box around a box around a box, and it was the heaviest piece of blue on
+ * the sign-in screen. .box.next above is the focus indicator instead. */
 .code-boxes input:focus-visible { outline: none; }
-.code-boxes:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 4px; }
 .code-boxes:has(input[aria-invalid="true"]) .box { border-color: var(--danger); }
 
 /* The number the code went to, with the way to correct it beside it. A typo is
