@@ -277,22 +277,3 @@ export interface Consent {
   withdrawn_at?: string
   active: boolean
 }
-
-/* --- guardians and assisted use ---------------------------------------------
- *
- * One shape for both sides of the relationship. A student sees the helper's
- * contact; a helper sees the student's name; neither field is filled for the
- * side that would be looking at themselves. */
-export interface GuardianLink {
-  link_id: string
-  relationship: string
-  /** Whether they may send an application, as against only prepare one. */
-  can_submit: boolean
-  guardian_contact?: string
-  student_name?: string
-  profile_id?: string
-  status: 'INVITED' | 'ACTIVE' | 'ENDED'
-  invited_at: string
-  approved_at?: string
-  revoked_at?: string
-}

@@ -39,7 +39,6 @@ const Apply = lazy(() => import('./pages/Apply'))
 const ProfileWizard = lazy(() => import('./pages/ProfileWizard'))
 const Profile = lazy(() => import('./pages/Profile'))
 const MyData = lazy(() => import('./pages/MyData'))
-const Helpers = lazy(() => import('./pages/Helpers'))
 
 export default function App() {
   /* Nothing waits for the session any more.
@@ -99,7 +98,6 @@ export default function App() {
         <Route path="/my-data" element={<RequireProfile><MyData /></RequireProfile>} />
         {/* Reachable by somebody who holds no student profile at all: a parent
             with an account and nothing in it still has invitations to answer. */}
-        <Route path="/helpers" element={<RequireAuth><Helpers /></RequireAuth>} />
 
         <Route path="*" element={<NotFound />} />
       </Route>

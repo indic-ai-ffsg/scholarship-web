@@ -247,7 +247,7 @@ export default function Layout() {
  */
 const PORTAL = [
   '/dashboard', '/matches', '/applications', '/documents',
-  '/profile', '/my-data', '/helpers', '/apply',
+  '/profile', '/my-data', '/apply',
 ]
 
 /* Public until somebody signs in. The scheme pages under it go with the
@@ -412,7 +412,6 @@ function titleFor(path: string, t: (key: string) => string): string {
   if (path.startsWith('/documents')) return t('nav.documents')
   if (path.startsWith('/profile')) return t('nav.profile')
   if (path.startsWith('/my-data')) return t('nav.privacy')
-  if (path.startsWith('/helpers')) return t('nav.helpers')
   if (path.startsWith('/register')) return t('nav.register')
   if (path.startsWith('/signin')) return t('nav.signin')
   return t('app.tagline')
@@ -490,7 +489,6 @@ function AccountMenu({ onSignOut }: { onSignOut: () => void }) {
     <Menu label={t('nav.account')} className="account">
       <>
         <NavLink to="/profile">{t('nav.profile')}</NavLink>
-        <NavLink to="/helpers">{t('nav.helpers')}</NavLink>
         <NavLink to="/my-data">{t('nav.privacy')}</NavLink>
 
         <hr />

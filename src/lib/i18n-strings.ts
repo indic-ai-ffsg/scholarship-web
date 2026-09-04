@@ -32,7 +32,6 @@ export const en: Dict = {
   'nav.documents': 'My documents',
   'nav.profile': 'My profile',
   'nav.privacy': 'My data',
-  'nav.helpers': 'People helping me',
   'nav.account': 'My account',
   'nav.register': 'Sign up',
   'footer.social': 'Indic AI elsewhere',
@@ -393,33 +392,7 @@ export const en: Dict = {
   /* Guardians and assisted use. Written for the student rather than about the
    * feature: "someone to help you" is what this is, and "guardian link" is
    * what we call it among ourselves. */
-  'helpers.title': 'People helping me',
-  'helpers.lede': 'You can ask someone you trust — a parent, a brother or sister, a teacher — to help you with your applications. They see what you see, and everything they do is recorded under their own name, not yours.',
-  'helpers.mine': 'People who help me',
-  'helpers.none': 'Nobody is helping you yet',
-  'helpers.noneHint': 'You can add someone below, and remove them whenever you want.',
-  'helpers.invite': 'Ask someone to help me',
-  'helpers.contact': 'Their email address or mobile number',
-  'helpers.contactHint': 'They need an account on this site already. Ask them to sign up first if they have not.',
-  'helpers.relationship': 'How do you know them?',
-  'helpers.relationshipHint': 'For example: mother, elder brother, teacher.',
-  'helpers.canSubmit': 'They can send applications for me',
-  'helpers.canSubmitHint': 'Leave this off and they can fill things in, but only you can send the application.',
-  'helpers.send': 'Send the request',
-  'helpers.sent': 'We have asked them. They will see it when they next sign in.',
-  'helpers.remove': 'Remove',
-  'helpers.removed': 'Removed. They can no longer see anything of yours.',
-  'helpers.statusInvited': 'Waiting for them to agree',
-  'helpers.statusActive': 'Helping you',
-  'helpers.statusEnded': 'No longer helping you',
-  'helpers.canSubmitYes': 'Can send applications for you',
-  'helpers.canSubmitNo': 'Can help, but cannot send applications',
 
-  'helpers.theirs': 'Students I help',
-  'helpers.accept': 'Yes, I will help',
-  'helpers.accepted': 'Thank you. Sign out and in again, then choose their name to help them.',
-  'helpers.decline': 'No thank you',
-  'helpers.askedBy': 'asked for your help',
 
 
   /* --- landing page ---------------------------------------------------------
