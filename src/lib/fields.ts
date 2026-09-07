@@ -276,3 +276,31 @@ export function disabilityTypeFor(selected: string[]): string | null {
   if (selected.length === 0) return null
   return selected.length === 1 ? selected[0] : 'MULTIPLE_DISABILITIES'
 }
+
+/* Gender, which the profile has always accepted and no screen has ever asked.
+ *
+ * profile.UpsertInput validates `oneof=MALE FEMALE TRANSGENDER UNDISCLOSED`,
+ * the matching engine filters on it (a women-only scheme is an eligibility_rule
+ * with field 'gender'), and compute_completeness counts it — so the API can and
+ * does answer "Add your gender to your profile" as a student's single most
+ * valuable next step. There was no control anywhere in this app to do it. The
+ * wizard's question list never included it and neither did the form that
+ * replaced the wizard, so the instruction was a wall: the one thing standing
+ * between a student and a scholarship, and no way to supply it.
+ *
+ * UNDISCLOSED is offered as a real answer rather than as the absence of one,
+ * and that is the point of including it. Without it the only way past this
+ * question is to state something, and a question that cannot be declined is
+ * worse than one that can — the enum has always had the value, so declining is
+ * a stored answer here rather than a blank the matcher keeps asking about.
+ */
+export const GENDERS: { value: string; label: string }[] = [
+  { value: 'FEMALE', label: 'Female' },
+  { value: 'MALE', label: 'Male' },
+  { value: 'TRANSGENDER', label: 'Transgender' },
+  { value: 'UNDISCLOSED', label: 'Prefer not to say' },
+]
+
+export function genderChoices(): Choice[] {
+  return GENDERS.map(g => ({ value: g.value, label: g.label }))
+}

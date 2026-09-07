@@ -578,6 +578,8 @@ export const en: Dict = {
   'reg.emailHint': 'So we can send you a deadline reminder. We never share it.',
   'reg.emailPlaceholder': 'your.email@example.com',
 
+  'reg.gender': 'Gender',
+  'reg.genderHint': '(some scholarships are for women or transgender students only)',
   'reg.udid': 'UDID number',
   'reg.udidHint': 'The number on your UDID (Unique Disability ID) card.',
   'reg.udidPlaceholder': 'Enter your UDID number',

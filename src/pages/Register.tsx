@@ -58,7 +58,7 @@ import { safeNext } from '../lib/next'
 import { formatE164, type Channel } from '../lib/otp'
 import {
   ALL_YEARS, PROGRAMS_GRADUATION, PROGRAMS_PG, PROGRAMS_TOP, PROGRAM_PHD,
-  courseLevelFor, courseNameFor, disabilityChips, disabilityTypeFor,
+  courseLevelFor, courseNameFor, disabilityChips, disabilityTypeFor, genderChoices,
   programCategory, stateChoices, yearLabel, yearOrdinal,
   type Choice,
 } from '../lib/fields'
@@ -135,6 +135,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [email, setEmail] = useState('')
+  const [gender, setGender] = useState(profile?.gender ?? '')
   const [udid, setUdid] = useState(profile?.udid_number ?? '')
   const [file, setFile] = useState<File | null>(null)
   /* One stored enum becomes a one-item selection. A profile saved as
@@ -164,7 +165,15 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const [institution, setInstitution] = useState(profile?.institution_name ?? '')
 
   const [problems, setProblems] = useState<Record<string, string>>({})
-  const [busy, setBusy] = useState(false)
+  /* Which action is in flight, not merely that one is.
+   *
+   * A boolean cannot answer that, and the answer is what the styling needs:
+   * the three resend channels sit beside Verify and are held by the same flag,
+   * so a boolean would draw "working" on four controls at once and say nothing
+   * about which one was pressed. The tag names the pressed control; `disabled`
+   * still reads the derived boolean, because being held is still being held. */
+  const [working, setWorking] = useState<'send' | 'verify' | 'save' | Channel | null>(null)
+  const busy = working !== null
   const [formError, setFormError] = useState<string | null>(null)
   const [fileWarning, setFileWarning] = useState<string | null>(null)
   const [resentAt, setResentAt] = useState<number | null>(null)
@@ -230,19 +239,19 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
       phoneInput.current?.focus()
       return
     }
-    setBusy(true)
+    setWorking('send')
     try {
       await requestCode(phone)
       setResentAt(Date.now())
     } catch {
       /* the provider holds the message, and useAuth exposes it */
     } finally {
-      setBusy(false)
+      setWorking(null)
     }
   }
 
   async function verify() {
-    setBusy(true)
+    setWorking('verify')
     setResent(false)
     try {
       await submitCode(code)
@@ -253,12 +262,12 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
       setCode('')
       codeInput.current?.focus()
     } finally {
-      setBusy(false)
+      setWorking(null)
     }
   }
 
   async function resend(channel: Channel) {
-    setBusy(true)
+    setWorking(channel)
     setResent(false)
     try {
       await resendCode(channel)
@@ -268,7 +277,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     } catch {
       /* the provider holds the message */
     } finally {
-      setBusy(false)
+      setWorking(null)
     }
   }
 
@@ -362,7 +371,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     }
     setProblems(found)
 
-    setBusy(true)
+    setWorking('save')
     setFormError(null)
     setFileWarning(null)
 
@@ -382,6 +391,10 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     }
     const ordinal = yearOrdinal(year)
     if (ordinal !== null) payload.current_year = ordinal
+    // Only when answered. An empty string is not one of the four the API
+    // accepts, and sending it fails the whole form on a question nobody has to
+    // answer.
+    if (gender) payload.gender = gender
 
     /* Email is asked for and not sent, and that is a gap rather than a
      * decision. There is no email column on student_profile and no field for it
@@ -424,7 +437,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     } catch (err) {
       setFormError(err instanceof Error ? err.message : t('common.error'))
     } finally {
-      setBusy(false)
+      setWorking(null)
     }
   }
 
@@ -503,7 +516,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                       />
                     </span>
                     {!awaitingCode && (
-                      <button type="button" className="primary" onClick={sendCode} disabled={busy}>
+                      <button type="button" className="primary" onClick={sendCode} disabled={busy} aria-busy={working === 'send' || undefined}>
                         {busy ? t('auth.sending') : t('reg.sendOtp')}
                       </button>
                     )}
@@ -545,6 +558,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                           className="primary"
                           onClick={verify}
                           disabled={busy || code.length < CODE_LENGTH}
+                          aria-busy={working === 'verify' || undefined}
                         >
                           {busy ? t('auth.checking') : t('auth.verify')}
                         </button>
@@ -568,9 +582,9 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                       <div className="otp-retry">
                         <span className="muted" id="reg-retry">{t('auth.noCode')}</span>
                         <div className="otp-channels" role="group" aria-labelledby="reg-retry">
-                          <button type="button" className="quiet" onClick={() => resend('sms')} disabled={busy || secondsLeft > 0}>{t('auth.viaSms')}</button>
-                          <button type="button" className="quiet" onClick={() => resend('whatsapp')} disabled={busy || secondsLeft > 0}>{t('auth.viaWhatsapp')}</button>
-                          <button type="button" className="quiet" onClick={() => resend('voice')} disabled={busy || secondsLeft > 0}>{t('auth.viaVoice')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('sms')} disabled={busy || secondsLeft > 0} aria-busy={working === 'sms' || undefined}>{t('auth.viaSms')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('whatsapp')} disabled={busy || secondsLeft > 0} aria-busy={working === 'whatsapp' || undefined}>{t('auth.viaWhatsapp')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('voice')} disabled={busy || secondsLeft > 0} aria-busy={working === 'voice' || undefined}>{t('auth.viaVoice')}</button>
                         </div>
                         {secondsLeft > 0 && (
                           <p className="muted">{t('auth.resendIn', { n: secondsLeft })}</p>
@@ -595,6 +609,33 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               />
             )}
           </Field>
+
+          {/* Chips rather than a select, and four of them fit one row.
+              *
+              * Asked because the matching engine asks for it: a women-only
+              * scheme is a rule on this field, and a profile without it is told
+              * "Add your gender to your profile" as its top next step. Until
+              * now that instruction pointed at a control that did not exist
+              * anywhere in the app.
+              *
+              * Not marked required. The API does not require it, and a question
+              * about gender that cannot be passed is the wrong thing to put in
+              * front of this audience — "Prefer not to say" is a stored answer
+              * that stops the matcher asking again, which is the honest way to
+              * let somebody decline. */}
+          <div className="field">
+            <span className="field-label" id="reg-gender">
+              {t('reg.gender')}
+              <span className="hint"> {t('reg.genderHint')}</span>
+            </span>
+            <ChipSelector
+              legend={t('reg.gender')}
+              name="gender"
+              options={genderChoices()}
+              selected={gender ? [gender] : []}
+              onChange={v => setGender(v[0] ?? '')}
+            />
+          </div>
 
           <h2 className="register-section">{t('reg.disability')}</h2>
 
@@ -777,7 +818,19 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             )}
           </Field>
 
-          <button type="submit" className="primary wide register-cta" disabled={busy}>
+          {/* Held by its own save, not by the OTP exchange happening above it.
+              `busy` here would have covered both, and both are on screen at
+              once until the number is verified — so pressing "Send OTP" turned
+              this button grey for the length of an SMS round trip, which is the
+              blink this whole state split exists to remove, on the largest
+              control on the page.
+
+              Nothing is lost by leaving it pressable meanwhile: an unverified
+              submit is already refused in words by the note below and by
+              submit() itself, which is the deliberate choice recorded there —
+              a button that cannot be pressed and does not say why is where
+              forms get abandoned. */}
+          <button type="submit" className="primary wide register-cta" disabled={working === 'save'} aria-busy={working === 'save' || undefined}>
             {busy ? t('reg.saving') : profile ? t('reg.saveChanges') : t('reg.cta')}
           </button>
 

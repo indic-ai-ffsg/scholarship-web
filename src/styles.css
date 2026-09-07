@@ -856,6 +856,16 @@ button.wide { width: 100%; }
  * MyData's export, erasure and withdraw, and the document "Remove", change no
  * label at all while they run, so until now the only acknowledgement that the
  * press had landed was the fade itself; the bar is that acknowledgement now.
+ *
+ * Which means this file cannot do it alone, and for a while it was: the two
+ * rules below shipped while every call site still held a plain `busy` boolean
+ * and set no aria-busy at all, so nothing ever matched the second selector and
+ * every button in flight took the unavailable ground — the exact blink the
+ * block was written to remove, still there, on all seven. Both auth pages now
+ * hold a tag naming the pressed action instead of a boolean, because a boolean
+ * cannot say which of Verify and the three resend channels beside it was the
+ * one pressed. If a new action is added, it needs the tag too; a `disabled`
+ * with no aria-busy beside it is this bug again.
  */
 button:disabled:not([aria-busy="true"]) {
   background: var(--surface-sunken);
@@ -887,12 +897,17 @@ button[aria-busy="true"]::after {
   left: 0; bottom: 0;
   height: 3px; width: 30%;
   border-radius: 999px;
-  background: var(--accent-text);
   animation: sweep 900ms linear infinite;
+  /* Keyed on what is beneath the bar, not on which class the button wears.
+   * The accent ground is .primary's alone — a default button is a border on
+   * the card's own surface, and the white bar this rule used to give it landed
+   * white on white, which is a button that says nothing while it works. MyData's
+   * export and erasure are the two that were invisible. So: accent by default,
+   * and the two grounds that cannot take it name their own. */
+  background: var(--accent);
 }
-/* No accent ground beneath it, so a white bar would be invisible. */
-button.quiet[aria-busy="true"]::after { background: var(--accent); }
-button.quiet.destructive[aria-busy="true"]::after { background: var(--danger); }
+button.primary[aria-busy="true"]::after { background: var(--accent-text); }
+button.destructive[aria-busy="true"]::after { background: var(--danger); }
 
 /* Reduced motion shortens a duration but cannot un-name an animation, which
  * would strand the bar wherever its last frame landed — the same note as under

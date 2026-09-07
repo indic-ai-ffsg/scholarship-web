@@ -252,6 +252,7 @@ function Talk() {
               type="submit"
               className="primary wide"
               disabled={busy || !org.trim() || !name.trim() || !email.trim()}
+              aria-busy={busy || undefined}
             >
               {busy ? t('partner.sending') : t('partner.submit')}
             </button>

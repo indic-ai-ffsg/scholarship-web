@@ -127,7 +127,7 @@ export default function Documents() {
           )}
         </Field>
 
-        <button className="primary" onClick={upload} disabled={busy || !docType}>
+        <button className="primary" onClick={upload} disabled={busy || !docType} aria-busy={busy || undefined}>
           {busy ? t('doc.uploading') : t('doc.upload')}
         </button>
       </section>
@@ -282,6 +282,7 @@ function DocumentCard({
           className="quiet destructive"
           onClick={remove}
           disabled={busy}
+          aria-busy={busy || undefined}
           aria-label={`${t('doc.remove')} ${label}`}
         >
           {t('doc.remove')}

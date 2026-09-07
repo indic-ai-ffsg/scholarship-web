@@ -13,7 +13,7 @@
  * same values or the answers would arrive and be dropped.
  */
 
-import { courseChoices, disabilityChoices, stateChoices } from './fields'
+import { courseChoices, disabilityChoices, genderChoices, stateChoices } from './fields'
 import type { Option } from '../components/ui'
 import { date as formatDate, money } from './format'
 
@@ -179,6 +179,18 @@ export function buildQuestions(): Question[] {
       kind: 'text',
       question: 'What is your name?',
       help: 'Exactly as it appears on your disability certificate. Providers check the two match.',
+    },
+    {
+      /* Optional, and it is the one question here where that word carries a
+         meaning beyond convenience: UNDISCLOSED is an answer, so a student who
+         declines is not left with a permanent gap the dashboard keeps
+         nagging about. */
+      field: 'gender',
+      kind: 'choice',
+      optional: true,
+      question: 'What is your gender?',
+      help: 'Some scholarships are open to women only, or to transgender students. Leave it if you would rather not say.',
+      options: genderChoices(),
     },
     {
       field: 'disability_type',

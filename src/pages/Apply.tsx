@@ -273,6 +273,7 @@ export default function Apply() {
           style={{ marginTop: '1rem' }}
           onClick={submit}
           disabled={busy || !consent || !canApply}
+          aria-busy={busy || undefined}
         >
           {busy ? t('apply.submitting') : t('apply.submit')}
         </button>

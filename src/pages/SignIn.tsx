@@ -78,7 +78,15 @@ export default function SignIn() {
   const [phone, setPhone] = useState('')
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [code, setCode] = useState('')
-  const [busy, setBusy] = useState(false)
+  /* Which action is in flight, not merely that one is.
+   *
+   * A boolean cannot answer that, and the answer is what the styling needs:
+   * the three resend channels sit beside Verify and are held by the same flag,
+   * so a boolean would draw "working" on four controls at once and say nothing
+   * about which one was pressed. The tag names the pressed control; `disabled`
+   * still reads the derived boolean, because being held is still being held. */
+  const [working, setWorking] = useState<'send' | 'verify' | Channel | null>(null)
+  const busy = working !== null
   const [resentAt, setResentAt] = useState<number | null>(null)
   const [resent, setResent] = useState(false)
   /* Which way the last code was sent, so the confirmation can name it —
@@ -144,20 +152,20 @@ export default function SignIn() {
       return
     }
 
-    setBusy(true)
+    setWorking('send')
     try {
       await requestCode(phone)
       setResentAt(Date.now())
     } catch {
       /* the provider holds the message */
     } finally {
-      setBusy(false)
+      setWorking(null)
     }
   }
 
   async function verify(e: FormEvent) {
     e.preventDefault()
-    setBusy(true)
+    setWorking('verify')
     setResent(false)
     try {
       await submitCode(code)
@@ -167,7 +175,7 @@ export default function SignIn() {
       setCode('')
       codeInput.current?.focus()
     } finally {
-      setBusy(false)
+      setWorking(null)
     }
   }
 
@@ -176,7 +184,7 @@ export default function SignIn() {
    * `channel` undefined is a plain repeat on whichever was used, which is SMS,
    * and is what the bare "send it again" button asks for. */
   async function resend(channel?: Channel) {
-    setBusy(true)
+    setWorking(channel ?? 'sms')
     setResent(false)
     try {
       await resendCode(channel)
@@ -186,7 +194,7 @@ export default function SignIn() {
     } catch {
       /* the provider holds the message */
     } finally {
-      setBusy(false)
+      setWorking(null)
     }
   }
 
@@ -254,7 +262,7 @@ export default function SignIn() {
               )}
             </Field>
 
-            <button type="submit" className="primary wide" disabled={busy}>
+            <button type="submit" className="primary wide" disabled={busy} aria-busy={working === 'send' || undefined}>
               {busy ? t('auth.sending') : t('auth.sendCode')}
             </button>
 
@@ -350,6 +358,7 @@ export default function SignIn() {
               type="submit"
               className="primary wide"
               disabled={busy || code.length < CODE_LENGTH}
+              aria-busy={working === 'verify' || undefined}
             >
               {busy ? t('auth.checking') : t('auth.verify')}
             </button>
@@ -387,6 +396,7 @@ export default function SignIn() {
                   className="quiet"
                   onClick={() => resend('sms')}
                   disabled={busy || secondsLeft > 0}
+                  aria-busy={working === 'sms' || undefined}
                 >
                   {t('auth.viaSms')}
                 </button>
@@ -395,6 +405,7 @@ export default function SignIn() {
                   className="quiet"
                   onClick={() => resend('whatsapp')}
                   disabled={busy || secondsLeft > 0}
+                  aria-busy={working === 'whatsapp' || undefined}
                 >
                   {t('auth.viaWhatsapp')}
                 </button>
@@ -403,6 +414,7 @@ export default function SignIn() {
                   className="quiet"
                   onClick={() => resend('voice')}
                   disabled={busy || secondsLeft > 0}
+                  aria-busy={working === 'voice' || undefined}
                 >
                   {t('auth.viaVoice')}
                 </button>

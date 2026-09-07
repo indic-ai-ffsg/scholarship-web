@@ -253,7 +253,7 @@ export default function Check() {
             </div>
           </details>
 
-          <button type="submit" className="primary" disabled={busy || answered === 0}>
+          <button type="submit" className="primary" disabled={busy || answered === 0} aria-busy={busy || undefined}>
             {busy ? t('check.checking') : t('check.go')}
           </button>
 
