@@ -469,13 +469,62 @@ export const en: Dict = {
   'home.openNone': 'No scholarships are listed here yet.',
   'home.openNoneBody': 'The directory is being filled now. Nothing here sits behind an account — when schemes are listed you will see them without signing in.',
 
+  /* The seven steps of registering, in the order they happen on screen.
+   *
+   * This section used to describe the product — check, see, apply. That answers
+   * "what is this site", and the question people actually arrive with is
+   * procedural: what do I press, what will it ask me for, and how far in am I.
+   * Most of this audience reaches the portal from a forwarded message that
+   * walks through exactly that, so the walkthrough is here too, in the same
+   * order and as close to the same words as the screen allows — a student told
+   * to "enter the 6-digit OTP" should meet the same phrase where they land.
+   *
+   * Step 1 is the one line that could not carry over unchanged. The message
+   * says "open the link and tap Sign in"; by the time this is being read the
+   * link is open, and a step describing something already done reads as a step
+   * that was somehow missed. So it names the button and where it is instead,
+   * in the masthead's own word — see nav.signin.
+   *
+   * The heading is still "How it works", because the masthead links to it by
+   * that name and a destination that repeats the link is how a visitor knows
+   * they arrived. What changed under it is the answer, not the question. */
   'home.how': 'How it works',
-  'home.step1': 'Check if you qualify',
-  'home.step1Body': 'Answer a few questions. No account, and nothing you type is saved.',
-  'home.step2': 'See what is open to you',
-  'home.step2Body': 'Every scholarship here is checked against your answers — and where one is closed to you, we say why.',
-  'home.step3': 'Apply when you are ready',
-  'home.step3Body': 'An account is needed only to apply. Your answers carry over, and a certificate uploaded once is reused by every provider after that.',
+  'home.howLede': 'Registering takes a mobile number and the code we send to it. There is no password, and no sign-up form to fill in first.',
+  'home.step1': 'Tap Sign in',
+  'home.step1Body': 'At the top of this page. The same button signs you in and creates your account, so there is nothing else to find first.',
+  'home.step2': 'Enter your mobile number',
+  'home.step2Body': 'Ten digits, with +91 already filled in. A 6-digit code goes to that number.',
+  'home.step3': 'Enter the code',
+  'home.step3Body': 'Type the six digits and you are in. If no message arrives, ask for the code on WhatsApp instead, or have us call and read it out.',
+  'home.step4': 'Fill in your details',
+  'home.step4Body': 'Your name, your certificate and where you study — one question at a time, and every answer is saved as you give it.',
+  'home.step5': 'Upload your documents',
+  'home.step5Body': 'Disability certificate, UDID card, income certificate and the rest. Once each, not once for every scholarship.',
+  'home.step6': 'See your matches',
+  'home.step6Body': 'My matches lists the scholarships you qualify for — and where one is closed to you, it says why.',
+  'home.step7': 'Apply',
+  'home.step7Body': 'Choose the ones you want. Your details and your documents go with the application.',
+
+  /* Three reasons not to stop, level with the steps rather than under them.
+   *
+   * Each answers a different reason this audience abandons a sign-up: a
+   * password to invent and then remember, a form standing between them and the
+   * thing they came for, and not enough time today to finish. An answer that
+   * arrives after the decision is worth nothing, which is the whole argument
+   * for where they sit. */
+  'home.assure': 'Good to know',
+  'home.assure1': 'No password to remember',
+  'home.assure2': 'No separate registration form',
+  'home.assure3': 'You can stop and finish later',
+
+  /* The helpline, in the one place on this page that asks somebody to do seven
+   * things in a row. "Stuck on a step" rather than "contact us": a general
+   * invitation to get in touch is not what a person halfway through a code
+   * screen is looking for, and naming the trouble is what makes the number
+   * findable at the moment it is needed. */
+  'home.help': 'Stuck on a step?',
+  'home.helpBody': 'Call and someone will take you through it.',
+  'home.helpCall': 'Call {number}',
 
   'home.closing': 'Closing soon',
   'home.closingLede': 'Apply to these first.',

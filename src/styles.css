@@ -1326,7 +1326,10 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
  * The green is the accent, which is also what this site marks "you qualify"
  * with — the association is the point. Decorative, and hidden from assistive
  * technology in the component, so it carries none of the meaning. */
-.lead-points .tick {
+/* Shared with the how-it-works panel's assurances, which are the same
+   lockup doing the same job one section further down. */
+.lead-points .tick,
+.assurances .tick {
   flex: none;
   display: inline-flex; align-items: center; justify-content: center;
   width: 1.375rem; height: 1.375rem;
@@ -1880,34 +1883,102 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 .home-section h2 { font-size: var(--step-2); }
 .home-section h3 { font-size: var(--step-1); margin-top: 1.25rem; }
 
-/* Numbered because the order is the point: the profile comes before the
- * matches, and the matches before the application. counter-reset on the list
- * rather than the browser's own markers, which cannot be styled to this size
- * and sit outside the text block. */
+/* --- how it works ----------------------------------------------------------
+ *
+ * A rail with the numbers threaded on it, not a row of cards.
+ *
+ * Three steps fitted the auto-fit card grid this replaces. Seven do not: the
+ * grid gave three, three and a widow, and a last row holding one card reads as
+ * a card that got separated from the others rather than as the end of a
+ * sequence. The deeper problem is that a grid asks the eye to travel
+ * left-right-and-down while the numerals count 1 to 7 — two orders on one
+ * list, which is the exact ambiguity a numbered list exists to remove.
+ *
+ * The line between the bubbles is doing the remaining work. It says these are
+ * one path rather than seven independent options, which is the difference
+ * between "do all of this, in this order" and "pick whichever applies to you";
+ * for a walkthrough of a sign-up, only the first reading is true. It costs
+ * nothing on a 320px screen, where a card grid is a single column anyway and
+ * the relationship between one card and the next was left entirely to the
+ * numbers.
+ */
+.how-body {
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: minmax(0, 1fr);
+}
+/* Two columns only where the panel can hold its own line length beside the
+   steps. Below this it falls under the last step, which is also where somebody
+   who has just read "Apply" and is still unsure would look for the number. */
+@media (min-width: 62rem) {
+  .how-body {
+    grid-template-columns: minmax(0, 1fr) 19rem;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  /* Follows the reader down the steps, at the same offset as the directory's
+     filters and a scheme's facts — the sticky masthead is 5.5rem of it. The
+     panel is shorter than any viewport this breakpoint applies to, so it never
+     becomes a pane that cannot be scrolled past, and the number to call stays
+     on screen for the whole of the list it is the answer to. */
+  .how-aside { position: sticky; top: 5.5rem; }
+}
+
+/* Numbered because the order is the point: the code comes before the details,
+ * the details before the matches, and the matches before the application.
+ * counter-increment on the list rather than the browser's own markers, which
+ * cannot be sized to this and sit outside the text block. */
 .steps {
   list-style: none; padding: 0; margin: 0;
   counter-reset: step;
-  display: grid; gap: var(--gap);
-  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
 }
 .steps > li {
   counter-increment: step;
+  position: relative;
+  /* The rail is the item's own left border, so it cannot fall out of step with
+     the bubbles when a body wraps to a different number of lines. */
+  border-left: 2px solid var(--border);
+  margin-left: 1.125rem;      /* half the bubble: the line runs through its centre */
+  padding: 0 0 1.5rem 2.5rem;
+}
+/* The rail stops at the last number instead of running on into nothing. */
+.steps > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+
+.steps > li::before {
+  content: counter(step);
+  position: absolute; left: -1.125rem; top: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem;
+  border-radius: 999px;
+  background: var(--accent-weak); color: var(--accent);
+  font-weight: 700;
+  /* Sits on the rail rather than being crossed by it. The halo is the page's
+     own background, so the line appears to stop at the bubble and start again
+     under it. */
+  box-shadow: 0 0 0 4px var(--bg);
+}
+.steps h3 { margin: 0 0 0.25rem; }
+.steps p { margin: 0; color: var(--text-muted); max-width: var(--measure); }
+
+/* What the steps cannot say: the three things you do not need, and the number
+   to call when one of them goes wrong. A card, because it is an aside to the
+   list beside it and needs a boundary to say so. */
+.how-aside {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem;
 }
-.steps > li::before {
-  content: counter(step);
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 2.25rem; height: 2.25rem;
-  margin-bottom: 0.625rem;
-  border-radius: 999px;
-  background: var(--accent-weak); color: var(--accent);
-  font-weight: 700;
-}
-.steps h3 { margin-top: 0; }
-.steps p { margin-bottom: 0; }
+.how-aside h3 { margin: 0 0 0.75rem; font-size: var(--step-1); }
+
+.assurances { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.assurances li { display: flex; align-items: flex-start; gap: 0.5rem; }
+
+.helpline { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.helpline p { margin: 0 0 0.75rem; color: var(--text-muted); font-size: var(--step--1); }
+/* Full width in the panel: the one action here should not be a short button
+   floating in a wide card, and the wider target is free. */
+.helpline .btn { width: 100%; }
 
 /* Browse entry points. Links rather than the .chip span used for read-only
  * tags elsewhere, so they carry a full-size target and look pressable. */

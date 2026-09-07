@@ -34,6 +34,24 @@ import type { Facet, Listing } from '../../lib/types'
  * on a metered connection, and a stock image of a person in a wheelchair is not
  * what this audience is short of.
  */
+
+/* The steps, as numbers rather than as seven copies of the same JSX. Their copy
+   lives in i18n-strings.ts under home.step1…home.step7. */
+const STEPS = [1, 2, 3, 4, 5, 6, 7]
+
+/* The helpline, written once and in both forms it is needed in.
+ *
+ * Not in the string table, because it is not copy: nothing about it changes
+ * with the language, and a translator given a phone number to carry is a
+ * translator who can mistype one. The two forms are not interchangeable — a
+ * dialler wants +91 and no spaces, a reader wants the grouping printed on a
+ * phone bill — and keeping them adjacent is what stops one being updated
+ * without the other.
+ *
+ * If this number starts changing per deployment, it belongs in runtime-config
+ * alongside the widget id rather than in a rebuild. It has not, so it does not. */
+const HELPLINE = { dial: '+917628953752', label: '76289 53752' }
+
 export default function Home() {
   const { t } = useI18n()
   const { status } = useAuth()
@@ -190,23 +208,59 @@ export default function Home() {
           * sticky bar, which would otherwise land on top of it. */}
       <section className="home-section" id="how-it-works">
         <h2 tabIndex={-1}>{t('home.how')}</h2>
-        <ol role="list" className="steps">
-          <li>
-            <h3>{t('home.step1')}</h3>
-            <p>{t('home.step1Body')}</p>
-          </li>
-          <li>
-            <h3>{t('home.step2')}</h3>
-            <p>{t('home.step2Body')}</p>
-          </li>
-          <li>
-            {/* The platform's actual claim, stated as a benefit rather than as
-                architecture. "Verify once, reuse many" is what we call it; this
-                is what it means to the person doing it. */}
-            <h3>{t('home.step3')}</h3>
-            <p>{t('home.step3Body')}</p>
-          </li>
-        </ol>
+        <p className="lede">{t('home.howLede')}</p>
+
+        <div className="how-body">
+          {/* Generated rather than written out seven times.
+              *
+              * The steps differ only in their number, and seven copies of the
+              * same three lines is seven places for one of them to drift — a
+              * heading that stops being an h3, a body that keeps a class the
+              * others lost. The keys are built from the number for the same
+              * reason; every one of them is defined in i18n-strings.ts, where
+              * a gap is visible as a gap. */}
+          <ol role="list" className="steps">
+            {STEPS.map(n => (
+              <li key={n}>
+                <h3>{t(`home.step${n}`)}</h3>
+                <p>{t(`home.step${n}Body`)}</p>
+              </li>
+            ))}
+          </ol>
+
+          {/* Beside the steps, not after them: both halves answer somebody who
+              is deciding whether to start, and an answer below seven steps
+              arrives after the decision it was meant to change. */}
+          <aside className="how-aside">
+            <h3>{t('home.assure')}</h3>
+            <ul role="list" className="assurances">
+              {[t('home.assure1'), t('home.assure2'), t('home.assure3')].map(point => (
+                <li key={point}>
+                  {/* The same lockup as the lead panel's points: a disc with a
+                      tick in it, decorative and hidden, with the sentence
+                      carrying the meaning on its own. */}
+                  <span className="tick" aria-hidden="true">✓</span>
+                  {point}
+                </li>
+              ))}
+            </ul>
+
+            <div className="helpline">
+              <h3>{t('home.help')}</h3>
+              <p>{t('home.helpBody')}</p>
+              {/* A tel: link rather than a number to copy out. On the phone
+                  this page is most often read on it dials; on a desktop it is
+                  still selectable text, which is what somebody writing it down
+                  needs. The href is the dialable form and the label is the
+                  grouped one — the same split as the sign-in field, where the
+                  number a person reads and the number a machine takes are not
+                  spelled the same way. */}
+              <a className="btn" href={`tel:${HELPLINE.dial}`}>
+                {t('home.helpCall', { number: HELPLINE.label })}
+              </a>
+            </div>
+          </aside>
+        </div>
       </section>
 
       {/* Coerced: `length && jsx` renders a literal 0 when the array is empty,
