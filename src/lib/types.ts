@@ -96,6 +96,23 @@ export interface Listing {
   benefit_summary?: string
   currency: string
   is_renewable: boolean
+  /* Where the student actually applies, and whether it is here.
+   *
+   * 'CURATED' is a scheme the platform lists but does not run: no organisation,
+   * no workflow, and a database trigger (backend 0026) that refuses any
+   * application row against it. For those, external_url is the sponsor's own
+   * page and is guaranteed present by the same CHECK constraint. 'TENANT' is a
+   * scheme run here, and the application is made at /apply.
+   *
+   * Both are new to this payload. The column has existed since backend 0005 and
+   * the admin panel has always had a field for it, but publicdir.Listing never
+   * carried it — so the site had no way to know a scheme was administered
+   * elsewhere and sent every student to its own /apply page, which for a
+   * curated scheme cannot succeed. Optional here because a cached or older API
+   * response will not have them; treat a missing listing_kind as TENANT, which
+   * is what the column's own default is. */
+  external_url?: string
+  listing_kind?: 'TENANT' | 'CURATED'
   opens_at: string
   /* Both optional since backend 0043: a curated listing is allowed to have no
      window, and the directory now shows those rather than hiding them. Absent

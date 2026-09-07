@@ -7,7 +7,7 @@ import { useQuery } from '../lib/hooks'
 import { useAnnounce } from '../lib/announce'
 import { useI18n } from '../lib/i18n-context'
 import { withNext } from '../lib/next'
-import { Empty, ErrorState, Loading, Notice, StateBadge } from '../components/ui'
+import { Empty, ErrorState, Notice, StateBadge } from '../components/ui'
 import type { Application, EligibilityState, Reason, RequiredDocument } from '../lib/types'
 
 /* Applying — UC-04.
@@ -34,6 +34,12 @@ interface Eligibility {
   documents: RequiredDocument[]
   documents_complete: boolean
   can_apply: boolean
+  /* Where this scheme is applied for. CURATED means the platform lists it and
+     does not run it, so no application can be made here at all — the server
+     refuses it and a database trigger refuses it under that. external_url is
+     the sponsor's own page, guaranteed present for a curated scheme. */
+  listing_kind?: 'TENANT' | 'CURATED'
+  external_url?: string
 }
 
 export default function Apply() {
@@ -86,9 +92,72 @@ export default function Apply() {
     )
   }
 
-  if (query.loading) return <div className="page"><Loading /></div>
-  if (query.error) return <div className="page"><ErrorState error={query.error} onRetry={query.reload} /></div>
+  /* The page keeps its shape while the check runs.
+   *
+   * This was `<div className="page"><Loading /></div>`, which is one line of
+   * text at the top of an otherwise empty document — and since main now grows
+   * to fill the viewport, that rendered as most of a screen of flat colour with
+   * "Loading..." stranded at the top. Measured after pressing Apply on a
+   * throttled connection: about 700ms of blank page, then the two white cards
+   * appearing at once. That is the flash.
+   *
+   * The heading is drawn immediately, because it is known immediately — this is
+   * the Apply screen whatever the answer turns out to be — and the skeleton
+   * holds the two cards' worth of space beneath it. Nothing moves when the data
+   * lands; the outlines fill in.
+   *
+   * aria-busy on a live region rather than a visual spinner alone, so the wait
+   * is announced once and the shapes stay decorative. */
+  if (query.loading) {
+    return (
+      <div className="page narrow">
+        <h1>{t('apply.title')}</h1>
+        <p className="sr-only" role="status" aria-busy="true">{t('common.loading')}</p>
+        <div className="skeleton-card" aria-hidden="true">
+          <span className="skeleton-line head" />
+          <span className="skeleton-line" />
+          <span className="skeleton-line short" />
+        </div>
+        <div className="skeleton-card" aria-hidden="true">
+          <span className="skeleton-line" />
+          <span className="skeleton-line short" />
+          <span className="skeleton-line button" />
+        </div>
+      </div>
+    )
+  }
+  if (query.error) return <div className="page narrow"><ErrorState error={query.error} onRetry={query.reload} /></div>
   if (!query.data) return null
+
+  /* A scheme the platform does not run, reached anyway.
+   *
+   * The scheme page no longer offers /apply for these, but the address is a
+   * plain URL: it is in browser histories, in anything already shared, and in
+   * the link somebody sent before this was fixed. Landing here used to mean a
+   * full application form whose submit button could not work — the server now
+   * refuses it with a sentence, but refusing at submit is after the student has
+   * read the checklist and given consent. So it is answered first, and the
+   * answer is the address they actually need. */
+  if (query.data.listing_kind === 'CURATED') {
+    const away = query.data.external_url
+    return (
+      <div className="page narrow">
+        <h1>{t('apply.title')}</h1>
+        <Notice tone="info" title={t('apply.elsewhereTitle')}>
+          <p>{t('apply.elsewhereBody')}</p>
+          {away && (
+            <p>
+              <a className="btn primary" href={away} target="_blank" rel="noopener noreferrer">
+                {t('public.applyExternal')}
+                <span aria-hidden="true"> ↗</span>
+                <span className="sr-only"> ({t('common.newTab')})</span>
+              </a>
+            </p>
+          )}
+        </Notice>
+      </div>
+    )
+  }
 
   const { eligibility, documents, can_apply: canApply } = query.data
   const shared = [...new Set(documents.map(d => d.label))].join(', ')

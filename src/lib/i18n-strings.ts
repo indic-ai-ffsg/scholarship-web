@@ -113,6 +113,15 @@ export const en: Dict = {
      It says the press is safe: the next screen checks the profile and the
      documents and names anything missing, so pressing Apply is not the same as
      sending an application. */
+  /* Under the Apply button for a scheme the platform lists but does not run.
+     Says plainly that the application is not ours to receive, so a student who
+     later cannot find it under "My applications" knows why. */
+  'public.applyExternal': "Apply on the sponsor's site",
+  'public.applyExternalHelp': '{org} runs this scholarship and takes the application on their own website. It will not appear under your applications here.',
+  /* Spoken, never drawn. Appended to the accessible name of any link that opens
+     a new tab, which is otherwise one of the most disorienting things a screen
+     reader user can meet. */
+  'common.newTab': 'opens in a new tab',
   'public.applyHelp': 'We check your profile and your documents against this scholarship first, and tell you if anything is missing. Nothing is sent until you confirm.',
   'public.ctaHelp': 'Answer a few questions and we will tell you which of these are open to you. No account needed.',
   'public.back': 'Back to all scholarships',
@@ -388,6 +397,8 @@ export const en: Dict = {
   'apply.blocked': 'You cannot apply yet',
   'apply.needProfile': 'Your profile comes first',
   'apply.needProfileHint': 'An application is sent from your profile, so we need that before you can apply. It takes a few minutes, and anything you have already told us is filled in.',
+  'apply.elsewhereTitle': 'This one is applied for on the sponsor\u2019s own site',
+  'apply.elsewhereBody': 'We list this scholarship so you can find it, but we do not run it, so an application cannot be sent from here. Everything you have already told us stays saved for the ones we do run.',
   'apply.docs': 'Documents this scholarship needs',
 
   'appl.title': 'Your applications',

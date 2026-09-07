@@ -58,6 +58,15 @@ export default function Scheme() {
    * that is what the reader sees: two differently-worded rules both survive. */
   const criteria = [...new Set(s.criteria ?? [])]
 
+  /* The sponsor's own page, when this is a scheme we only list.
+   *
+   * Both halves matter. A TENANT scheme may also carry an external_url — the
+   * admin field is offered for every listing — and for one of those the
+   * application still belongs here, so the kind decides and the URL only
+   * supplies the address. */
+  const external =
+    (s.listing_kind ?? 'TENANT') === 'CURATED' && s.external_url ? s.external_url : null
+
   return (
     <div className="page">
       <p className="breadcrumb"><Link to="/scholarships">← {t('public.back')}</Link></p>
@@ -142,52 +151,76 @@ export default function Scheme() {
                 are the entire answer. The rule goes with the button: a divider
                 under the last fact, separating it from nothing, is a line the
                 eye stops at for no reason. */}
-            {/* Two actions, one slot, and which one appears depends on whether
-                there is an account behind the reader.
+            {/* Where Apply goes, and it is not always here.
                 *
-                * A signed-in student had nothing here at all. The slot held
-                * "My matches" once, that was removed as a button whose only
-                * effect was to leave the page, and nothing replaced it - so the
-                * scheme page, which is where somebody actually decides to
-                * apply, was the one place in the product with no way to apply.
-                * The matched list was the only route to /apply, which reaches
-                * only the students who arrive that way: anybody following a
-                * shared link, an SMS, a search result or the directory read the
-                * criteria and hit a dead end.
+                * A CURATED listing is a scheme this platform lists but does not
+                * run: no organisation, no workflow, and a database trigger
+                * (backend 0026) that refuses any application row against it.
+                * The student applies on the sponsor's own site, and
+                * external_url is where. A TENANT scheme is run here and /apply
+                * is the real thing.
                 *
-                * It links straight to /apply rather than testing eligibility
-                * here first. This page is public and deliberately knows nothing
-                * about the reader, and /apply already does the real check -
-                * it holds the document checklist, the blocked reasons and the
-                * consent record, and it refuses on can_apply. Hiding the button
-                * behind a guess made here would mean a student who is eligible
-                * and has one expired certificate is shown no button and no
-                * reason, which is the failure this product is most careful
-                * about elsewhere. Better to offer the action and let the next
-                * screen explain itself.
+                * This branch is the whole point of the fix. The button used to
+                * be an unconditional link to /apply for every signed-in reader,
+                * because the API never sent external_url — so a scheme whose
+                * operator had carefully entered https://scholarships.gov.in in
+                * the admin panel still sent the student to
+                * /apply/<uuid> on this site, where the form cannot submit. The
+                * address existed in the database the whole time and nothing
+                * carried it to the page that needed it.
                 *
-                * Nothing is drawn until the session resolves. `status` is
-                * 'loading' on the first paint, so branching on
-                * `!== 'authenticated'` put "Check now" in the slot for a moment
-                * and then swapped it for Apply - two different destinations
-                * under one position, which is a mis-press for anybody who
-                * reached for the button as it changed. Appearing a moment late
-                * costs a reader nothing; the panel is beside the criteria they
-                * are still reading. */}
+                * `?? 'TENANT'` because an older or cached API response has no
+                * listing_kind, and TENANT is the column's own default. Falling
+                * back the other way would send every reader off-site the moment
+                * a stale response came back, which is the worse mistake.
+                *
+                * Nothing is drawn until the session resolves: `status` is
+                * 'loading' on the first paint, and branching before it settles
+                * puts one destination under the reader's finger and swaps it
+                * for another. */}
             {status !== 'loading' && (
               <>
                 <hr />
-                {status === 'authenticated' ? (
+                {status !== 'authenticated' ? (
+                  <>
+                    <Link className="btn primary wide" to="/check">{t('check.go')}</Link>
+                    <p className="muted small">{t('public.ctaHelp')}</p>
+                  </>
+                ) : external ? (
+                  /* A real anchor, not a Link: this leaves the site.
+                     *
+                     * target=_blank keeps the student's place here — they are
+                     * mid-decision, and a government portal that swallows the
+                     * tab costs them the criteria they were reading. rel is the
+                     * pair that must always travel with it: noopener denies the
+                     * opened page a handle on this one, noreferrer keeps our
+                     * URL out of their logs.
+                     *
+                     * The new tab is announced rather than implied by the arrow,
+                     * which is aria-hidden decoration. An unannounced new tab is
+                     * one of the most disorienting things a screen reader user
+                     * meets, and this audience is the reason that matters. */
+                  <>
+                    <a
+                      className="btn primary wide"
+                      href={external}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('public.applyExternal')}
+                      <span aria-hidden="true"> ↗</span>
+                      <span className="sr-only"> ({t('common.newTab')})</span>
+                    </a>
+                    <p className="muted small">
+                      {t('public.applyExternalHelp', { org: s.organisation_name })}
+                    </p>
+                  </>
+                ) : (
                   <>
                     <Link className="btn primary wide" to={`/apply/${s.scholarship_id}`}>
                       {t('match.apply')}
                     </Link>
                     <p className="muted small">{t('public.applyHelp')}</p>
-                  </>
-                ) : (
-                  <>
-                    <Link className="btn primary wide" to="/check">{t('check.go')}</Link>
-                    <p className="muted small">{t('public.ctaHelp')}</p>
                   </>
                 )}
               </>

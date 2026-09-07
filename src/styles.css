@@ -3184,3 +3184,63 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
   display: grid; place-items: center;
   padding: 1.5rem clamp(1.25rem, 2.5vw, 3rem);
 }
+
+/* --- skeletons ---------------------------------------------------------------
+ *
+ * The shape of a screen while its answer is still being fetched.
+ *
+ * Not decoration. The Apply page used to render one line of text on an
+ * otherwise empty document while it checked eligibility, and since main grows
+ * to fill the viewport that came out as most of a screen of flat colour with
+ * "Loading..." stranded at the top - about 700ms of it on a throttled
+ * connection, ending with two white cards appearing at once. That is what a
+ * flash after pressing a button actually is: not a colour, a layout arriving
+ * all at once where there was nothing.
+ *
+ * The skeleton holds the space the answer will occupy, so the cards fill in
+ * rather than drop in. It is aria-hidden and paired with one polite status
+ * line: the shapes say nothing a screen reader needs, and a stack of fake
+ * paragraphs announced as content is worse than silence.
+ */
+
+.skeleton-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: var(--gap);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.skeleton-line {
+  display: block;
+  height: 1rem;
+  border-radius: 4px;
+  /* Two stops of the same token, so the sweep reads as a sheen on the surface
+     rather than as a second colour appearing. */
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 25%,
+    var(--bg) 37%,
+    var(--surface-sunken) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+.skeleton-line.head { height: 1.5rem; width: 45%; }
+.skeleton-line.short { width: 60%; }
+.skeleton-line.button { height: 48px; border-radius: var(--radius); margin-top: 0.5rem; }
+
+@keyframes skeleton-sweep {
+  from { background-position: 100% 50%; }
+  to   { background-position: 0 50%; }
+}
+
+/* A sweep is a moving thing on a screen somebody is waiting at, and this
+ * audience includes people for whom that is not neutral. Reduced motion gets
+ * the same shapes, holding the same space, without the animation - the layout
+ * stability is the part that matters, and it is kept. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line { animation: none; background: var(--surface-sunken); }
+}
