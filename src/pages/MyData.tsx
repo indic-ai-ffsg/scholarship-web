@@ -137,7 +137,7 @@ export default function MyData() {
 
             {c.active ? (
               <button className="quiet" disabled={busy === c.consent_id} aria-busy={busy === c.consent_id || undefined} onClick={() => withdraw(c.consent_id)}>
-                {t('privacy.withdraw')}
+                {busy === c.consent_id ? t('privacy.withdrawing') : t('privacy.withdraw')}
                 <span className="sr-only"> — {c.organisation_name}</span>
               </button>
             ) : (
@@ -151,7 +151,7 @@ export default function MyData() {
         <h2 id="rights" style={{ fontSize: 'var(--step-1)' }}>{t('privacy.export')}</h2>
         <p>{t('privacy.exportBody')}</p>
         <button onClick={requestExport} disabled={busy === 'export'} aria-busy={busy === 'export' || undefined}>
-          {t('privacy.export')}
+          {busy === 'export' ? t('privacy.exporting') : t('privacy.export')}
         </button>
 
         <hr style={{ margin: '1.5rem 0', border: 0, borderTop: '1px solid var(--border)' }} />
@@ -170,7 +170,7 @@ export default function MyData() {
           </Notice>
         ) : (
           <button onClick={requestErasure} disabled={busy === 'erase'} aria-busy={busy === 'erase' || undefined}>
-            {t('privacy.erase')}
+            {busy === 'erase' ? t('privacy.erasing') : t('privacy.erase')}
           </button>
         )}
       </section>

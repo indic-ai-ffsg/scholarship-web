@@ -22,7 +22,6 @@ export const en: Dict = {
   'app.tagline': 'For students with disabilities',
 
   'nav.home': 'Home',
-  'nav.check': 'Check eligibility',
   /* The bar names the place, not the verb: a nav item is a destination, and
    * "Find scholarships" read as an instruction sitting beside three nouns. */
   'nav.find': 'Scholarships',
@@ -62,7 +61,7 @@ export const en: Dict = {
    * to the same place. They are one screen now, and it registers an unknown
    * number on the way through — so the longer label described a distinction
    * that no longer exists, and it made the account door the loudest thing in
-   * the masthead on a site whose actual ask is the eligibility check. */
+   * the masthead on a site whose actual ask is the registration form. */
   'nav.signin': 'Sign in',
   'nav.signout': 'Sign out',
   'nav.skip': 'Skip to main content',
@@ -84,6 +83,10 @@ export const en: Dict = {
   'public.filters': 'Filters',
   'public.clear': 'Clear',
   'public.results': 'scholarships open now',
+  /* Stands in the count's place while a search runs. It replaced a sweeping
+     progress bar: the count line is already reserved, so the word costs no
+     reflow and does not flicker the way the bar did. */
+  'public.searching': 'Searching…',
   /* Two empty states, because they are two situations and the page was
    * telling the wrong one.
    *
@@ -108,7 +111,7 @@ export const en: Dict = {
   'public.award': 'Award',
   'public.renewable': 'Can be renewed each year',
   'public.offeredBy': 'Offered by',
-  'public.cta': 'Check if you qualify',
+  'public.cta': 'Find scholarships for you',
   /* Under the Apply button on a scheme page, for somebody who has an account.
      It says the press is safe: the next screen checks the profile and the
      documents and names anything missing, so pressing Apply is not the same as
@@ -123,7 +126,7 @@ export const en: Dict = {
      reader user can meet. */
   'common.newTab': 'opens in a new tab',
   'public.applyHelp': 'We check your profile and your documents against this scholarship first, and tell you if anything is missing. Nothing is sent until you confirm.',
-  'public.ctaHelp': 'Answer a few questions and we will tell you which of these are open to you. No account needed.',
+  'public.ctaHelp': 'Tell us about yourself once and we will show you every scholarship you qualify for.',
   'public.back': 'Back to all scholarships',
 
   /* The partner page.
@@ -202,35 +205,6 @@ export const en: Dict = {
   'impact.honestBody': 'No figure for students helped or money paid out. The platform can count those and this page will show them when the numbers are real rather than a demonstration — a public impact page that flatters itself is worth nothing to the students it is meant to serve.',
   'impact.empty': 'Nothing is open at the moment. New schemes open through the year.',
 
-  'check.title': 'Check if you qualify',
-  'check.lede': 'Answer what you know — no question here is required. We check every scholarship that is open and tell you which ones are for you.',
-  'check.privacy': 'These answers are used once, to work out this result. They are not saved on our servers. They stay on this phone or computer, so that you do not type them again if you create an account.',
-  'check.disabilityType': 'Your disability',
-  'check.disabilityPercent': 'Percentage on your certificate',
-  'check.disabilityPercentHint': 'Many scholarships need 40% or more.',
-  'check.courseLevel': 'What you are studying',
-  'check.state': 'State you live in',
-  'check.income': "Your family's yearly income",
-  'check.incomeHint': 'In rupees, as on your income certificate.',
-  'check.category': 'Your category',
-  'check.dob': 'Date of birth',
-  'check.marks': 'Last exam marks (%)',
-  'check.more': 'Two more questions',
-  'check.moreHint': 'Only if you know them. They let us check schemes with an age limit or a marks requirement.',
-  'check.unanswered': 'Not answered',
-  'check.go': 'Check now',
-  'check.checking': 'Checking…',
-  'check.results': 'Your results',
-  'check.eligibleHelp': 'Nothing you told us blocks this one. Documents come later, when you apply.',
-  'check.answerThese': 'To be sure, answer: {fields}',
-  'check.summary': 'You may qualify for {n} of the {total} scholarships open now.',
-  'check.summaryBlocked': '{n} of the {total} scholarships open now might be open to you. Answer a little more and we can say for certain.',
-  'check.summaryNone': 'None of the {total} scholarships open now match these answers.',
-  'check.answered': 'Based on the {n} answers you gave. Answer more and we can check more.',
-  'check.applyRegister': 'Create account to apply',
-  'check.browse': 'See scholarships like these',
-  'check.saveTitle': 'Keep these answers',
-  'check.saveBody': 'An account takes a mobile number or an email address, nothing else. Your answers carry over, so you will not type them again — and we tell you when a new scholarship matches you.',
 
   /* The student's hub. Counts are phrased as things rather than numbers —
      "3 open" reads as a fact, "3" alone reads as a score. */
@@ -299,9 +273,6 @@ export const en: Dict = {
   'auth.sending': 'Sending…',
   'auth.continue': 'Continue',
   'auth.checking': 'Checking…',
-  /* Still used by the public eligibility check, which sends somebody to the
-     one sign-in page whether or not they turn out to have an account. */
-  'auth.haveAccount': 'Already have an account?',
   /* Said on the code screen, once the number has been recognised or not. The
      flow checks before sending the code so a student is told which of the two
      is happening rather than discovering it afterwards. */
@@ -388,6 +359,9 @@ export const en: Dict = {
   'doc.none': 'You have not added any documents yet',
   'doc.uploading': 'Uploading…',
   'doc.remove': 'Remove',
+  /* The working label. Without it the button changed nothing at all while
+     the request ran, which is what a flashing bar was invented to cover. */
+  'doc.removing': 'Removing…',
 
   'apply.title': 'Apply',
   'apply.consent': 'Share my details with this provider',
@@ -415,9 +389,15 @@ export const en: Dict = {
   'privacy.accessNone': 'Nobody outside your own account has opened your documents.',
   'privacy.consents': 'What you have agreed to share',
   'privacy.withdraw': 'Withdraw',
+  'privacy.withdrawing': 'Withdrawing…',
   'privacy.export': 'Download everything we hold',
+  /* Not "Downloading…": nothing is coming down the wire yet. The server is
+     assembling the copy, and saying so is the difference between a wait that
+     makes sense and one that looks stuck. */
+  'privacy.exporting': 'Preparing your copy…',
   'privacy.exportBody': 'A complete machine-readable copy of your data.',
   'privacy.erase': 'Delete my data',
+  'privacy.erasing': 'Requesting…',
   'privacy.eraseBody': 'We must keep records of any scholarship paid to you. Everything else is removed.',
   'privacy.requested': 'Requested',
 

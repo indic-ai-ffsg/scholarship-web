@@ -364,7 +364,7 @@ export default function Layout() {
             * as a credit rather than as co-ownership.
             *
             * Before the actions rather than after them. The far corner is the
-            * eye's last stop and it belongs to "Check eligibility"; a logo
+            * eye's last stop and it belongs to the masthead's one action; a logo
             * placed beyond it would take the corner from the one thing this
             * site is asking anybody to do.
             *
@@ -401,19 +401,19 @@ export default function Layout() {
           {signedIn
             ? <AccountMenu onSignOut={signOut} />
             : (
-              /* The one action the site is asking for, and the account door.
+              /* One control, and it is the thing the site is asking for.
 
-                 The filled control used to be "Sign in or Sign Up", which made
-                 the loudest thing in the masthead an account form. This
-                 product's proposition is "tell us about yourself and we will
-                 tell you what you qualify for" — so the loudest thing is now
-                 Check eligibility, and signing in is the quiet link beside it.
+                 There were two: a filled "Check eligibility" and a quiet
+                 "Register / Login" beside it. The check has gone — it asked a
+                 visitor the same questions the registration form asks, saved
+                 none of them, and handed them on to be typed again — so the
+                 pair collapses to the survivor, and the survivor takes the
+                 filled style because it is now the only thing being asked for.
 
-                 A visitor does not need an account to use the check, and the
-                 check does not ask for one: registration happens further along,
-                 at the point it buys them something. Leading with a sign-in
-                 button inverted that, and asked for the commitment before the
-                 value.
+                 The product's proposition is unchanged: tell us about yourself
+                 and we will tell you what you qualify for. What changed is that
+                 there is one form for that rather than two, and it is the one
+                 that can keep the answer.
 
                  The label is "Register / Login", and it names two things on
                  purpose. It read "Sign in" for a while, on the argument that
@@ -428,8 +428,7 @@ export default function Layout() {
                  form carries "Already registered? Login with OTP" at the bottom
                  and the reverse trip is the shorter one. */
               <div className="nav-end">
-                <NavLink to="/check" className="nav-cta">{t('nav.check')}</NavLink>
-                <NavLink to="/register" className="nav-signin">{t('nav.registerLogin')}</NavLink>
+                <NavLink to="/register" className="nav-cta">{t('nav.registerLogin')}</NavLink>
               </div>
             )}
         </div>
@@ -479,7 +478,7 @@ export default function Layout() {
  *
  * Mostly by route, because a page that looks different depending on whether a
  * cookie has expired is a page nobody can describe to anybody else. The
- * landing page, the eligibility check and the two organisation pages carry the
+ * landing page and the two organisation pages carry the
  * footer for everyone.
  *
  * /signin keeps its footer. It is the one page where a stranger is being asked
@@ -671,7 +670,6 @@ function SocialLinks() {
 
 /** The page name for the tab, so several open at once stay distinguishable. */
 function titleFor(path: string, t: (key: string) => string): string {
-  if (path.startsWith('/check')) return t('nav.check')
   if (path.startsWith('/scholarships')) return t('nav.find')
   if (path.startsWith('/partner')) return t('nav.partner')
   if (path.startsWith('/impact')) return t('nav.impact')

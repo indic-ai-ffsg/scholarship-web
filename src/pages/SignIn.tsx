@@ -87,6 +87,13 @@ export default function SignIn() {
    * still reads the derived boolean, because being held is still being held. */
   const [working, setWorking] = useState<'send' | 'verify' | Channel | null>(null)
   const busy = working !== null
+
+  /* Disabled because this button's own work is running, or only because some
+   * other button's is? The second must not repaint — see the note on
+   * :not([data-held]) in styles.css. `unavailable` is the button's own reason
+   * to be off, the one the student can act on, and it always wins. */
+  const held = (own: boolean, unavailable = false) =>
+    (busy && !own && !unavailable) || undefined
   const [resentAt, setResentAt] = useState<number | null>(null)
   const [resent, setResent] = useState(false)
   /* Which way the last code was sent, so the confirmation can name it —
@@ -126,8 +133,7 @@ export default function SignIn() {
      * arrived at by a route that also works for everyone else.
      *
      * A returning student still goes wherever they were headed, which is a
-     * specific scholarship when they came in by pressing Apply on the public
-     * eligibility check. */
+     * specific scholarship when they came in by pressing Apply on one. */
     return <Navigate to={safeNext(location.search)} replace />
   }
 
@@ -278,7 +284,7 @@ export default function SignIn() {
                 should be in the same place as the evidence. */}
             <p className="auth-target">
               <span className="number">{formatE164(pendingCode.phone)}</span>
-              <button type="button" className="quiet small" onClick={startOver} disabled={busy}>
+              <button type="button" className="quiet small" onClick={startOver} disabled={busy} data-held={held(false)}>
                 {t('auth.changeNumber')}
               </button>
             </p>
@@ -359,6 +365,7 @@ export default function SignIn() {
               className="primary wide"
               disabled={busy || code.length < CODE_LENGTH}
               aria-busy={working === 'verify' || undefined}
+              data-held={held(working === 'verify', code.length < CODE_LENGTH)}
             >
               {busy ? t('auth.checking') : t('auth.verify')}
             </button>
@@ -397,6 +404,7 @@ export default function SignIn() {
                   onClick={() => resend('sms')}
                   disabled={busy || secondsLeft > 0}
                   aria-busy={working === 'sms' || undefined}
+                  data-held={held(working === 'sms', secondsLeft > 0)}
                 >
                   {t('auth.viaSms')}
                 </button>
@@ -406,6 +414,7 @@ export default function SignIn() {
                   onClick={() => resend('whatsapp')}
                   disabled={busy || secondsLeft > 0}
                   aria-busy={working === 'whatsapp' || undefined}
+                  data-held={held(working === 'whatsapp', secondsLeft > 0)}
                 >
                   {t('auth.viaWhatsapp')}
                 </button>
@@ -415,6 +424,7 @@ export default function SignIn() {
                   onClick={() => resend('voice')}
                   disabled={busy || secondsLeft > 0}
                   aria-busy={working === 'voice' || undefined}
+                  data-held={held(working === 'voice', secondsLeft > 0)}
                 >
                   {t('auth.viaVoice')}
                 </button>

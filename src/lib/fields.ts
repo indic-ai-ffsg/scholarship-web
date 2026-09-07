@@ -1,13 +1,17 @@
 /* The answer vocabularies.
  *
- * These were inside the profile wizard, which was the only screen that asked
- * for them. The public eligibility check asks the same questions of somebody
- * who has no account yet, and its answers are handed to the wizard afterwards
- * so nobody types them twice — which makes an exact match between the two lists
- * a correctness requirement rather than tidiness. A course level offered as
- * "UG" on one screen and "UNDERGRADUATE" on the other would silently drop the
- * answer on the way through, and the student would see a question they had
- * already answered with the box empty.
+ * These were inside the profile wizard, and then shared with a public
+ * eligibility check that asked the same questions of somebody with no account
+ * and handed the answers on as a draft. Both of those screens have gone: the
+ * registration form asks these questions once, of the person who can save the
+ * answer.
+ *
+ * They stay in their own file because two things still read them — the form
+ * writes these fields and the profile view renders them back — and because the
+ * values are the API's enums (0001_extensions_and_enums.sql). A course level
+ * offered as "UG" in one place and "UNDERGRADUATE" in another is an answer
+ * silently dropped on the way to the server, which is the failure this file
+ * exists to make impossible.
  *
  * The values are the API's enums (see 0001_extensions_and_enums.sql) and are
  * never translated. The labels were bilingual until Hindi came out of the app;
@@ -97,10 +101,8 @@ export function stateChoices(): Choice[] {
  * "Undergraduate". Asking the question in the student's words and storing it in
  * the API's is what the mapping functions at the bottom of this file are for.
  *
- * COURSE_LEVELS stays. The profile view still reads it back, and the public
- * eligibility check still asks with it — four large rows is the right control
- * for a visitor answering one question, and forty chips is the right one for
- * somebody filling a whole form in a single pass.
+ * COURSE_LEVELS stays: it is the enum the API stores and the profile view
+ * reads back, and courseLevelFor below is what maps a chip onto it.
  */
 
 /** Selectable on their own, above the two grouped sets. */

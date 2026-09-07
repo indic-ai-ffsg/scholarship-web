@@ -24,7 +24,7 @@
  * The dashboard rather than the matched list: it is the screen both branches of
  * the sign-in flow converge on, and it says what is waiting on the student
  * before it says what they could apply for. Somebody who arrived by pressing
- * Apply on the public eligibility check still goes to that scholarship, because
+ * Apply on a scholarship page still goes to that scholarship, because
  * a `next` was carried and overrides this. */
 const FALLBACK = '/dashboard'
 

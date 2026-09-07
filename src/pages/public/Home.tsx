@@ -126,7 +126,7 @@ export default function Home() {
         <div className="row">
           {/* The full sentence here, where there is room for it. The masthead
               and the footer use the shorter nav label. */}
-          <Link className="btn primary" to="/check">{t('public.cta')}</Link>
+          <Link className="btn primary" to="/register">{t('public.cta')}</Link>
           <Link className="btn" to="/scholarships">{t('home.browseAll')}</Link>
         </div>
 

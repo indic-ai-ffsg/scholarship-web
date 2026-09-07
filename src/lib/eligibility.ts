@@ -6,7 +6,7 @@ import type { EligibilityState } from './types'
  * both a component and a plain function breaks Fast Refresh.
  *
  * Everything a state carries is here rather than inlined at its call sites, and
- * that matters more since the public eligibility check arrived: the anonymous
+ * that matters more since the four states were first shown to visitors: the anonymous
  * check and the signed-in matched list render the same four states from two
  * different endpoints. A state whose colour, mark or explanation differed
  * between those two pages would read as two different answers to the one

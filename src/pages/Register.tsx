@@ -124,8 +124,8 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const location = useLocation()
 
   /* Where finishing leads. The matched list normally, but a visitor who pressed
-     Apply on the public eligibility check arrives with the scholarship they had
-     chosen in the address, and finishing hands them back to it. */
+     Apply on a scholarship arrives with it in the address, and finishing hands
+     them back to it rather than to a list they must search it out of again. */
   const destination = safeNext(location.search)
 
   const verified = status === 'authenticated'
@@ -174,6 +174,13 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
    * still reads the derived boolean, because being held is still being held. */
   const [working, setWorking] = useState<'send' | 'verify' | 'save' | Channel | null>(null)
   const busy = working !== null
+
+  /* Disabled because this button's own work is running, or only because some
+   * other button's is? The second must not repaint — see the note on
+   * :not([data-held]) in styles.css. `unavailable` is the button's own reason
+   * to be off, the one the student can act on, and it always wins. */
+  const held = (own: boolean, unavailable = false) =>
+    (busy && !own && !unavailable) || undefined
   const [formError, setFormError] = useState<string | null>(null)
   const [fileWarning, setFileWarning] = useState<string | null>(null)
   const [resentAt, setResentAt] = useState<number | null>(null)
@@ -531,6 +538,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                           className="quiet small"
                           onClick={() => { cancelCode(); setCode('') }}
                           disabled={busy}
+                          data-held={held(false)}
                         >
                           {t('auth.changeNumber')}
                         </button>
@@ -559,6 +567,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                           onClick={verify}
                           disabled={busy || code.length < CODE_LENGTH}
                           aria-busy={working === 'verify' || undefined}
+                          data-held={held(working === 'verify', code.length < CODE_LENGTH)}
                         >
                           {busy ? t('auth.checking') : t('auth.verify')}
                         </button>
@@ -582,9 +591,9 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                       <div className="otp-retry">
                         <span className="muted" id="reg-retry">{t('auth.noCode')}</span>
                         <div className="otp-channels" role="group" aria-labelledby="reg-retry">
-                          <button type="button" className="quiet" onClick={() => resend('sms')} disabled={busy || secondsLeft > 0} aria-busy={working === 'sms' || undefined}>{t('auth.viaSms')}</button>
-                          <button type="button" className="quiet" onClick={() => resend('whatsapp')} disabled={busy || secondsLeft > 0} aria-busy={working === 'whatsapp' || undefined}>{t('auth.viaWhatsapp')}</button>
-                          <button type="button" className="quiet" onClick={() => resend('voice')} disabled={busy || secondsLeft > 0} aria-busy={working === 'voice' || undefined}>{t('auth.viaVoice')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('sms')} disabled={busy || secondsLeft > 0} aria-busy={working === 'sms' || undefined} data-held={held(working === 'sms', secondsLeft > 0)}>{t('auth.viaSms')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('whatsapp')} disabled={busy || secondsLeft > 0} aria-busy={working === 'whatsapp' || undefined} data-held={held(working === 'whatsapp', secondsLeft > 0)}>{t('auth.viaWhatsapp')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('voice')} disabled={busy || secondsLeft > 0} aria-busy={working === 'voice' || undefined} data-held={held(working === 'voice', secondsLeft > 0)}>{t('auth.viaVoice')}</button>
                         </div>
                         {secondsLeft > 0 && (
                           <p className="muted">{t('auth.resendIn', { n: secondsLeft })}</p>

@@ -152,7 +152,12 @@ export interface Slide {
   position: number
 }
 
-/* --- the public eligibility check -------------------------------------------
+/* --- an anonymous eligibility result ----------------------------------------
+ *
+ * The screen that rendered these has been removed. The type and the endpoint
+ * behind it stay: /public/eligibility-check is still served, and the four
+ * states are still the product's vocabulary, so a future caller has something
+ * to decode into rather than a shape to reinvent.
  *
  * The same four states a signed-in student sees, computed from answers that
  * were never saved anywhere (FR-17). Field-compatible with Match wherever the

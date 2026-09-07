@@ -7,10 +7,8 @@
  * stored as an ISO string both need turning back into the answer somebody gave,
  * and doing that beside each caller is how the two drift.
  *
- * The vocabularies come from lib/fields, shared with the public eligibility
- * check: that page asks a visitor the same questions before they have an
- * account and hands the answers here as a draft, so the lists have to offer the
- * same values or the answers would arrive and be dropped.
+ * The vocabularies come from lib/fields, which the registration form also
+ * reads — so a value shown here and a value written there cannot drift.
  */
 
 import { courseChoices, disabilityChoices, genderChoices, stateChoices } from './fields'
@@ -168,10 +166,8 @@ export const today = new Date().toISOString().slice(0, 10)
 
 /* The questions, in the order they are asked.
  *
- * The vocabularies they offer are in lib/fields, shared with the public
- * eligibility check: that page asks a visitor the same questions before they
- * have an account and hands the answers here as a draft, so the two lists have
- * to offer the same values or the answers would arrive and be dropped. */
+ * The vocabularies they offer are in lib/fields, which the registration form
+ * writes from, so the two cannot offer different values for one field. */
 export function buildQuestions(): Question[] {
   return [
     {

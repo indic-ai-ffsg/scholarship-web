@@ -183,7 +183,7 @@ export default function Scheme() {
                 <hr />
                 {status !== 'authenticated' ? (
                   <>
-                    <Link className="btn primary wide" to="/check">{t('check.go')}</Link>
+                    <Link className="btn primary wide" to="/register">{t('public.cta')}</Link>
                     <p className="muted small">{t('public.ctaHelp')}</p>
                   </>
                 ) : external ? (

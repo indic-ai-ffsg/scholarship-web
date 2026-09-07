@@ -283,9 +283,14 @@ function DocumentCard({
           onClick={remove}
           disabled={busy}
           aria-busy={busy || undefined}
-          aria-label={`${t('doc.remove')} ${label}`}
+          /* Tracks the visible word. 2.5.3 wants the accessible name to
+             contain the label somebody can see, and "Removing…" is not inside
+             "Remove" — a voice-control user saying "click Remove" during the
+             second it runs would otherwise be talking to a name that is no
+             longer on screen. */
+          aria-label={`${busy ? t('doc.removing') : t('doc.remove')} ${label}`}
         >
-          {t('doc.remove')}
+          {busy ? t('doc.removing') : t('doc.remove')}
         </button>
       </div>
 

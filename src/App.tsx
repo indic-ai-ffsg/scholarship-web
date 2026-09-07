@@ -26,7 +26,6 @@ import Register from './pages/Register'
  * screens and the data-rights page before anything rendered. Nobody sees more
  * than a handful of these in a session, and a student who never applies sees
  * none of them. */
-const Check = lazy(() => import('./pages/public/Check'))
 const Directory = lazy(() => import('./pages/public/Directory'))
 const Scheme = lazy(() => import('./pages/public/Scheme'))
 const Partner = lazy(() => import('./pages/public/Partner'))
@@ -66,10 +65,23 @@ export default function App() {
             ever answering "is any of this for me" — the question Table 4.1
             gives the public site. */}
         <Route index element={<Home />} />
-        {/* The first step of the flow: an eligibility answer before an account.
-            Public on purpose — the whole value of it is that it precedes
-            registration. */}
-        <Route path="/check" element={<Check />} />
+        {/* /check is gone, and the address is kept alive rather than left to
+            the catch-all.
+            *
+            * The page asked a visitor the same questions the registration form
+            now asks, saved none of them, and handed them on as a draft to be
+            typed again — two forms over one vocabulary, and only the second
+            could keep an answer. Every link to it inside the app now points at
+            /register.
+            *
+            * The ones outside the app cannot be updated. This was the filled
+            * button in the masthead of every public page for months, so it is
+            * in browser histories and in anything anybody shared; letting it
+            * fall through to the catch-all would answer a bookmark with a page
+            * that does not exist. Same reasoning as /profile/setup below and
+            * /register itself — an address the product has published is a
+            * promise the product keeps. */}
+        <Route path="/check" element={<Navigate to="/register" replace />} />
         <Route path="/scholarships" element={<Directory />} />
         {/* Two pages the platform had the endpoints for and no way into:
             organisations could not apply to join at all, and nothing published

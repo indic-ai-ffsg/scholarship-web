@@ -842,32 +842,60 @@ button.wide { width: 100%; }
  *                 that measures 3.31:1 against the card. The same treatment as
  *                 .chip-choice.off, and for the same reason.
  *
- *   working       Untouched. Full accent ground, label back at 8.06:1, and the
- *                 signal moved onto a bar along the bottom edge — the same
- *                 indeterminate sweep the results list uses, so that "working"
- *                 looks like one thing wherever it happens. No colour on the
- *                 button changes when it is pressed, and that is what removes
- *                 the blink.
+ *   held          Rest, exactly. A button that is off for one second because a
+ *                 different button is working is not unavailable and must not
+ *                 be drawn as though it were — see :not([data-held]) below.
  *
- * aria-busy is what separates them, which is the honest attribute for it: the
- * call sites set it on the button actually doing the work and never on one
- * merely held while something else does — so "send it again" stays dimmed by
- * its timer, which is correct. On four of them it carries more than styling.
- * MyData's export, erasure and withdraw, and the document "Remove", change no
- * label at all while they run, so until now the only acknowledgement that the
- * press had landed was the fade itself; the bar is that acknowledgement now.
+ *   working       Rest, exactly, plus the label. Full accent ground, label at
+ *                 8.06:1, and nothing that appears, moves or changes colour.
+ *                 What is happening is said in the word on the button:
+ *                 "Sending…", "Checking…", "Uploading…", "Saving…".
  *
- * Which means this file cannot do it alone, and for a while it was: the two
- * rules below shipped while every call site still held a plain `busy` boolean
- * and set no aria-busy at all, so nothing ever matched the second selector and
- * every button in flight took the unavailable ground — the exact blink the
- * block was written to remove, still there, on all seven. Both auth pages now
- * hold a tag naming the pressed action instead of a boolean, because a boolean
- * cannot say which of Verify and the three resend channels beside it was the
- * one pressed. If a new action is added, it needs the tag too; a `disabled`
- * with no aria-busy beside it is this bug again.
+ * That last state took three attempts and the first two failed the same way,
+ * which is worth recording so it is not tried a third time.
+ *
+ * The opacity was attempt zero. Attempt one was this block: separate the
+ * grounds, keyed on aria-busy. It was written and never wired — every call site
+ * still held a plain `busy` boolean and set aria-busy on nothing, so the second
+ * selector matched nothing and every button in flight took the unavailable
+ * ground. The report was unchanged because the behaviour was unchanged.
+ *
+ * Attempt two wired it and put the signal on a 3px bar sweeping the bottom edge
+ * on a 900ms loop. That was reported in the same words as the opacity — a white
+ * shape appearing and disappearing at the bottom of the button, once a second,
+ * for the length of the request. Pinning a blink to a smaller area does not
+ * stop it being a blink, and the same bar on the results list meant the search
+ * flow carried it without pressing anything at all.
+ *
+ * So the working state paints nothing. Text is the one channel that cannot
+ * flicker, and it is the only one that was ever going to reach a screen reader
+ * anyway, which aria-busy on the same element announces. The four actions with
+ * no working label — MyData's export, erasure and withdraw, and a document's
+ * "Remove" — have one now, which is what a bar was standing in for.
+ *
+ * aria-busy stays as the hook, because it is the honest attribute for it, and
+ * both auth pages hold a tag naming the pressed action rather than a boolean:
+ * a boolean cannot say which of Verify and the three resend channels beside it
+ * was the one pressed. A new action needs the tag, the label and, if it can be
+ * off while a neighbour works, data-held. A bare `disabled` is this bug again.
  */
-button:disabled:not([aria-busy="true"]) {
+/* :not([data-held]) is the third state, and the last of the blink.
+ *
+ * "Unavailable" and "held" are not the same thing and were being drawn the
+ * same way. Unavailable is a reason the student can act on and will sit there
+ * until they do — nothing answered yet, four of six digits typed, the resend
+ * timer running. Held is a button that is merely not pressable for the second
+ * it takes some *other* button to finish, and it goes back exactly as it was.
+ *
+ * Drawn identically, the second one repaints twice per press. Pressing Verify
+ * turned the three resend channels grey and back; pressing a resend turned
+ * Verify from green to pale and back. That is the same flicker as the original
+ * report, one control over, and it is why the fix has to be a third state
+ * rather than a better-looking second one.
+ *
+ * Held renders as rest. The button is inert, says nothing about it, and is
+ * whole again before the eye has finished deciding something changed. */
+button:disabled:not([aria-busy="true"]):not([data-held]) {
   background: var(--surface-sunken);
   border-color: var(--border-strong);
   color: var(--text-muted);
@@ -876,46 +904,35 @@ button:disabled:not([aria-busy="true"]) {
  * one by becoming unavailable — a word that gains a box reads as a new control
  * appearing rather than as an old one closing. The muted text is the whole of
  * the state, exactly as the accent colour is the whole of it at rest. */
-button.quiet:disabled:not([aria-busy="true"]) {
+button.quiet:disabled:not([aria-busy="true"]):not([data-held]) {
   background: transparent;
   border-color: transparent;
   color: var(--text-muted);
 }
 
-button[aria-busy="true"] {
-  cursor: progress;
-  /* The bar is placed against the padding box, so it lands just inside the
-   * border rather than over it, and the clip rounds it off at the two bottom
-   * corners. It does not clip the focus ring: that is an outline, and an
-   * outline draws outside the border box, where overflow cannot reach it. */
-  position: relative;
-  overflow: hidden;
-}
-button[aria-busy="true"]::after {
-  content: "";
-  position: absolute;
-  left: 0; bottom: 0;
-  height: 3px; width: 30%;
-  border-radius: 999px;
-  animation: sweep 900ms linear infinite;
-  /* Keyed on what is beneath the bar, not on which class the button wears.
-   * The accent ground is .primary's alone — a default button is a border on
-   * the card's own surface, and the white bar this rule used to give it landed
-   * white on white, which is a button that says nothing while it works. MyData's
-   * export and erasure are the two that were invisible. So: accent by default,
-   * and the two grounds that cannot take it name their own. */
-  background: var(--accent);
-}
-button.primary[aria-busy="true"]::after { background: var(--accent-text); }
-button.destructive[aria-busy="true"]::after { background: var(--danger); }
-
-/* Reduced motion shortens a duration but cannot un-name an animation, which
- * would strand the bar wherever its last frame landed — the same note as under
- * .refetching, which is where `sweep` is defined. Full width still says
- * "working". */
-@media (prefers-reduced-motion: reduce) {
-  button[aria-busy="true"]::after { animation: none; left: 0; width: 100%; }
-}
+/* Nothing. That is the rule, and it is the whole of the working state.
+ *
+ * There was a bar here — 3px, swept across the bottom edge on a 900ms loop,
+ * white on the accent ground. It was the second answer to "it blinks white",
+ * and it was the same answer: a white shape appearing and disappearing at the
+ * bottom of the button, once a second, for as long as the request took. Moving
+ * the blink from the whole button onto a strip along its edge makes it smaller,
+ * not different, and it was reported in the same words.
+ *
+ * So the working state changes no colour, grows no shape, and moves nothing.
+ * The button holds still and its label says what is happening — "Sending…",
+ * "Checking…", "Uploading…", "Saving…". Text is the one channel here that
+ * cannot flicker, and it is also the only one that was ever going to reach a
+ * screen reader, which is what aria-busy on the same element already announces.
+ *
+ * Four actions had no such label and were the reason a visual signal seemed
+ * necessary at all — MyData's export, erasure and withdraw, and a document's
+ * "Remove". They have one now (privacy.exporting, privacy.erasing,
+ * privacy.withdrawing, doc.removing), which is the honest fix: the button that
+ * said nothing while it worked now says something, rather than flashing.
+ *
+ * The cursor is the only thing left, and it neither paints nor animates. */
+button[aria-busy="true"] { cursor: progress; }
 
 input, select, textarea {
   font: 400 var(--step-0)/1.5 var(--font);
@@ -1096,31 +1113,6 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   justify-content: start;
 }
 .filters .field { margin: 0; }
-
-/* --- the eligibility check's answers -------------------------------------------
- *
- * The same shape as the filters above, for the same reason: a set of short,
- * independent questions is read faster in columns than as one tall stack, and on
- * this page in particular the length of the form is what decides whether a
- * visitor finishes it. The ceiling on the track is the same too â a select
- * stretched across a third of a wide screen reads as broken. */
-.answers {
-  display: grid; gap: 0 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 22rem));
-  justify-content: start;
-}
-
-/* The two questions most students cannot answer off the top of their head, put
- * behind a disclosure rather than dropped. A <details> because it is
- * keyboard-operable and announces its own state with no script; the native
- * marker is kept, since it is the affordance saying this opens. */
-.more-answers { margin: 0 0 1.25rem; }
-.more-answers > summary {
-  display: inline-flex; align-items: center;
-  min-height: 48px;
-  font-weight: 600; color: var(--accent); cursor: pointer;
-}
-.more-answers > p { margin-top: 0; }
 
 .chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .chip {
@@ -2694,33 +2686,20 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
  * moves onto a progress bar and the region is made inert instead â a tap
  * cannot land on a result that is about to be replaced by a different one. */
 
-.refetching { position: relative; pointer-events: none; }
-.refetching::before,
-.refetching::after {
-  content: "";
-  position: absolute;
-  top: 0; height: 3px;
-  border-radius: 999px;
-  z-index: 1;
-}
-.refetching::before { left: 0; right: 0; background: var(--accent-weak); }
-.refetching::after {
-  width: 30%;
-  background: var(--accent);
-  animation: sweep 900ms linear infinite;
-}
-
-@keyframes sweep {
-  from { left: -30%; }
-  to   { left: 100%; }
-}
-
-/* The global reduced-motion rule shortens durations but cannot un-name an
- * animation, which would leave the bar frozen wherever its last frame landed.
- * Replaced outright: a full-width bar still says "working". */
-@media (prefers-reduced-motion: reduce) {
-  .refetching::after { animation: none; left: 0; width: 100%; }
-}
+/* Inert, and nothing else — the same decision as the button above.
+ *
+ * This had the bar the buttons borrowed: a 30% sweep looping across the top of
+ * the results on a 900ms cycle, for as long as a keystroke took to answer. On
+ * the directory that is every keystroke, so the search flow carried the blink
+ * even though no button there ever changed. It is gone for the reason the
+ * button's is: a shape that appears and disappears once a second is a flicker
+ * whichever edge it is pinned to.
+ *
+ * The signal moved into the count line, which was blanked to a non-breaking
+ * space while a search ran and now says "Searching…" instead. Same place, same
+ * size, no reflow, and it is the one signal that also survives being read
+ * aloud. The list stays up and stays inert; that part was always right. */
+.refetching { pointer-events: none; }
 
 /* --- pages written in the admin panel ------------------------------------------
  *

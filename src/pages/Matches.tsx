@@ -22,7 +22,7 @@ import type { Match } from '../lib/types'
  * disclosed reason is often the thing that tells them which certificate to
  * chase for next year.
  *
- * The card itself is in components/ui, shared with the public eligibility check:
+ * The card itself is in components/ui, built to be shared:
  * a visitor who ran that check before registering arrives here to the same cards
  * in the same order, which is the whole reason the check is worth running.
  */

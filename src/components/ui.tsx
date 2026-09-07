@@ -30,8 +30,7 @@ export interface FieldProps {
    * On by default, because on a form with both kinds it is what tells them
    * apart. A form where nothing is required has nothing to tell apart: the
    * marker then repeats on every single field and says only what one sentence
-   * above the form has already said. The public eligibility check turns it off
-   * for that reason. */
+   * above the form has already said. A form of that shape turns it off. */
   optional?: boolean
   children: (props: {
     id: string
@@ -135,16 +134,12 @@ export function StateBadge({ state }: { state: EligibilityState }) {
 
 /* --- one classified scheme --------------------------------------------------------
  *
- * Shared by the signed-in matched list and the public eligibility check, which
- * is the point of it being here: somebody who checked their eligibility before
- * registering should meet the same card afterwards, in the same order, carrying
- * the same instruction. A second card design for the same four states would
- * make the portal look like a different product from the site that sent them.
- *
- * What legitimately differs between the two is what can be done next — a
- * visitor has no application to open and no documents to add — so the buttons
- * are the caller's, passed as children, and the state's explanation can be
- * overridden where the standard one would not be true for that caller. */
+ * Used by the matched list, and built to be shared: the four states are the
+ * product's own vocabulary and a second card design for them would read as a
+ * different product. It had a second caller — the public eligibility check —
+ * until that page was removed, which is why what can be done next is still the
+ * caller's business, passed as children, and why the state's explanation can be
+ * overridden where the standard sentence would not be true. */
 export function ResultCard({
   state, title, slug, award, benefit, organisation, daysRemaining, nextAction, help, children,
 }: {

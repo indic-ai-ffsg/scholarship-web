@@ -6,8 +6,8 @@ import { ErrorState, Loading } from '../../components/ui'
 
 /* A page written in the admin panel rather than in this repository.
  *
- * The five pages with behaviour — the eligibility check, the directory, a
- * scheme's own page — are components and stay components. This renders the ones
+ * The pages with behaviour — the directory, a scheme's own page, the
+ * registration form — are components and stay components. This renders the ones
  * that are only words: a partner programme, a state's scheme explained, a
  * campaign that runs for six weeks. See backend migration 0042.
  *

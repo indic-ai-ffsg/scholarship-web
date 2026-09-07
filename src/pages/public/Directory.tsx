@@ -234,9 +234,11 @@ export default function Directory() {
               here yet" is the same news twice, and the first version of it is
               the one that reads as a number nobody wanted. */}
           <p className="result-count" role="status" aria-live="polite">
-            {query.stale || total === 0
-              ? '\u00a0'
-              : `${total ?? listings.length} ${t('public.results')}`}
+            {query.stale
+              ? t('public.searching')
+              : total === 0
+                ? '\u00a0'
+                : `${total ?? listings.length} ${t('public.results')}`}
           </p>
 
           {listings.length === 0 && !query.stale ? (
@@ -283,7 +285,7 @@ export default function Directory() {
       {status !== 'authenticated' && listings.length > 0 && (
         <Notice tone="info" title={t('public.cta')}>
           <p>{t('public.ctaHelp')}</p>
-          <Link className="btn primary" to="/check">{t('check.go')}</Link>
+          <Link className="btn primary" to="/register">{t('public.cta')}</Link>
         </Notice>
       )}
         </div>
