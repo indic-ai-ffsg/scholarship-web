@@ -109,6 +109,11 @@ export const en: Dict = {
   'public.renewable': 'Can be renewed each year',
   'public.offeredBy': 'Offered by',
   'public.cta': 'Check if you qualify',
+  /* Under the Apply button on a scheme page, for somebody who has an account.
+     It says the press is safe: the next screen checks the profile and the
+     documents and names anything missing, so pressing Apply is not the same as
+     sending an application. */
+  'public.applyHelp': 'We check your profile and your documents against this scholarship first, and tell you if anything is missing. Nothing is sent until you confirm.',
   'public.ctaHelp': 'Answer a few questions and we will tell you which of these are open to you. No account needed.',
   'public.back': 'Back to all scholarships',
 

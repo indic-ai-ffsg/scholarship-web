@@ -142,11 +142,54 @@ export default function Scheme() {
                 are the entire answer. The rule goes with the button: a divider
                 under the last fact, separating it from nothing, is a line the
                 eye stops at for no reason. */}
-            {status !== 'authenticated' && (
+            {/* Two actions, one slot, and which one appears depends on whether
+                there is an account behind the reader.
+                *
+                * A signed-in student had nothing here at all. The slot held
+                * "My matches" once, that was removed as a button whose only
+                * effect was to leave the page, and nothing replaced it - so the
+                * scheme page, which is where somebody actually decides to
+                * apply, was the one place in the product with no way to apply.
+                * The matched list was the only route to /apply, which reaches
+                * only the students who arrive that way: anybody following a
+                * shared link, an SMS, a search result or the directory read the
+                * criteria and hit a dead end.
+                *
+                * It links straight to /apply rather than testing eligibility
+                * here first. This page is public and deliberately knows nothing
+                * about the reader, and /apply already does the real check -
+                * it holds the document checklist, the blocked reasons and the
+                * consent record, and it refuses on can_apply. Hiding the button
+                * behind a guess made here would mean a student who is eligible
+                * and has one expired certificate is shown no button and no
+                * reason, which is the failure this product is most careful
+                * about elsewhere. Better to offer the action and let the next
+                * screen explain itself.
+                *
+                * Nothing is drawn until the session resolves. `status` is
+                * 'loading' on the first paint, so branching on
+                * `!== 'authenticated'` put "Check now" in the slot for a moment
+                * and then swapped it for Apply - two different destinations
+                * under one position, which is a mis-press for anybody who
+                * reached for the button as it changed. Appearing a moment late
+                * costs a reader nothing; the panel is beside the criteria they
+                * are still reading. */}
+            {status !== 'loading' && (
               <>
                 <hr />
-                <Link className="btn primary wide" to="/check">{t('check.go')}</Link>
-                <p className="muted small">{t('public.ctaHelp')}</p>
+                {status === 'authenticated' ? (
+                  <>
+                    <Link className="btn primary wide" to={`/apply/${s.scholarship_id}`}>
+                      {t('match.apply')}
+                    </Link>
+                    <p className="muted small">{t('public.applyHelp')}</p>
+                  </>
+                ) : (
+                  <>
+                    <Link className="btn primary wide" to="/check">{t('check.go')}</Link>
+                    <p className="muted small">{t('public.ctaHelp')}</p>
+                  </>
+                )}
               </>
             )}
           </div>

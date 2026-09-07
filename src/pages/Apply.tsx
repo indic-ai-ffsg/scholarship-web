@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { useAnnounce } from '../lib/announce'
 import { useI18n } from '../lib/i18n-context'
+import { withNext } from '../lib/next'
 import { Empty, ErrorState, Loading, Notice, StateBadge } from '../components/ui'
 import type { Application, EligibilityState, Reason, RequiredDocument } from '../lib/types'
 
@@ -67,7 +68,16 @@ export default function Apply() {
           title={t('apply.needProfile')}
           hint={t('apply.needProfileHint')}
           action={
-            <Link className="btn primary" to={`/profile?next=/apply/${scholarshipId}`}>
+            /* withNext, and to the form rather than to /profile.
+             *
+             * This read `/profile?next=...`, which lost the scholarship twice
+             * over: /profile is the read-only review and it redirects to the
+             * form when there is no profile to review, and that redirect is a
+             * bare Navigate that does not carry a query string - so a student
+             * who pressed this arrived at an empty form with no idea what they
+             * had been applying for, and finishing it dropped them at the
+             * default destination rather than at the scholarship. */
+            <Link className="btn primary" to={withNext('/register', `/apply/${scholarshipId}`)}>
               {t('profile.start')}
             </Link>
           }
