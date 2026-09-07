@@ -239,38 +239,10 @@ export default function Layout() {
             * That distinction matters more here than on most sites, because
             * the thing being decided is whether to trust it with a disability
             * certificate. */}
-          <div className="brand-lockup">
-            <Link to="/" className="brand">
-              <img src="/logo-mark.png" alt="" width="36" height="28" className="brand-mark" />
-              <span className="brand-name">{t('app.name')}</span>
-            </Link>
-
-            {/* Not lazy, unlike the footer copy it replaces: it is above the
-              * fold now, and `loading="lazy"` on an image in the first screen
-              * delays the thing it was meant to speed up.
-              *
-              * alt names the bank rather than being empty, which is the
-              * opposite of the rule the mark beside it follows — that one sits
-              * next to real text saying the same word, and this one does not.
-              * With the label, a screen reader reads "Supported by HSBC".
-              *
-              * Not a link: there is no address to send anybody to. The file is
-              * the supplied artwork, unresized and unrecoloured — it is
-              * somebody else's trademark, and scaling it in CSS is ordinary use
-              * where re-encoding a copy into this repository is not ours to
-              * do. */}
-            <p className="brand-sponsor">
-              <span className="label">{t('footer.sponsor')}</span>
-              <img
-                src="/hsbc_logo.png"
-                alt="HSBC"
-                width="1280"
-                height="345"
-                decoding="async"
-                className="sponsor-logo"
-              />
-            </p>
-          </div>
+          <Link to="/" className="brand">
+            <img src="/logo-mark.png" alt="" width="36" height="28" className="brand-mark" />
+            <span className="brand-name">{t('app.name')}</span>
+          </Link>
 
           {/* Three zones: who this is, where to go, what to do.
            *
@@ -380,6 +352,46 @@ export default function Layout() {
               <NavLink key={p.slug} to={`/${p.slug}`}>{p.label}</NavLink>
             ))}
           </nav>
+
+          {/* Who funds this, at the right-hand end.
+            *
+            * It sat beside the wordmark and has moved across. Two marks
+            * together at the left read as one lockup however carefully the
+            * divider is drawn — and a lockup is precisely what this must not
+            * be: HSBC supports the platform and does not run it, which is the
+            * distinction a visitor about to hand over a disability certificate
+            * is entitled to. Across the bar from the site's own name, it reads
+            * as a credit rather than as co-ownership.
+            *
+            * Before the actions rather than after them. The far corner is the
+            * eye's last stop and it belongs to "Check eligibility"; a logo
+            * placed beyond it would take the corner from the one thing this
+            * site is asking anybody to do.
+            *
+            * Not lazy, unlike the footer copy it replaces: it is above the fold
+            * now, and `loading="lazy"` on a first-screen image delays the thing
+            * it was meant to speed up.
+            *
+            * alt names the bank rather than being empty, which is the opposite
+            * of the rule the brand mark follows — that one sits beside real
+            * text saying the same word and this one does not. With the label, a
+            * screen reader reads "Supported by HSBC".
+            *
+            * Not a link: there is no address to send anybody to. The file is
+            * the supplied artwork, unresized and unrecoloured — somebody else's
+            * trademark, where scaling in CSS is ordinary use and re-encoding a
+            * copy into this repository is not ours to do. */}
+          <p className="masthead-sponsor">
+            <span className="label">{t('footer.sponsor')}</span>
+            <img
+              src="/hsbc_logo.png"
+              alt="HSBC"
+              width="1280"
+              height="345"
+              decoding="async"
+              className="sponsor-logo"
+            />
+          </p>
 
           {/* The actions are a child of the bar in their own right, not part of
               the nav group, and that is what lets a phone arrange them: on a

@@ -2536,28 +2536,36 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
  * tallest case rather than tracking a number that changes. */
 [id] { scroll-margin-top: 6rem; }
 
-/* --- the masthead's identity block ---------------------------------------------
+/* --- the masthead's sponsor credit --------------------------------------------
  *
- * The site's own lockup, then a rule, then who funds it. The rule is doing real
- * work: without it two marks sit side by side and read as two owners, and the
- * one thing this credit must not say is that HSBC runs the platform.
+ * At the right-hand end of the bar, across from the site's own name.
+ *
+ * It was beside the wordmark with a rule between them, and the rule was not
+ * enough: two marks adjacent read as one lockup however they are separated, and
+ * a lockup says HSBC runs this platform. They do not, and the visitor deciding
+ * whether to hand over a disability certificate is entitled to the difference.
+ * The width of the bar does what a 1px rule could not.
+ *
+ * Before the action cluster, never after it. The far corner is the eye's last
+ * stop and belongs to "Check eligibility".
  */
-.brand-lockup {
-  display: flex; align-items: center;
-  gap: clamp(0.6rem, 1.5vw, 1.1rem);
-  min-width: 0;
-}
-
-.brand-sponsor {
+.masthead-sponsor {
   margin: 0;
   display: flex; flex-direction: column; gap: 0.15rem;
-  padding-inline-start: clamp(0.6rem, 1.5vw, 1.1rem);
-  border-inline-start: 1px solid var(--border);
+  /* Right-aligned within itself, so the label sits over the mark's right edge
+     and the whole block reads as anchored to the bar's end rather than
+     floating. */
+  align-items: flex-end;
+  flex: none;
+  padding-inline-end: clamp(0.6rem, 1.5vw, 1.25rem);
+  margin-inline-end: clamp(0.1rem, 0.5vw, 0.5rem);
+  border-inline-end: 1px solid var(--border);
 }
-/* 10px and muted. Subordinate on purpose — it is a caption on the mark beside
-   it, not a heading, and at the masthead's scale anything larger competes with
-   the site's own name two centimetres to its left. */
-.brand-sponsor .label {
+
+/* 10px and muted. Subordinate on purpose — a caption on the mark below it, not
+   a heading, and anything larger competes with the site's own name across the
+   bar. */
+.masthead-sponsor .label {
   font-size: 10px;
   line-height: 1;
   letter-spacing: 0.04em;
@@ -2565,20 +2573,28 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
   color: var(--text-muted);
   white-space: nowrap;
 }
-/* 4.5rem here against the footer's 7.5rem. The bar is 48px tall and the credit
-   has to fit inside it beside a two-line wordmark. */
-.brand-lockup .sponsor-logo { width: 4.5rem; }
 
-/* Narrow: the label goes and the mark stays.
+/* 4.5rem against the footer's old 7.5rem: the bar is 48px tall and the credit
+   has to sit inside it beside a two-line wordmark and two buttons. */
+.masthead-sponsor .sponsor-logo { width: 4.5rem; }
+
+/* Narrow: the words go, the mark stays.
  *
- * Dropping the credit entirely would be the easy answer and the wrong one —
- * most of this audience is on a phone, so hiding it there hides it from nearly
- * everybody, and it is a trust signal rather than decoration. What goes is the
- * word "Supported by", which the bar has no room for; the mark keeps its own
- * accessible name, so a screen reader still reads "HSBC" and nothing is lost
- * to the reader who most depends on it. */
+ * Dropping the credit entirely is the easy answer and the wrong one — most of
+ * this audience is on a phone, so hiding it there hides it from nearly
+ * everybody, and it is a trust signal rather than decoration. What goes is
+ * "Supported by", which the bar has no room for; the image keeps its own
+ * accessible name, so a screen reader still reads "HSBC" and the reader who
+ * most depends on it loses nothing.
+ *
+ * The rule goes too. Stacked, it would be a line between two rows rather than
+ * between two things, which is a divider that divides nothing. */
 @media (max-width: 48rem) {
-  .brand-sponsor .label { display: none; }
-  .brand-lockup .sponsor-logo { width: 3.75rem; }
-  .brand-sponsor { padding-inline-start: 0.6rem; }
+  .masthead-sponsor .label { display: none; }
+  .masthead-sponsor .sponsor-logo { width: 3.75rem; }
+  .masthead-sponsor {
+    border-inline-end: 0;
+    padding-inline-end: 0;
+  }
 }
+
