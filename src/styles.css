@@ -3022,3 +3022,12 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
 
 /* The profile view's one button, now that its rows no longer carry eleven. */
 .detail-actions { margin-top: 1.75rem; }
+
+/* The form ends at its last control.
+ *
+ * .page carries 5rem of bottom padding, which is right for a page of content
+ * whose last paragraph should not sit on the fold. Under a card it is a
+ * screenful of nothing between the submit button and the end of the document —
+ * and with the footer gone from this route (see showsFooter in Layout) there is
+ * nothing below it to separate from. */
+.register-page { padding-bottom: 2rem; }

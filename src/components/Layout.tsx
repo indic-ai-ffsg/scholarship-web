@@ -489,8 +489,34 @@ function under(prefixes: string[], path: string): boolean {
   return prefixes.some(p => path === p || path.startsWith(`${p}/`))
 }
 
+/* A task, even though it is public.
+ *
+ * /register is not a page somebody reads, it is a form somebody fills: nine
+ * questions, three sections, and about three thousand pixels of it. The footer
+ * under that was a 269px band of pure white on the near-white page, arriving
+ * after a white card and a screenful of empty space — which reads as a
+ * rendering artifact rather than as the end of the document, and puts a
+ * hundred-and-eighty-pixel logo below the one button the screen exists for.
+ *
+ * It is not in PORTAL because it is reachable without an account, and PORTAL is
+ * what the route guards are written against. The rule it actually follows is
+ * the one at SiteFooter: the footer belongs to the pages that answer "is this
+ * real and whose is it", and a form answers "who are you" instead. That
+ * question is already answered above this form — the masthead carries the mark,
+ * the name and the sponsor credit, and it is sticky, so it is on screen for the
+ * whole way down.
+ *
+ * /signin keeps its footer and the distinction is not arbitrary. It is one
+ * question on one card, a screen a stranger arrives at from an SMS link with
+ * nothing else on it, and there the footer is the only thing on the page that
+ * says whose site just asked for a phone number. Nobody scrolls past nine
+ * answered questions to check provenance before pressing submit.
+ */
+const TASK = ['/register']
+
 function showsFooter(path: string, signedIn: boolean): boolean {
   if (under(PORTAL, path)) return false
+  if (under(TASK, path)) return false
   if (signedIn && under(BROWSE, path)) return false
   return true
 }
