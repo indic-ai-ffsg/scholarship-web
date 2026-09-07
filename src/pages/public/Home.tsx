@@ -186,8 +186,12 @@ export default function Home() {
         )}
       </section>
 
-      <section className="home-section">
-        <h2>{t('home.how')}</h2>
+      {/* The anchor the masthead's "How it works" points at.
+          *
+          * scroll-margin-top in the stylesheet keeps the heading clear of the
+          * sticky bar, which would otherwise land on top of it. */}
+      <section className="home-section" id="how-it-works">
+        <h2 tabIndex={-1}>{t('home.how')}</h2>
         <ol role="list" className="steps">
           <li>
             <h3>{t('home.step1')}</h3>

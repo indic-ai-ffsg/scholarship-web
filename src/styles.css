@@ -505,14 +505,32 @@ main { scroll-margin-top: 5rem; }
 /* The one action in the bar, and now the only filled thing in it. As an
  * outlined link it carried exactly as much weight as "Find scholarships" beside
  * it, which left the bar with six controls and no answer to "what do I press". */
-.masthead a.signin {
+/* The one filled control in the bar, and it is the eligibility check rather
+ * than the account door.
+ *
+ * It was Sign in, which made the loudest thing in the masthead a form — on a
+ * site whose whole proposition is "tell us about yourself and we will tell you
+ * what you qualify for", and whose check needs no account at all. One filled
+ * control, on the thing being asked for. */
+.masthead a.nav-cta {
   background: var(--accent); color: var(--accent-text);
   /* Filled, bordered and the only solid thing in the bar. 700 on top of all
      three was belt and braces. */
   font-weight: var(--w-strong); border: 2px solid var(--accent);
   text-decoration: none;
 }
-.masthead a.signin:hover { background: var(--accent); filter: brightness(1.12); }
+.masthead a.nav-cta:hover { background: var(--accent); filter: brightness(1.12); }
+
+/* The account door, quiet beside it. An outline rather than a fill, so the two
+   read as one action and one way back in rather than as a choice between two
+   equal things — which is what a returning student needs and a new one can
+   ignore. */
+.masthead a.nav-signin {
+  border: 2px solid var(--border-strong);
+  color: var(--text);
+  text-decoration: none;
+}
+.masthead a.nav-signin:hover { border-color: var(--accent); color: var(--accent); }
 
 /* The returning visitor's way in. Outlined rather than filled: it has to be
  * easy to find and must not compete with the one action the site is asking a
@@ -2496,3 +2514,14 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
 .page-faq > div:first-child { border-top: 0; }
 .page-faq dt { font-weight: var(--w-strong); margin-bottom: 0.25rem; }
 .page-faq dd { margin: 0; color: var(--text-muted); }
+
+/* An anchored heading clears the sticky bar.
+ *
+ * "How it works" in the masthead scrolls to a section on the landing page, and
+ * scrollIntoView puts its top at the top of the viewport — which is behind the
+ * bar that is stuck there. The reader arrives at a heading they cannot see.
+ *
+ * Generous rather than exact: the bar's height varies with the offline banner
+ * above it and with the row wrapping on a narrow window, so this clears the
+ * tallest case rather than tracking a number that changes. */
+[id] { scroll-margin-top: 6rem; }

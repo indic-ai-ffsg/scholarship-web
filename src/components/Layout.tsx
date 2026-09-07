@@ -98,12 +98,40 @@ export default function Layout() {
   useEffect(() => {
     document.title = `${titleFor(location.pathname, t)} · ${t('app.name')}`
 
+    /* A hash goes to its target instead of to the top.
+      *
+      * "How it works" in the masthead is an anchor into the landing page, so
+      * from anywhere else it is a navigation AND a scroll — and a single-page
+      * app does neither for itself. Without this the link lands the reader at
+      * the top of the home page with the section they asked for three screens
+      * down, which reads as the link not working.
+      *
+      * Focus moves to the heading, not only the scroll position. A screen
+      * reader that is not moved is still sitting on the link that was pressed,
+      * and would read the page from the top — so the two readers get different
+      * destinations from the same control. The heading carries tabIndex={-1}
+      * for this; scroll-margin-top in the stylesheet keeps it clear of the
+      * sticky bar.
+      *
+      * Checked before the same-path guard below, because pressing the anchor
+      * while already on the landing page does not change the path and would
+      * otherwise do nothing at all. */
+    if (location.hash) {
+      const target = document.querySelector<HTMLElement>(location.hash)
+      if (target) {
+        lastPath.current = location.pathname
+        target.scrollIntoView({ behavior: 'instant', block: 'start' })
+        target.querySelector<HTMLElement>('h1, h2, h3')?.focus()
+        return
+      }
+    }
+
     if (lastPath.current === location.pathname) return
     lastPath.current = location.pathname
 
     window.scrollTo({ top: 0, behavior: 'instant' })
     mainRef.current?.focus()
-  }, [location.pathname, t])
+  }, [location.pathname, location.hash, t])
 
   /* The class is toggled on the element rather than held in state.
    *
@@ -197,13 +225,38 @@ export default function Layout() {
               * dashboard, which is already in the bar below, and two links
               * called Home and Dashboard pointing at different pages is worse
               * than neither. */}
-            {!signedIn && <NavLink to="/" end>{t('nav.home')}</NavLink>}
-            {/* Then the visitor's first destination, first in the flow: check,
-                then find, then apply. A signed-in student has the same thing
-                better — their matched list, computed from a saved profile — so
-                it is not repeated for them. */}
-            {!signedIn && <NavLink to="/check">{t('nav.check')}</NavLink>}
+            {/* Places, in the order a visitor needs them — and "Check
+              * eligibility" is no longer among them.
+              *
+              * It was first here, on the reasoning that it is first in the
+              * flow. That was right about the flow and wrong about the bar: a
+              * destination and an action rendered identically, so the one thing
+              * this site exists to get somebody to do looked exactly like
+              * "Impact". It has moved to the actions cluster and is now the
+              * only filled control in the masthead. See there.
+              *
+              * "Home" has gone with it. The wordmark to the left is the home
+              * link and now the only one, which is the convention every visitor
+              * already holds — and with four places, one action and a sign-in,
+              * a seventh item was the one that made the row wrap.
+              *
+              * "How it works" is a section of the landing page rather than a
+              * page of its own. It is in the bar because it answers the
+              * question a forwarded link cannot — what IS this — and it is an
+              * anchor because inventing a page to hold three paragraphs that
+              * already exist would leave two copies of them. */}
             <NavLink to="/scholarships">{t('nav.find')}</NavLink>
+            {/* Link, not NavLink, and it is not a style preference.
+              *
+              * NavLink matches on the pathname, and this one's pathname is "/"
+              * — so on the landing page it marked itself as the current page,
+              * tinted and underlined, while the reader was at the top of a page
+              * called something else. It also set aria-current="page" on it,
+              * which told a screen reader the same untruth.
+              *
+              * A section of a page is not a page you can be on. Nothing here
+              * should claim otherwise. */}
+            {!signedIn && <Link to="/#how-it-works">{t('nav.how')}</Link>}
             {signedIn && <NavLink to="/dashboard">{t('nav.dashboard')}</NavLink>}
             {signedIn && <NavLink to="/matches">{t('nav.matches')}</NavLink>}
             {signedIn && <NavLink to="/applications">{t('nav.applications')}</NavLink>}
@@ -212,8 +265,8 @@ export default function Layout() {
                 to join and a student halfway through an application are not the
                 same reader, and the student's four destinations are not worth
                 diluting with two that are not theirs. */}
-            {!signedIn && <NavLink to="/partner">{t('nav.partner')}</NavLink>}
             {!signedIn && <NavLink to="/impact">{t('nav.impact')}</NavLink>}
+            {!signedIn && <NavLink to="/partner">{t('nav.partner')}</NavLink>}
 
             {/* Pages added in the admin panel (backend migration 0042).
               *
@@ -242,23 +295,32 @@ export default function Layout() {
           {signedIn
             ? <AccountMenu onSignOut={signOut} />
             : (
-              /* One action, because there is one flow behind it.
-                 
-                 This was two — an outlined "Login" beside a filled "Register" —
-                 and they went to the same screen, because a mobile number and a
-                 code do both jobs and an unknown number is registered on the way
-                 through. Two doors onto one room is not a richer choice, it is a
-                 question the visitor cannot answer: a new student pressed the
-                 loud "Register" and arrived at a card headed "Login", and the
-                 line below it had to talk them out of the contradiction the
-                 heading had just created.
-                 
-                 So: one button, filled, naming both audiences, and the page it
-                 opens repeats the same words back. /register stays alive as a
-                 redirect — it is printed on outreach material — but it is no
-                 longer a second thing to press. */
+              /* The one action the site is asking for, and the account door.
+
+                 The filled control used to be "Sign in or Sign Up", which made
+                 the loudest thing in the masthead an account form. This
+                 product's proposition is "tell us about yourself and we will
+                 tell you what you qualify for" — so the loudest thing is now
+                 Check eligibility, and signing in is the quiet link beside it.
+
+                 A visitor does not need an account to use the check, and the
+                 check does not ask for one: registration happens further along,
+                 at the point it buys them something. Leading with a sign-in
+                 button inverted that, and asked for the commitment before the
+                 value.
+
+                 The label is "Sign in", not "Sign in or Sign Up". Both words
+                 were there because the two used to be separate screens going to
+                 the same place, and a new student who pressed the loud
+                 "Register" arrived at a card headed "Login". They are one screen
+                 now and it handles an unknown number by registering it, so the
+                 second half of the label was describing a distinction that no
+                 longer exists — at the cost of making the account door read as
+                 the main event. /register stays alive as a redirect; it is
+                 printed on outreach material. */
               <div className="nav-end">
-                <NavLink to="/signin" className="signin">{t('nav.signin')}</NavLink>
+                <NavLink to="/check" className="nav-cta">{t('nav.check')}</NavLink>
+                <NavLink to="/signin" className="nav-signin">{t('nav.signin')}</NavLink>
               </div>
             )}
         </div>

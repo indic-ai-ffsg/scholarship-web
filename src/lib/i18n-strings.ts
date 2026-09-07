@@ -26,8 +26,12 @@ export const en: Dict = {
   /* The bar names the place, not the verb: a nav item is a destination, and
    * "Find scholarships" read as an instruction sitting beside three nouns. */
   'nav.find': 'Scholarships',
-  'nav.partner': 'Become a partner',
+  /* "For partners" in the bar; the page's own heading still says "Become a
+     partner". A nav item names a destination, and the imperative reads as an
+     instruction to a student who is not the audience for it. */
+  'nav.partner': 'For partners',
   'nav.impact': 'Impact',
+  'nav.how': 'How it works',
   'nav.matches': 'My matches',
   'nav.applications': 'My applications',
   'nav.documents': 'My documents',
@@ -52,7 +56,14 @@ export const en: Dict = {
      is the more distinct phrasing and this is the line to change. It is also the
      heading on the page it opens — see auth.title — because a destination
      that repeats the button confirms you arrived where you meant to. */
-  'nav.signin': 'Sign in or Sign Up',
+  /* "Sign in", not "Sign in or Sign Up".
+   *
+   * Both halves were there because the two used to be separate screens going
+   * to the same place. They are one screen now, and it registers an unknown
+   * number on the way through — so the longer label described a distinction
+   * that no longer exists, and it made the account door the loudest thing in
+   * the masthead on a site whose actual ask is the eligibility check. */
+  'nav.signin': 'Sign in',
   'nav.signout': 'Sign out',
   'nav.skip': 'Skip to main content',
 
