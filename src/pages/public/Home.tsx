@@ -5,7 +5,7 @@ import * as api from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
 import { useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
-import { count, money } from '../../lib/format'
+import { count, deadlineLabel, money } from '../../lib/format'
 import { Field } from '../../components/ui'
 import Slides from '../../components/Slides'
 import type { Facet, Listing } from '../../lib/types'
@@ -170,10 +170,8 @@ export default function Home() {
                     <Link to={`/scholarships/${l.slug}`}>{l.title}</Link>
                     <p>
                       <span className="amount">{money(l.award_amount)}</span>
-                      <span className={`deadline ${l.days_remaining <= 7 ? 'soon' : ''}`}>
-                        {l.days_remaining <= 7
-                          ? t('public.closingSoon')
-                          : t('public.closesIn', { n: l.days_remaining })}
+                      <span className={`deadline ${deadlineLabel(t, l.days_remaining).soon ? 'soon' : ''}`}>
+                        {deadlineLabel(t, l.days_remaining).text}
                       </span>
                     </p>
                   </li>

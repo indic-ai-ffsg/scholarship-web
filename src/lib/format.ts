@@ -47,3 +47,30 @@ export function humanise(value: string) {
   return words[0][0].toUpperCase() + words[0].slice(1)
     + (words.length > 1 ? ' ' + words.slice(1).join(' ') : '')
 }
+
+/* How a closing date is written, including when there is not one.
+ *
+ * One function because six screens showed the same countdown and each would
+ * otherwise need its own answer to "what if there is no date" — which is a real
+ * state since backend 0043: a curated listing is allowed not to know this
+ * year's window, and the directory shows those rather than hiding them.
+ *
+ * The absent case must not fall through to a number. `days_remaining` used to
+ * be computed from a zero date and came out around minus 740,000, which reads
+ * as "closed" on one screen and "closing soon" on another depending on which
+ * threshold it crosses first. Undefined in, "No closing date" out, and `soon`
+ * false — an open-ended scheme is not urgent.
+ *
+ * `t` is passed rather than imported: this file is pure formatting and has no
+ * business holding a hook.
+ */
+export function deadlineLabel(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  days: number | undefined,
+): { text: string; soon: boolean } {
+  if (days === undefined || days === null) {
+    return { text: t('public.noClose'), soon: false }
+  }
+  if (days <= 7) return { text: t('public.closingSoon'), soon: true }
+  return { text: t('public.closesIn', { n: days }), soon: false }
+}

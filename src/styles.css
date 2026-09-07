@@ -411,8 +411,10 @@ main { scroll-margin-top: 5rem; }
  * HSBC's red is specified by HSBC, and a stylesheet is not the place to have an
  * opinion about somebody else's trademark. Nothing recolours it, and the width
  * is set in rem with height:auto so it can only ever scale, never distort. */
-.footer-sponsor { display: grid; gap: 0.5rem; justify-items: start; }
-.footer-sponsor .label { font-size: var(--step--1); color: var(--text-muted); }
+/* The sponsor credit, now in the masthead.
+ *
+ * .footer-sponsor is gone with the markup; .sponsor-logo stays because the
+ * masthead uses it, at a smaller width set below. */
 .sponsor-logo { width: 7.5rem; height: auto; }
 
 /* The notice, centred under both columns, because it belongs to neither: it is
@@ -2533,3 +2535,50 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
  * above it and with the row wrapping on a narrow window, so this clears the
  * tallest case rather than tracking a number that changes. */
 [id] { scroll-margin-top: 6rem; }
+
+/* --- the masthead's identity block ---------------------------------------------
+ *
+ * The site's own lockup, then a rule, then who funds it. The rule is doing real
+ * work: without it two marks sit side by side and read as two owners, and the
+ * one thing this credit must not say is that HSBC runs the platform.
+ */
+.brand-lockup {
+  display: flex; align-items: center;
+  gap: clamp(0.6rem, 1.5vw, 1.1rem);
+  min-width: 0;
+}
+
+.brand-sponsor {
+  margin: 0;
+  display: flex; flex-direction: column; gap: 0.15rem;
+  padding-inline-start: clamp(0.6rem, 1.5vw, 1.1rem);
+  border-inline-start: 1px solid var(--border);
+}
+/* 10px and muted. Subordinate on purpose — it is a caption on the mark beside
+   it, not a heading, and at the masthead's scale anything larger competes with
+   the site's own name two centimetres to its left. */
+.brand-sponsor .label {
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+/* 4.5rem here against the footer's 7.5rem. The bar is 48px tall and the credit
+   has to fit inside it beside a two-line wordmark. */
+.brand-lockup .sponsor-logo { width: 4.5rem; }
+
+/* Narrow: the label goes and the mark stays.
+ *
+ * Dropping the credit entirely would be the easy answer and the wrong one —
+ * most of this audience is on a phone, so hiding it there hides it from nearly
+ * everybody, and it is a trust signal rather than decoration. What goes is the
+ * word "Supported by", which the bar has no room for; the mark keeps its own
+ * accessible name, so a screen reader still reads "HSBC" and nothing is lost
+ * to the reader who most depends on it. */
+@media (max-width: 48rem) {
+  .brand-sponsor .label { display: none; }
+  .brand-lockup .sponsor-logo { width: 3.75rem; }
+  .brand-sponsor { padding-inline-start: 0.6rem; }
+}

@@ -219,10 +219,55 @@ export default function Layout() {
             * alt is empty and the words below it are real text: the link
             * already says the name, and a mark that repeats its own wordmark to
             * a screen reader is announced twice. */}
-          <Link to="/" className="brand">
-            <img src="/logo-mark.png" alt="" width="36" height="28" className="brand-mark" />
-            <span className="brand-name">{t('app.name')}</span>
-          </Link>
+          {/* The identity block: whose site this is, and who stands behind it.
+            *
+            * The sponsor credit moved up from the footer, and the move is worth
+            * more than it looks. The footer comment argued that "whose platform
+            * is this" is the question it exists to answer for "somebody about
+            * to hand over a disability certificate" — which is right, and it
+            * was answering it four screens below the fold, after the decision.
+            * A visitor arriving from a forwarded message decides whether this
+            * is legitimate in the first few seconds, and that is where the
+            * answer belongs.
+            *
+            * Deliberately subordinate. A divider and a small label, not a
+            * second lockup: HSBC supports this platform and does not run it,
+            * and two marks at equal weight in a masthead read as two owners.
+            * That distinction matters more here than on most sites, because
+            * the thing being decided is whether to trust it with a disability
+            * certificate. */}
+          <div className="brand-lockup">
+            <Link to="/" className="brand">
+              <img src="/logo-mark.png" alt="" width="36" height="28" className="brand-mark" />
+              <span className="brand-name">{t('app.name')}</span>
+            </Link>
+
+            {/* Not lazy, unlike the footer copy it replaces: it is above the
+              * fold now, and `loading="lazy"` on an image in the first screen
+              * delays the thing it was meant to speed up.
+              *
+              * alt names the bank rather than being empty, which is the
+              * opposite of the rule the mark beside it follows — that one sits
+              * next to real text saying the same word, and this one does not.
+              * With the label, a screen reader reads "Supported by HSBC".
+              *
+              * Not a link: there is no address to send anybody to. The file is
+              * the supplied artwork, unresized and unrecoloured — it is
+              * somebody else's trademark, and scaling it in CSS is ordinary use
+              * where re-encoding a copy into this repository is not ours to
+              * do. */}
+            <p className="brand-sponsor">
+              <span className="label">{t('footer.sponsor')}</span>
+              <img
+                src="/hsbc_logo.png"
+                alt="HSBC"
+                width="1280"
+                height="345"
+                decoding="async"
+                className="sponsor-logo"
+              />
+            </p>
+          </div>
 
           {/* Three zones: who this is, where to go, what to do.
            *
@@ -459,36 +504,15 @@ function SiteFooter() {
             className="footer-logo"
           />
 
-          {/* The funder, under the foundation's own mark and labelled.
+          {/* The funder used to sit here, under the foundation's own mark. It
+            * is in the masthead now — see the note there. The argument for the
+            * label survived the move intact and the argument for the position
+            * did not: "whose platform is this" was being answered four screens
+            * below the fold, after the visitor had already decided.
             *
-            * The label is the load-bearing part. A second logo sitting bare
-            * beneath the first reads as a second owner, and "whose platform is
-            * this" is the one question this footer exists to answer for
-            * somebody about to hand over a disability certificate. "Supported
-            * by" says what HSBC is and, just as usefully, what they are not.
-            *
-            * alt names the bank rather than being empty, which is the opposite
-            * of the rule the brand mark above follows: that one sits beside real
-            * text saying the same word, and this one does not. It is also not a
-            * link — there is no address to send anybody to — so nothing else on
-            * the page would announce it.
-            *
-            * The file is the supplied artwork, unresized and unrecoloured. It is
-            * somebody else's trademark: scaling it in CSS is ordinary use, and
-            * re-encoding a copy of it into this repository is not ours to do.
-            * Lazy, because it is four screens below the fold on a phone. */}
-          <p className="footer-sponsor">
-            <span className="label">{t('footer.sponsor')}</span>
-            <img
-              src="/hsbc_logo.png"
-              alt="HSBC"
-              width="1280"
-              height="345"
-              loading="lazy"
-              decoding="async"
-              className="sponsor-logo"
-            />
-          </p>
+            * Not repeated in both places. A sponsor credit twice on one page
+            * starts to read as advertising rather than as provenance, which is
+            * the opposite of what it is for. */}
         </div>
 
         {/* The accounts at the far side, level with the top of the logo. */}

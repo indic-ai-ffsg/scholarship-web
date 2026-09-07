@@ -5,7 +5,7 @@ import { useAuth } from '../../lib/auth-context'
 import { useDebounced, useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
 import { courseChoices, disabilityChoices, stateChoices, type Choice } from '../../lib/fields'
-import { money, shortDate } from '../../lib/format'
+import { deadlineLabel, money, shortDate } from '../../lib/format'
 import { Empty, ErrorState, Field, Loading, Notice } from '../../components/ui'
 import type { Facet, Listing } from '../../lib/types'
 
@@ -362,7 +362,7 @@ function FacetSelect({
 
 export function ListingCard({ listing }: { listing: Listing }) {
   const { t } = useI18n()
-  const soon = listing.days_remaining <= 7
+  const { text: closing, soon } = deadlineLabel(t, listing.days_remaining)
 
   return (
     <article className="card">
@@ -375,10 +375,14 @@ export function ListingCard({ listing }: { listing: Listing }) {
       <div className="row" style={{ gap: '1.25rem' }}>
         <span className="amount">{money(listing.award_amount)}</span>
         <span className={`deadline ${soon ? 'soon' : ''}`}>
-          {soon
-            ? t('public.closingSoon')
-            : t('public.closesIn', { n: listing.days_remaining })}
-          <span className="sr-only"> — {shortDate(listing.closes_at)}</span>
+          {closing}
+          {/* The exact date, for a screen reader, when there is one. "Closing
+              soon" is the scannable version and the date is the useful one;
+              omitted entirely rather than announced as an empty string when the
+              scheme has no window. */}
+          {listing.closes_at && (
+            <span className="sr-only"> — {shortDate(listing.closes_at)}</span>
+          )}
         </span>
       </div>
 

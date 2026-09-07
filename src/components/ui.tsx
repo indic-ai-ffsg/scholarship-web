@@ -11,7 +11,7 @@ import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useI18n } from '../lib/i18n-context'
-import { money } from '../lib/format'
+import { deadlineLabel, money } from '../lib/format'
 import { stateClass, stateHelpKey, stateLabelKey, stateMark } from '../lib/eligibility'
 import type { EligibilityState } from '../lib/types'
 
@@ -153,22 +153,22 @@ export function ResultCard({
   slug: string
   award: number
   organisation: string
-  daysRemaining: number
+  /* Optional since backend 0043: a curated listing may have no window, and
+     an open-ended scheme is not urgent. See format.deadlineLabel. */
+  daysRemaining?: number
   nextAction?: string
   /** Replaces the state's own sentence. Only where that sentence would lie. */
   help?: string
   children?: ReactNode
 }) {
   const { t } = useI18n()
-  const soon = daysRemaining <= 7
+  const { text: closing, soon } = deadlineLabel(t, daysRemaining)
 
   return (
     <article className={`card match ${stateClass(state)}`}>
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: '0.5rem' }}>
         <StateBadge state={state} />
-        <span className={`deadline ${soon ? 'soon' : ''}`}>
-          {t('public.closesIn', { n: daysRemaining })}
-        </span>
+        <span className={`deadline ${soon ? 'soon' : ''}`}>{closing}</span>
       </div>
 
       <h3 style={{ marginBottom: '0.25rem' }}>

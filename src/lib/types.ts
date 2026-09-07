@@ -55,8 +55,11 @@ export interface Match {
   org_type: string
   award_amount: number
   currency: string
-  closes_at: string
-  days_remaining: number
+  /* Both optional since backend 0043: a curated listing is allowed to have no
+     window, and the directory now shows those rather than hiding them. Absent
+     means open-ended — NOT closing today, which is what a 0 would read as. */
+  closes_at?: string
+  days_remaining?: number
   state: EligibilityState
   score: number
   missing?: Reason[]
@@ -82,8 +85,11 @@ export interface Listing {
   currency: string
   is_renewable: boolean
   opens_at: string
-  closes_at: string
-  days_remaining: number
+  /* Both optional since backend 0043: a curated listing is allowed to have no
+     window, and the directory now shows those rather than hiding them. Absent
+     means open-ended — NOT closing today, which is what a 0 would read as. */
+  closes_at?: string
+  days_remaining?: number
   slots_available?: number
   tags: string[]
   criteria?: string[]
@@ -133,8 +139,11 @@ export interface CheckedScheme {
   org_type: string
   award_amount: number
   currency: string
-  closes_at: string
-  days_remaining: number
+  /* Both optional since backend 0043: a curated listing is allowed to have no
+     window, and the directory now shows those rather than hiding them. Absent
+     means open-ended — NOT closing today, which is what a 0 would read as. */
+  closes_at?: string
+  days_remaining?: number
   state: EligibilityState
   score: number
   missing?: Reason[]

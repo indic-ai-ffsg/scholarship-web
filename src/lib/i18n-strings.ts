@@ -102,6 +102,7 @@ export const en: Dict = {
   'public.atAGlance': 'At a glance',
   'public.signedInHelp': 'Checked against your profile, with anything that blocks you named.',
   'public.closes': 'Closes',
+  'public.noClose': 'No closing date',
   'public.closesIn': 'Closes in {n} days',
   'public.closingSoon': 'Closing soon',
   'public.award': 'Award',
