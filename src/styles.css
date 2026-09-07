@@ -736,7 +736,7 @@ button, .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
 }
 button:hover:not(:disabled), .btn:hover { background: var(--surface-sunken); }
-button:disabled { opacity: 0.55; cursor: not-allowed; }
+button:disabled:not([aria-busy="true"]) { cursor: not-allowed; }
 
 /* What a control does when a pointer arrives.
  *
@@ -758,11 +758,13 @@ button, .btn, .chip-link, input, select, textarea {
     transform 120ms ease-out,
     filter 120ms ease-out,
     /* opacity and colour, so a control becoming available is something you see
-     * happen. Disabled here is opacity: 0.55, and neither that nor a text
-     * colour was in this list â so "send it again" and the verify button
-     * snapped from unavailable to available in one frame, at the two moments a
-     * student is watching them most closely: the resend timer running out and
-     * the sixth digit landing. */
+     * happen. Unavailable is a ground and a text colour now
+     * rather than an opacity (see button:disabled below), and background-color,
+     * border-color and color are all listed above — which is what makes
+     * "send it again" and the verify button fade in rather than snap from
+     * unavailable to available in one frame, at the two moments a student is
+     * watching them most closely: the resend timer running out and the sixth
+     * digit landing. */
     opacity 120ms ease-out,
     color 120ms ease-out;
 }
@@ -798,6 +800,107 @@ button.quiet:hover:not(:disabled) { background: var(--accent-weak); }
 button.quiet.destructive { color: var(--danger); }
 button.quiet.destructive:hover:not(:disabled) { background: var(--danger-weak); }
 button.wide { width: 100%; }
+
+/* --- a control you cannot press yet, and one that is working -------------------
+ *
+ * Two states, and they were a single declaration until now: `opacity: 0.55` on
+ * :disabled. Every action on this site holds its own button with `disabled`
+ * while the request is in flight, so that one rule was doing both jobs, and it
+ * is only defensible for one of them.
+ *
+ * Group opacity is why. It composites the whole button — ground, border and
+ * label together — against whatever is behind it, so it cannot dim a button
+ * without dimming the text on it by exactly as much. Measured on a card, at
+ * 0.55:
+ *
+ *   .primary   label 2.76:1, ground 2.76:1 against the card (8.06:1 at rest)
+ *   default    label 4.00:1, border 1.81:1
+ *   .quiet     label 2.76:1
+ *
+ * Every one is under the 4.5:1 that nothing else in this file goes under, and
+ * the borders are under the 3:1 that 1.4.11 sets for a control boundary — on a
+ * site whose entire audience has a disability. The primary is both the worst of
+ * them and the most exposed: its accent composites to a pale #78a593, and its
+ * border, being the same green, dissolves into it, so the button reads as
+ * having gone blank rather than as having been pressed. That is the whole of
+ * the report — "it blinks white" — and it was on search, the eligibility
+ * check, both OTP sends, verify, the registration save and a document upload,
+ * which is every action a student performs here.
+ *
+ * The .refetching block further down already refused this trade for the results
+ * list, in nearly these words: any opacity that reads as faded drops the text
+ * below the floor. This is the other half of that decision, and the two agree
+ * now.
+ *
+ * So the states are separated, and neither of them is an opacity:
+ *
+ *   unavailable   A ground of its own. "Check now" with nothing answered,
+ *                 "Verify" with four of six digits typed, "send it again" while
+ *                 the timer runs — nothing is happening, and the control should
+ *                 say so in a way that survives being read. --text-muted on
+ *                 --surface-sunken is 6.52:1, inside the 2px --border-strong
+ *                 that measures 3.31:1 against the card. The same treatment as
+ *                 .chip-choice.off, and for the same reason.
+ *
+ *   working       Untouched. Full accent ground, label back at 8.06:1, and the
+ *                 signal moved onto a bar along the bottom edge — the same
+ *                 indeterminate sweep the results list uses, so that "working"
+ *                 looks like one thing wherever it happens. No colour on the
+ *                 button changes when it is pressed, and that is what removes
+ *                 the blink.
+ *
+ * aria-busy is what separates them, which is the honest attribute for it: the
+ * call sites set it on the button actually doing the work and never on one
+ * merely held while something else does — so "send it again" stays dimmed by
+ * its timer, which is correct. On four of them it carries more than styling.
+ * MyData's export, erasure and withdraw, and the document "Remove", change no
+ * label at all while they run, so until now the only acknowledgement that the
+ * press had landed was the fade itself; the bar is that acknowledgement now.
+ */
+button:disabled:not([aria-busy="true"]) {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  color: var(--text-muted);
+}
+/* A quiet button has no ground and no border at rest and must not grow either
+ * one by becoming unavailable — a word that gains a box reads as a new control
+ * appearing rather than as an old one closing. The muted text is the whole of
+ * the state, exactly as the accent colour is the whole of it at rest. */
+button.quiet:disabled:not([aria-busy="true"]) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+button[aria-busy="true"] {
+  cursor: progress;
+  /* The bar is placed against the padding box, so it lands just inside the
+   * border rather than over it, and the clip rounds it off at the two bottom
+   * corners. It does not clip the focus ring: that is an outline, and an
+   * outline draws outside the border box, where overflow cannot reach it. */
+  position: relative;
+  overflow: hidden;
+}
+button[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 3px; width: 30%;
+  border-radius: 999px;
+  background: var(--accent-text);
+  animation: sweep 900ms linear infinite;
+}
+/* No accent ground beneath it, so a white bar would be invisible. */
+button.quiet[aria-busy="true"]::after { background: var(--accent); }
+button.quiet.destructive[aria-busy="true"]::after { background: var(--danger); }
+
+/* Reduced motion shortens a duration but cannot un-name an animation, which
+ * would strand the bar wherever its last frame landed — the same note as under
+ * .refetching, which is where `sweep` is defined. Full width still says
+ * "working". */
+@media (prefers-reduced-motion: reduce) {
+  button[aria-busy="true"]::after { animation: none; left: 0; width: 100%; }
+}
 
 input, select, textarea {
   font: 400 var(--step-0)/1.5 var(--font);
