@@ -42,7 +42,7 @@ export default function Matches() {
         <Empty
           title={t('match.none')}
           hint={t('match.noneHint')}
-          action={<Link className="btn primary" to="/profile/setup">{t('profile.start')}</Link>}
+          action={<Link className="btn primary" to="/register?edit">{t('profile.start')}</Link>}
         />
       </div>
     )
@@ -70,7 +70,7 @@ export default function Matches() {
           {/* The single highest-weight gap, not all of them. The list is
               ordered by how many schemes each field unlocks. */}
           <p>{profile.next_steps[0].message}</p>
-          <Link className="btn" to="/profile/setup">{t('profile.continue')}</Link>
+          <Link className="btn" to="/register?edit">{t('profile.continue')}</Link>
         </Notice>
       ) : null}
 

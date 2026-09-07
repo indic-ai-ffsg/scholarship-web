@@ -1,11 +1,11 @@
 /* The questions a student profile is made of.
  *
- * Extracted from the wizard because there are now two screens asking them: the
- * wizard, which walks a new student through all of them one at a time, and the
- * profile view, where somebody who finished months ago changes the one answer
- * that has since changed. Two copies of this list would drift, and the way it
- * would show is a value editable on one screen and not the other — or worse,
- * two different sets of options for the same field.
+ * Extracted from the wizard that used to hold them, and kept after it went,
+ * because two screens still read this list: the registration form writes these
+ * fields, and the profile view reads them back. displayValue below is the whole
+ * reason it is worth one file — a choice stored as UNDERGRADUATE and a date
+ * stored as an ISO string both need turning back into the answer somebody gave,
+ * and doing that beside each caller is how the two drift.
  *
  * The vocabularies come from lib/fields, shared with the public eligibility
  * check: that page asks a visitor the same questions before they have an
@@ -13,7 +13,7 @@
  * same values or the answers would arrive and be dropped.
  */
 
-import { categoryChoices, courseChoices, disabilityChoices, stateChoices } from './fields'
+import { courseChoices, disabilityChoices, stateChoices } from './fields'
 import type { Option } from '../components/ui'
 import { date as formatDate, money } from './format'
 
@@ -30,10 +30,10 @@ export interface Question {
   placeholder?: string
   /* Answerable with nothing, and the wizard lets the student walk past it.
    *
-   * The default is the opposite, and the argument for that is in ProfileWizard:
-   * a skipped answer is a scheme silently lost, and the student is never told
-   * which one it was. It does not hold for a question a student may have no
-   * answer to. Nobody can invent a UDID number they have not been issued, and a
+   * The default is the opposite, and the argument for it outlived the wizard
+   * that made it: an unanswered question is a scheme silently lost, and the
+   * student is never told which one it was. It does not hold for a question a
+   * student may have no answer to. Nobody can invent a UDID number they have not been issued, and a
    * student between school and college has no institution to name — and a
    * required question they cannot answer is not a prompt, it is a wall across
    * question four of eleven.
@@ -252,17 +252,6 @@ export function buildQuestions(): Question[] {
       outOfRange: 'An income cannot be less than zero.',
     },
     {
-      field: 'social_category',
-      kind: 'choice',
-      question: 'What is your category?',
-      /* "Leave this if you are not sure" was the old help, and it stopped being
-         true when the question stopped being skippable. General is the answer
-         for a student with no certificate for another category, which is what
-         the sentence was really telling them. */
-      help: 'As on your caste or EWS certificate. Choose General if you do not have one.',
-      options: categoryChoices(),
-    },
-    {
       field: 'academic_percentage',
       kind: 'marks',
       unit: 'percent',
@@ -367,7 +356,11 @@ export function seedValue(q: Question, raw: unknown): string {
  * waiting for an organisation to check it, and sending a student to the first
  * question for that reopened every answer they had already given, changed
  * nothing, and left the meter where it was.
+ *
+ * The wizard is gone and the questions live on the registration form, re-opened
+ * with ?edit so it arrives holding the answers already given rather than empty.
+ * The documents exception outlives it unchanged.
  */
 export function stepDestination(field: string): string {
-  return field === 'documents' ? '/documents' : '/profile/setup'
+  return field === 'documents' ? '/documents' : '/register?edit'
 }

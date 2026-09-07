@@ -1,57 +1,45 @@
-/* My profile — what a student sees after they have finished registering.
+/* My profile — everything a student has told us, read only.
  *
- * This screen exists because "My profile" used to open the wizard, and the
- * wizard opens on "Question 1 of 11". That is the right shape exactly once, for
- * somebody who has just registered and has every answer still to give. It is the
- * wrong shape forever afterwards: a student who moved house and wants to change
- * their state should not be walked through their disability certificate, their
- * income and their marks to get there, and a screen that says "Question 1 of 11"
- * to a person whose profile has been complete for six months is telling them
- * they have not started.
+ * This screen used to hold a second copy of every control on the registration
+ * form: each row could be opened in place, edited with the shared
+ * QuestionInput, and saved on its own with a one-field PATCH. The argument for
+ * that was good and is worth recording, because it is not obvious why it went.
+ * One field at a time meant one field on the wire, so a stale tab could not
+ * overwrite an answer changed on a phone an hour earlier, and it meant nobody
+ * was ever shown eleven live controls at once.
  *
- * So the wizard keeps the questions and moves to /profile/setup, and this
- * is what /profile means now: everything they have told us, in one list, with
- * one answer editable at a time.
+ * What it cost was two of everything. Two places asking for a disability
+ * percentage, two places converting a CGPA, two places deciding whether a UDID
+ * number is optional — and the drift that follows is the kind that shows up as
+ * a value editable on one screen and not the other. The registration form is
+ * now one screen that can be re-opened (/register?edit) with the answers
+ * already in it, which is the same affordance without the second
+ * implementation: a student who moved house opens it, changes the state, and
+ * presses save.
  *
- * One at a time rather than one big form with a Save at the bottom, and that is
- * the same argument the wizard makes for its own shape. Eleven controls live at
- * once is the form this product exists not to be; it also makes every save a
- * whole-profile PATCH, so a stale tab quietly overwrites what was changed on a
- * phone an hour ago. Editing one row sends one field.
+ * So this is a review. It lists what is stored, marks what an organisation has
+ * verified, and hands off to the form for anything that needs changing. The
+ * one-field PATCH is the real loss and it is a real one — saving now sends the
+ * whole form again. It is bounded by the fact that a student is the only writer
+ * of their own profile, so the tab that loses a race is their own.
  */
 
-import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 
-import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
 import { useI18n } from '../lib/i18n-context'
-import { useAnnounce } from '../lib/announce'
-import {
-  buildQuestions, displayValue, problemFor, seedValue, stepDestination,
-  type Answers, type Question,
-} from '../lib/questions'
-import { QuestionInput } from '../components/QuestionInput'
-import { ErrorState } from '../components/ui'
+import { buildQuestions, displayValue, seedValue, type Answers } from '../lib/questions'
 
 export default function Profile() {
+  const { t } = useI18n()
   const { profile } = useAuth()
 
-  /* Nothing to review yet. The wizard is the whole of the answer for somebody
-     with no profile, so they are sent there rather than shown a list of empty rows
-     and asked to edit each one. */
-  if (!profile) return <Navigate to="/profile/setup" replace />
+  /* Nothing to review yet. The form is the whole of the answer for somebody
+     with no profile, so they are sent there rather than shown a list of empty
+     rows. */
+  if (!profile) return <Navigate to="/register" replace />
 
-  return <ProfileDetails />
-}
-
-function ProfileDetails() {
-  const { t } = useI18n()
-  const { profile, refreshProfile } = useAuth()
   const questions = buildQuestions()
-  const [editing, setEditing] = useState<string | null>(null)
-
-  if (!profile) return null
 
   const answers: Answers = {}
   for (const q of questions) {
@@ -60,15 +48,15 @@ function ProfileDetails() {
   }
 
   const complete = profile.completeness_score >= 100
-  const nextField = profile.next_steps?.[0]?.field ?? ''
 
   return (
     <div className="page">
       <h1>{t('nav.profile')}</h1>
       <p className="lede">{t('profile.viewLede')}</p>
 
-      {/* Where the wizard still belongs: a profile with answers missing. The
-          meter is the same component the dashboard and the wizard use. */}
+      {/* The meter, and the way back into the form. Both are here rather than
+          only on the dashboard because this is the screen somebody opens when
+          they want to change something. */}
       {!complete && (
         <section className="card progress-panel" aria-labelledby="completeness">
           <h2 id="completeness">{t('dash.profileTitle')}</h2>
@@ -96,141 +84,46 @@ function ProfileDetails() {
           ) : null}
 
           <div className="actions">
-            <Link className="btn primary" to={stepDestination(nextField)}>
-              {nextField === 'documents' ? t('doc.upload') : t('profile.continue')}
-            </Link>
+            {/* Documents are the one next step the form cannot answer: it is
+                answered by uploading a certificate and waiting for an
+                organisation to check it, and sending somebody to the form for
+                that would reopen every answer and change nothing. */}
+            {profile.next_steps?.[0]?.field === 'documents' ? (
+              <Link className="btn primary" to="/documents">{t('doc.upload')}</Link>
+            ) : (
+              <Link className="btn primary" to="/register?edit">{t('profile.continue')}</Link>
+            )}
           </div>
         </section>
       )}
 
       <dl className="detail-list">
-        {questions.map(q => (
-          <Row
-            key={q.field}
-            question={q}
-            answers={answers}
-            verified={profile.verified_fields?.includes(q.field) ?? false}
-            editing={editing === q.field}
-            onEdit={() => setEditing(q.field)}
-            onDone={async (saved: boolean) => {
-              setEditing(null)
-              if (saved) await refreshProfile()
-            }}
-          />
-        ))}
+        {questions.map(q => {
+          const shown = displayValue(q, answers[q.field])
+          const verified = profile.verified_fields?.includes(q.field) ?? false
+          return (
+            <div className="detail-row" key={q.field}>
+              <dt>
+                {q.question}
+                {verified && (
+                  <span className="verified">
+                    <span aria-hidden="true">✓</span> {t('profile.verified')}
+                  </span>
+                )}
+              </dt>
+              <dd>{shown ?? <span className="muted">{t('profile.notAnswered')}</span>}</dd>
+            </div>
+          )
+        })}
       </dl>
-    </div>
-  )
-}
 
-function Row({ question, answers, verified, editing, onEdit, onDone }: {
-  question: Question
-  answers: Answers
-  verified: boolean
-  editing: boolean
-  onEdit: () => void
-  onDone: (saved: boolean) => void
-}) {
-  const { t } = useI18n()
-  const announce = useAnnounce()
-
-  const [draft, setDraft] = useState<Answers>(answers)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const shown = displayValue(question, answers[question.field])
-  const problem = problemFor(question, draft)
-  const value = draft[question.field] ?? ''
-
-  async function save() {
-    if (problem || value === '') return
-    setBusy(true)
-    setError(null)
-    try {
-      /* One field, not the whole profile. The marks question still sends one —
-         the scale and
-         the number it was typed on live only in the draft; academic_percentage
-         is the profile field, and the control has already converted to it. */
-      await api.request('/me/profile', {
-        method: 'PATCH',
-        body: {
-          [question.field]:
-            question.kind === 'number' || question.kind === 'marks' ? Number(value) : value,
-        },
-      })
-      announce(t('profile.saved'))
-      onDone(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (!editing) {
-    return (
-      <div className="detail-row">
-        <dt>
-          {question.question}
-          {verified && (
-            <span className="verified">
-              <span aria-hidden="true">✓</span> {t('profile.verified')}
-            </span>
-          )}
-        </dt>
-        <dd>
-          {shown ?? <span className="muted">{t('profile.notAnswered')}</span>}
-          {/* aria-label rather than a visually hidden span. Eleven buttons all
-              reading "Change" is useless in a screen reader's list of controls,
-              so the question has to be in the name — but as hidden text it also
-              landed in anything copied off the page, which is how a profile
-              pasted into a message came out as "Sudip DeChange— What is your
-              name?". The label is announced and never rendered. */}
-          <button
-            type="button"
-            className="quiet small"
-            onClick={onEdit}
-            aria-label={`${shown ? t('profile.change') : t('profile.add')} — ${question.question}`}
-          >
-            {shown ? t('profile.change') : t('profile.add')}
-          </button>
-        </dd>
-      </div>
-    )
-  }
-
-  return (
-    <div className="detail-row editing">
-      {/* The control carries the question as its own label once editing starts,
-          and the help text with it. Repeating both in the dt showed the student
-          the same sentence twice in a row — so the term stays for the list's
-          semantics and stops being drawn. */}
-      <dt className="sr-only">{question.question}</dt>
-      <dd>
-        {error && <ErrorState error={error} onRetry={save} />}
-
-        <QuestionInput
-          question={question}
-          answers={draft}
-          onChange={patch => setDraft(d => ({ ...d, ...patch }))}
-          label={question.question}
-          autoFocus
-        />
-
-        <div className="row">
-          <button
-            type="button"
-            className="primary"
-            onClick={save}
-            disabled={busy || value === '' || Boolean(problem)}
-          >
-            {busy ? t('profile.saving') : t('profile.save')}
-          </button>
-          <button type="button" className="quiet" onClick={() => onDone(false)} disabled={busy}>
-            {t('profile.cancelEdit')}
-          </button>
-        </div>
-      </dd>
+      {/* One button for the whole list rather than eleven "Change" buttons.
+          Eleven controls all reading "Change" is close to useless in a screen
+          reader's list of controls, and every one of them led to the same nine
+          questions in the end. */}
+      <p className="detail-actions">
+        <Link className="btn primary" to="/register?edit">{t('profile.edit')}</Link>
+      </p>
     </div>
   )
 }

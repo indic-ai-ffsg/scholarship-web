@@ -538,6 +538,71 @@ export const en: Dict = {
   'home.ctaButton': 'Create an account',
   'home.signedInCta': 'See what you qualify for',
 
+  /* --- the registration form ---------------------------------------------
+   * One screen, three sections, nine questions. The copy carries the two
+   * things the form's shape cannot: which answers are required, and why the
+   * button at the bottom will not move until the code has been checked. */
+  'reg.title': 'Register to find scholarships',
+  'reg.editTitle': 'Update your details',
+  'reg.requiredNote': 'All fields marked with * are required.',
+  'reg.requiredNoteSr': 'Every question is required unless its label says optional.',
+
+  'reg.personal': 'Personal details',
+  'reg.disability': 'Disability details',
+  'reg.education': 'Education details',
+
+  'reg.name': 'Full name',
+  'reg.namePlaceholder': 'Enter your full name',
+  'reg.phoneHint': 'We send a 6-digit code to this number. The same number signs you in every time.',
+  'reg.sendOtp': 'Send OTP',
+  'reg.otpPlaceholder': 'Enter 6-digit OTP',
+  'reg.verified': 'Phone number verified',
+  'reg.verifyFirst': 'Verify your phone number to finish registering.',
+  'reg.email': 'Email',
+  'reg.emailHint': 'So we can send you a deadline reminder. We never share it.',
+  'reg.emailPlaceholder': 'your.email@example.com',
+
+  'reg.udid': 'UDID number',
+  'reg.udidHint': 'The number on your UDID (Unique Disability ID) card.',
+  'reg.udidPlaceholder': 'Enter your UDID number',
+  'reg.certificate': 'Upload UDID certificate',
+  'reg.certificateHint': 'PDF or image, 5 MB or smaller.',
+  'reg.fileType': 'That file must be a PDF, a JPEG or a PNG.',
+  'reg.fileSize': 'That file is larger than 5 MB. A photo taken on a phone is usually smaller if you scan it rather than photograph it.',
+  /* Said instead of an error, because the profile did save. The registration
+     is not undone by a certificate that has to be retried. */
+  'reg.fileLater': 'You are registered, and your details are saved. The certificate did not upload — add it from My documents and nothing else needs doing again.',
+  'reg.disabilityType': 'Disability type',
+  'reg.selectAll': '(select all that apply)',
+  'reg.percent': 'Disability percentage',
+  'reg.percentHint': 'The figure on your certificate. Many scholarships need 40% or more.',
+  'reg.percentPlaceholder': 'e.g. 40',
+  'reg.percentRange': 'A certificate percentage is a whole number between 0 and 100.',
+
+  'reg.state': 'State',
+  'reg.statePlaceholder': 'Type to search your state…',
+  'reg.program': 'Select your program',
+  'reg.graduation': 'Graduation',
+  'reg.postgraduation': 'Post-Graduation / Masters',
+  'reg.year': 'Select year',
+  'reg.yearAfterProgram': 'choose your program first',
+  'reg.institution': 'School / College name',
+  'reg.institutionPlaceholder': 'Enter your institution name',
+
+  'reg.required': 'This one is needed.',
+  'reg.fix': 'A few answers need attention. The first one is focused below.',
+  'reg.cta': 'Register and find scholarships',
+  'reg.saveChanges': 'Save changes',
+  'reg.saving': 'Saving…',
+  'reg.done': 'Registered. Finding your scholarships.',
+  'reg.doneTitle': 'You are registered',
+  'reg.already': 'Already registered?',
+  'reg.login': 'Login with OTP',
+
+  /* The masthead's account door, and the profile view's one button. */
+  'nav.registerLogin': 'Register / Login',
+  'profile.edit': 'Update your details',
+
 }
 
 /* One table, and no switch in front of it.

@@ -5,7 +5,7 @@ import * as api from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
 import { saveDraft } from '../../lib/draft'
 import { canApply } from '../../lib/eligibility'
-import { categoryChoices, courseChoices, disabilityChoices, stateChoices } from '../../lib/fields'
+import { courseChoices, disabilityChoices, stateChoices } from '../../lib/fields'
 import { useI18n } from '../../lib/i18n-context'
 import { withNext } from '../../lib/next'
 import { Field, Notice, ResultCard, type FieldProps } from '../../components/ui'
@@ -76,7 +76,6 @@ const FIELD_LABEL: Record<string, string> = {
   course_level: 'check.courseLevel',
   state_code: 'check.state',
   annual_family_income: 'check.income',
-  social_category: 'check.category',
   date_of_birth: 'check.dob',
   // Derived from the date of birth, so the question to answer is the same one.
   age: 'check.dob',
@@ -211,18 +210,6 @@ export default function Check() {
                   placeholder="250000"
                   value={answers.annual_family_income ?? ''}
                   onChange={e => set('annual_family_income', e.target.value)}
-                />
-              )}
-            </CheckField>
-
-            <CheckField label={t('check.category')} error={fieldErrors.social_category}>
-              {props => (
-                <Select
-                  {...props}
-                  value={answers.social_category ?? ''}
-                  onChange={v => set('social_category', v)}
-                  options={categoryChoices()}
-                  blank={t('check.unanswered')}
                 />
               )}
             </CheckField>

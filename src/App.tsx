@@ -37,7 +37,6 @@ const Documents = lazy(() => import('./pages/Documents'))
 const Applications = lazy(() => import('./pages/Applications'))
 const ApplicationDetail = lazy(() => import('./pages/ApplicationDetail'))
 const Apply = lazy(() => import('./pages/Apply'))
-const ProfileWizard = lazy(() => import('./pages/ProfileWizard'))
 const Profile = lazy(() => import('./pages/Profile'))
 const MyData = lazy(() => import('./pages/MyData'))
 
@@ -84,13 +83,18 @@ export default function App() {
 
         {/* The student's own. */}
         <Route path="/dashboard" element={<RequireProfile><Dashboard /></RequireProfile>} />
-        {/* Two screens, and which one you get depends on whether you have
-            finished rather than on which link you pressed. /profile is the
-            review; the questions live at /profile/setup, because
-            "Question 1 of 11" is the right thing to show somebody exactly once
-            and the wrong thing to show them ever after. */}
+        {/* /profile is the review — everything the student has told us, read
+            only. The form that writes it is /register, which is the same form
+            whether it is being filled for the first time or re-opened with
+            ?edit to change one answer. One form rather than two is why the
+            eleven-screen wizard and its per-field twin on the review screen
+            both went; see the header of pages/Register.
+            *
+            * /profile/setup stays alive as a redirect. It is in browser
+            * histories and in the "finish your profile" links of every email
+            * sent before this changed. */}
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
-        <Route path="/profile/setup" element={<RequireAuth><ProfileWizard /></RequireAuth>} />
+        <Route path="/profile/setup" element={<Navigate to="/register?edit" replace />} />
         <Route path="/matches" element={<RequireProfile><Matches /></RequireProfile>} />
         <Route path="/documents" element={<RequireProfile><Documents /></RequireProfile>} />
         <Route path="/apply/:scholarshipId" element={<RequireProfile><Apply /></RequireProfile>} />
@@ -118,7 +122,7 @@ export default function App() {
 /* Registered is not the same as finished.
  *
  * Verifying a code creates an account; it does not create a student. Somebody
- * who abandons the details wizard has an account with nothing in it, and the
+ * who abandons the registration form has an account with nothing in it, and the
  * dashboard, the matches and the application pages all describe a student who
  * does not exist yet — so they are sent back to finish rather than shown empty
  * versions of each.
@@ -139,7 +143,7 @@ function RequireProfile({ children }: { children: React.ReactNode }) {
   if (status === 'loading') return <div className="page"><Loading /></div>
   if (status !== 'authenticated') return <Navigate to="/signin" replace />
   if (!profile) {
-    return <Navigate to={withNext('/profile/setup', location.pathname + location.search)} replace />
+    return <Navigate to={withNext('/register', location.pathname + location.search)} replace />
   }
   return <>{children}</>
 }

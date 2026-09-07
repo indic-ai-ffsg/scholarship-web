@@ -56,7 +56,7 @@ export default function Dashboard() {
      than as a second, differently-worded empty state: if the guard is ever
      loosened, the answer to "registered but not finished" should stay one
      answer given in one place. */
-  if (!profile) return <Navigate to="/profile/setup" replace />
+  if (!profile) return <Navigate to="/register?edit" replace />
 
   const s = summary.data
   const applications = recent.data ?? []

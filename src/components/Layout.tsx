@@ -415,18 +415,21 @@ export default function Layout() {
                  button inverted that, and asked for the commitment before the
                  value.
 
-                 The label is "Sign in", not "Sign in or Sign Up". Both words
-                 were there because the two used to be separate screens going to
-                 the same place, and a new student who pressed the loud
-                 "Register" arrived at a card headed "Login". They are one screen
-                 now and it handles an unknown number by registering it, so the
-                 second half of the label was describing a distinction that no
-                 longer exists — at the cost of making the account door read as
-                 the main event. /register stays alive as a redirect; it is
-                 printed on outreach material. */
+                 The label is "Register / Login", and it names two things on
+                 purpose. It read "Sign in" for a while, on the argument that
+                 registering and signing in are one screen handling an unknown
+                 number by registering it — so naming both was describing a
+                 distinction that no longer existed. They are two screens again:
+                 /register is the form that asks the nine questions, /signin is
+                 the number-and-code door for somebody who has already answered
+                 them. A visitor cannot tell which of the two they are from the
+                 outside, and the pair of words is what lets either of them
+                 recognise themselves in it. It points at /register, because the
+                 form carries "Already registered? Login with OTP" at the bottom
+                 and the reverse trip is the shorter one. */
               <div className="nav-end">
                 <NavLink to="/check" className="nav-cta">{t('nav.check')}</NavLink>
-                <NavLink to="/signin" className="nav-signin">{t('nav.signin')}</NavLink>
+                <NavLink to="/register" className="nav-signin">{t('nav.registerLogin')}</NavLink>
               </div>
             )}
         </div>

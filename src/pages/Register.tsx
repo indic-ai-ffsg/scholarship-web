@@ -1,23 +1,781 @@
-/* There is no separate registration any more.
+/* Registration: one form, one screen, one press.
  *
- * A mobile number and a code do both jobs: an unknown number is registered on
- * the way through, a known one is signed in. Keeping the route alive and
- * redirecting is the point of this file — /register is printed on outreach
- * material, sits in browser histories, and is linked from the public
- * eligibility check, and none of those should turn into a 404 because the flow
- * behind them was simplified.
+ * This replaces the eleven-screen profile wizard, and the reasons it replaced
+ * it are worth keeping because the wizard's own argument was a good one and it
+ * lost to something it had not accounted for.
  *
- * The destination carries over, so somebody who followed "create an account to
- * apply" still lands on the scholarship they were looking at.
+ * The wizard's case was that a long form asking for a disability percentage, a
+ * family income and a UDID number at once is what makes people abandon, so it
+ * asked one question per screen and wrote a draft after every answer. What that
+ * costs is a student who cannot see the shape of what is being asked. Eleven
+ * screens with no way to look ahead reads as an interview of unknown length,
+ * every answer is a commitment made blind, and going back to change the third
+ * answer means pressing Back eight times. It also put registration and details
+ * in two places — a code at /signin, then eleven questions at /profile/setup —
+ * so the moment a student was actually registered was invisible to them.
+ *
+ * One form fixes the thing the wizard could not: the whole ask is visible
+ * before the first keystroke. Nine questions, three named sections, and a
+ * student can see that section three is the last one. The phone number and its
+ * code sit inside the form rather than on a screen before it, so registering
+ * and saying who you are is one action with one button at the end of it.
+ *
+ * What the wizard was right about is kept where it still applies: the controls
+ * are large, nothing is denser than it has to be, and the questions are grouped
+ * so that the sensitive ones are not mixed in with the ordinary ones. What is
+ * deliberately dropped is the draft-per-answer machinery — there is no step to
+ * resume from when there is only one step, and the answers are in the form.
+ *
+ * ---------------------------------------------------------------------------
+ * The order of operations, which is not the order of the fields
+ * ---------------------------------------------------------------------------
+ *
+ * The code has to be verified before the form can be submitted, because both
+ * of the things submitting does need a session: POST /me/profile is behind the
+ * auth middleware, and so is the document upload. So the phone block is the one
+ * part of this form that acts on its own, mid-form, and it says so — it goes
+ * quiet and reads "Verified" once it is done, and the submit button explains
+ * itself while it is not.
+ *
+ * Submitting then does three things in a fixed order: create the profile,
+ * upload the certificate, then leave. The upload is second rather than first
+ * because /me/documents wants a profile to hang the document on, and it is not
+ * allowed to fail the registration — a student whose profile saved and whose
+ * PDF did not is registered, and telling them otherwise would send them round
+ * the whole form again to fix a file. They are told about the file alone, and
+ * the document vault is where it is retried.
  */
 
-import { Navigate, useLocation } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 
-import { withNext } from '../lib/next'
+import * as api from '../lib/api'
+import { useAuth } from '../lib/auth-context'
+import { useI18n } from '../lib/i18n-context'
+import { useAnnounce } from '../lib/announce'
+import { safeNext } from '../lib/next'
+import { formatE164, type Channel } from '../lib/otp'
+import {
+  ALL_YEARS, PROGRAMS_GRADUATION, PROGRAMS_PG, PROGRAMS_TOP, PROGRAM_PHD,
+  courseLevelFor, courseNameFor, disabilityChips, disabilityTypeFor,
+  programCategory, stateChoices, yearLabel, yearOrdinal,
+  type Choice,
+} from '../lib/fields'
+import { ChipSelector } from '../components/ChipSelector'
+import { SearchableSelect } from '../components/SearchableSelect'
+import { Field, Notice } from '../components/ui'
+import type { Profile } from '../lib/types'
 
+/* Same rule as the sign-in screen, checked here as well so the complaint can
+ * land on the field being typed into rather than in a banner at the top. */
+const MOBILE = /^[6-9]\d{9}$/
+const CODE_LENGTH = 6
+const RESEND_SECONDS = 30
+
+/* 5 MB, and the three types a certificate actually arrives as. Checked on the
+ * device rather than only at the API: a student on a slow connection should not
+ * spend two minutes uploading a 12 MB camera photo to be told no at the end. */
+const MAX_FILE_BYTES = 5 * 1024 * 1024
+const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+
+/* 98765 43210 — the grouping printed on a phone bill, so a number copied off a
+ * document can be checked against its source in two glances rather than ten. */
+function group(digits: string) {
+  return digits.length > 5 ? `${digits.slice(0, 5)} ${digits.slice(5)}` : digits
+}
+
+const asChoices = (values: readonly string[]): Choice[] =>
+  values.map(v => ({ value: v, label: v }))
+
+/* Two components, and the split exists to own one problem: seeding.
+ *
+ * A visitor arrives with no profile and the form must open empty. A student who
+ * pressed "Update details" arrives with one and the form must open holding
+ * their answers. The awkward case is the third — somebody opening /register?edit
+ * from a bookmark, where the session is still being refreshed at mount, so the
+ * profile is null for the first frame and arrives on a later one.
+ *
+ * Seeding that in an effect is the obvious move and it is the wrong one: it
+ * paints nine empty controls, then fills them, so the form visibly rewrites
+ * itself under the reader. Keying the inner component on the profile's id
+ * instead means the arrival remounts it, and `useState` initialisers do the
+ * seeding — one render, already correct, no effect. It also costs nothing for
+ * the two common cases, which mount once and never re-key.
+ *
+ * The outer half deliberately does not gate on `status === 'loading'`. A
+ * spinner here would put the public /register behind an API round trip for
+ * every visitor, which is the exact five-second first paint App.tsx took the
+ * session gate out to fix.
+ */
 export default function Register() {
-  const location = useLocation()
-  const next = new URLSearchParams(location.search).get('next')
+  const { profile } = useAuth()
+  return <RegisterForm key={profile?.profile_id ?? 'new'} profile={profile} />
+}
 
-  return <Navigate to={withNext('/signin', next)} replace />
+function RegisterForm({ profile }: { profile: Profile | null }) {
+  const { t } = useI18n()
+  const {
+    requestCode, submitCode, resendCode, cancelCode, clearError,
+    status, pendingCode, error: authError, refreshProfile,
+  } = useAuth()
+  const announce = useAnnounce()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  /* Where finishing leads. The matched list normally, but a visitor who pressed
+     Apply on the public eligibility check arrives with the scholarship they had
+     chosen in the address, and finishing hands them back to it. */
+  const destination = safeNext(location.search)
+
+  const verified = status === 'authenticated'
+  const awaitingCode = status === 'awaiting_code' && pendingCode
+
+  const [name, setName] = useState(profile?.full_name ?? '')
+  const [phone, setPhone] = useState('')
+  const [code, setCode] = useState('')
+  const [email, setEmail] = useState('')
+  const [udid, setUdid] = useState(profile?.udid_number ?? '')
+  const [file, setFile] = useState<File | null>(null)
+  /* One stored enum becomes a one-item selection. A profile saved as
+     MULTIPLE_DISABILITIES reopens as that single chip rather than as the set it
+     was folded from — the set was never stored, and guessing it back would be
+     inventing an answer. disabilityTypeFor in lib/fields carries the whole
+     argument for the fold. */
+  const [disabilities, setDisabilities] = useState<string[]>(
+    profile?.disability_type ? [profile.disability_type] : [],
+  )
+  const [percent, setPercent] = useState(
+    profile?.disability_percent != null ? String(profile.disability_percent) : '',
+  )
+  const [state, setState] = useState(profile?.state_code ?? '')
+  /* course_name holds the chip that was picked; the postgraduate ones are
+     stored prefixed, and programCategory needs the prefix back to know which
+     year chips apply. course_level is what says which group it came from. */
+  const [program, setProgram] = useState(() => {
+    if (!profile?.course_name) return ''
+    return profile.course_level === 'POSTGRADUATE' && profile.course_name !== PROGRAM_PHD
+      ? `PG: ${profile.course_name}`
+      : profile.course_name
+  })
+  const [year, setYear] = useState(
+    () => yearLabel(profile?.course_level, profile?.current_year) ?? '',
+  )
+  const [institution, setInstitution] = useState(profile?.institution_name ?? '')
+
+  const [problems, setProblems] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [fileWarning, setFileWarning] = useState<string | null>(null)
+  const [resentAt, setResentAt] = useState<number | null>(null)
+  const [secondsLeft, setSecondsLeft] = useState(0)
+  const [sentVia, setSentVia] = useState<Channel>('sms')
+  const [resent, setResent] = useState(false)
+
+  const phoneInput = useRef<HTMLInputElement>(null)
+  const codeInput = useRef<HTMLInputElement>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const form = useRef<HTMLFormElement>(null)
+
+  /* The countdown that gates the resend buttons. */
+  useEffect(() => {
+    if (!awaitingCode) return
+    const started = resentAt ?? Date.now()
+    const tick = () => setSecondsLeft(Math.max(0, RESEND_SECONDS - Math.floor((Date.now() - started) / 1000)))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [awaitingCode, resentAt])
+
+  /* Move to the code box the moment it appears, so the code can be typed
+     straight from the notification without hunting for the field. */
+  useEffect(() => {
+    if (awaitingCode) codeInput.current?.focus()
+  }, [awaitingCode])
+
+  /* A student who already has a profile and came here by accident — /register is
+     printed on outreach material and sits in browser histories — is not shown a
+     form asking them to register again. Editing is deliberate and arrives with
+     ?edit, which is what the profile view links to. */
+  const editing = new URLSearchParams(location.search).has('edit')
+  if (verified && profile && !editing) {
+    return <Navigate to={destination} replace />
+  }
+
+  const category = programCategory(program)
+  /* The years that do not belong to the chosen program are shown and disabled
+     rather than removed — see ALL_YEARS in lib/fields for why the row does not
+     change length. PhD has no year at all, so the whole question goes. */
+  const yearsOff = category
+    ? ALL_YEARS.filter(y => !y.cats.includes(category)).map(y => y.label)
+    : []
+
+  function clearProblem(key: string) {
+    setProblems(p => (p[key] ? { ...p, [key]: '' } : p))
+    if (formError) setFormError(null)
+  }
+
+  function changePhone(value: string) {
+    /* The last ten digits of whatever arrives. A number pasted off a contact
+       card comes with +91, or a leading 0, or dots between the groups, and none
+       of those is a mistake the person pasting should have to clean up. */
+    setPhone(value.replace(/\D/g, '').slice(-10))
+    clearProblem('phone')
+    if (authError) clearError()
+  }
+
+  async function sendCode() {
+    if (!MOBILE.test(phone)) {
+      setProblems(p => ({ ...p, phone: t(phone ? 'auth.phoneInvalid' : 'auth.phoneMissing') }))
+      phoneInput.current?.focus()
+      return
+    }
+    setBusy(true)
+    try {
+      await requestCode(phone)
+      setResentAt(Date.now())
+    } catch {
+      /* the provider holds the message, and useAuth exposes it */
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function verify() {
+    setBusy(true)
+    setResent(false)
+    try {
+      await submitCode(code)
+      announce(t('reg.verified'))
+    } catch {
+      // Wrong or expired: clear the box so the next attempt is not typed on top
+      // of the last one.
+      setCode('')
+      codeInput.current?.focus()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function resend(channel: Channel) {
+    setBusy(true)
+    setResent(false)
+    try {
+      await resendCode(channel)
+      setResentAt(Date.now())
+      setSentVia(channel)
+      setResent(true)
+    } catch {
+      /* the provider holds the message */
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function chooseFile(chosen: File | null) {
+    setFileWarning(null)
+    clearProblem('file')
+    if (!chosen) {
+      setFile(null)
+      return
+    }
+    if (!ALLOWED_TYPES.includes(chosen.type)) {
+      setProblems(p => ({ ...p, file: t('reg.fileType') }))
+      setFile(null)
+      return
+    }
+    if (chosen.size > MAX_FILE_BYTES) {
+      setProblems(p => ({ ...p, file: t('reg.fileSize') }))
+      setFile(null)
+      return
+    }
+    setFile(chosen)
+  }
+
+  /* Every rule in one place, so the button and the fields cannot disagree about
+   * whether the form is ready. Returns the map rather than setting it, because
+   * submit needs to know which field to move focus to and a state update is not
+   * readable in the same tick. */
+  function check(): Record<string, string> {
+    const found: Record<string, string> = {}
+    const required = t('reg.required')
+
+    if (!name.trim()) found.name = required
+    if (!verified) found.phone = t('reg.verifyFirst')
+    if (!udid.trim()) found.udid = required
+    /* Only on a first registration. An edit is re-opening a form whose
+       certificate was uploaded the first time through, and demanding the file
+       again to change a state code would be asking for the document twice. */
+    if (!file && !profile) found.file = required
+    if (disabilities.length === 0) found.disability = required
+
+    const pct = Number(percent)
+    if (percent === '') found.percent = required
+    else if (!Number.isFinite(pct) || !Number.isInteger(pct) || pct < 0 || pct > 100) {
+      found.percent = t('reg.percentRange')
+    }
+
+    if (!state) found.state = required
+    if (!program) found.program = required
+    // PhD is the one program with no year to give.
+    if (category !== 'phd' && !year) found.year = required
+    if (!institution.trim()) found.institution = required
+
+    return found
+  }
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+
+    const found = check()
+    setProblems(found)
+    if (Object.keys(found).length > 0) {
+      /* Focus the first thing that is wrong, in document order rather than in
+         the order the checks happen to run. A summary at the top telling
+         somebody that four fields need attention, with no way to reach the
+         first of them, is the failure mode this avoids. */
+      setFormError(t('reg.fix'))
+      const first = form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')
+      first?.focus()
+      first?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      return
+    }
+
+    setBusy(true)
+    setFormError(null)
+    setFileWarning(null)
+
+    /* Only what was answered, and each in the type the API decodes it as.
+     * disability_percent is *int and current_year is *int on UpsertInput; a
+     * string in either fails to decode before any handler runs, and the reply
+     * is the generic "We could not read that request" naming no field. */
+    const payload: Record<string, unknown> = {
+      full_name: name.trim(),
+      disability_type: disabilityTypeFor(disabilities),
+      disability_percent: Number(percent),
+      udid_number: udid.trim(),
+      state_code: state,
+      course_level: courseLevelFor(program),
+      course_name: courseNameFor(program),
+      institution_name: institution.trim(),
+    }
+    const ordinal = yearOrdinal(year)
+    if (ordinal !== null) payload.current_year = ordinal
+
+    /* Email is asked for and not sent, and that is a gap rather than a
+     * decision. There is no email column on student_profile and no field for it
+     * on profile.UpsertInput, so there is nowhere for it to go — sending it
+     * would be silently dropped by the decoder. It is on the form because the
+     * design asks for it and because a student who gives it should not have to
+     * give it again once the column exists. Until then it lives for the length
+     * of this page and no longer, which is worth knowing before somebody
+     * concludes the address is on file. */
+    void email
+
+    try {
+      if (profile) {
+        await api.request('/me/profile', { method: 'PATCH', body: payload })
+      } else {
+        await api.post('/me/profile', payload)
+      }
+
+      /* Second, and allowed to fail on its own. /me/documents needs the profile
+         the call above just created, and a certificate that does not upload
+         must not un-register a student whose details saved. */
+      if (file) {
+        const body = new FormData()
+        body.append('file', file)
+        body.append('doc_type', 'UDID_CARD')
+        try {
+          // FormData rather than the JSON client: the browser has to set its own
+          // multipart boundary, which it cannot do if a Content-Type is forced.
+          await api.upload('/me/documents', body)
+        } catch {
+          setFileWarning(t('reg.fileLater'))
+        }
+      }
+
+      await refreshProfile()
+      announce(t('reg.done'))
+      /* Held on the page when the certificate did not go up, so the sentence
+         about it is read rather than flashed on the way out. */
+      if (!fileWarning) navigate(destination)
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : t('common.error'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="page register-page">
+      <div className="register-card">
+        <h1>{profile ? t('reg.editTitle') : t('reg.title')}</h1>
+        <p className="register-sub">
+          {/* The asterisk is decoration; Field puts "(required)" in every
+              required control's accessible name, so this sentence is for the
+              person reading the page and not the one hearing it. */}
+          <span aria-hidden="true">{t('reg.requiredNote')}</span>
+          <span className="sr-only">{t('reg.requiredNoteSr')}</span>
+        </p>
+
+        {authError && <Notice tone="danger">{authError}</Notice>}
+        {formError && <Notice tone="danger">{formError}</Notice>}
+        {fileWarning && (
+          <Notice tone="warn" title={t('reg.doneTitle')}>
+            <p>{fileWarning}</p>
+            <p><Link to="/documents">{t('doc.upload')}</Link></p>
+          </Notice>
+        )}
+
+        <form ref={form} onSubmit={submit} noValidate>
+          <h2 className="register-section">{t('reg.personal')}</h2>
+
+          <Field label={t('reg.name')} error={problems.name || undefined} required>
+            {props => (
+              <input
+                {...props}
+                type="text"
+                autoComplete="name"
+                placeholder={t('reg.namePlaceholder')}
+                value={name}
+                onChange={e => { setName(e.target.value); clearProblem('name') }}
+              />
+            )}
+          </Field>
+
+          {/* The one block that acts before the form is submitted. */}
+          {verified ? (
+            <p className="register-verified">
+              <span className="mark" aria-hidden="true">✓</span>
+              <span>
+                {t('reg.verified')}
+                {pendingCode && <> — <span className="number">{formatE164(pendingCode.phone)}</span></>}
+              </span>
+            </p>
+          ) : (
+            <Field
+              label={t('auth.phone')}
+              hint={awaitingCode ? undefined : t('reg.phoneHint')}
+              error={problems.phone || undefined}
+              required
+            >
+              {props => (
+                <>
+                  <div className="phone-otp">
+                    {/* The country code is fixed furniture rather than a
+                        prefilled "+91" to be typed around or deleted by
+                        accident. */}
+                    <span className="input-group">
+                      <span className="prefix" aria-hidden="true">+91</span>
+                      <input
+                        {...props}
+                        ref={phoneInput}
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel-national"
+                        placeholder={t('auth.phonePlaceholder')}
+                        maxLength={11}
+                        disabled={Boolean(awaitingCode)}
+                        value={group(phone)}
+                        onChange={e => changePhone(e.target.value)}
+                      />
+                    </span>
+                    {!awaitingCode && (
+                      <button type="button" className="primary" onClick={sendCode} disabled={busy}>
+                        {busy ? t('auth.sending') : t('reg.sendOtp')}
+                      </button>
+                    )}
+                  </div>
+
+                  {awaitingCode && (
+                    <div className="otp-step">
+                      <p className="otp-target">
+                        <span className="number">{formatE164(pendingCode.phone)}</span>
+                        <button
+                          type="button"
+                          className="quiet small"
+                          onClick={() => { cancelCode(); setCode('') }}
+                          disabled={busy}
+                        >
+                          {t('auth.changeNumber')}
+                        </button>
+                      </p>
+
+                      <div className="phone-otp">
+                        <input
+                          ref={codeInput}
+                          type="text"
+                          /* one-time-code lets the phone offer the digits
+                             straight from the message, which saves the
+                             copy-paste most likely to go wrong. */
+                          autoComplete="one-time-code"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={CODE_LENGTH}
+                          className="otp-input"
+                          aria-label={t('auth.code')}
+                          placeholder={t('reg.otpPlaceholder')}
+                          value={code}
+                          onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH))}
+                        />
+                        <button
+                          type="button"
+                          className="primary"
+                          onClick={verify}
+                          disabled={busy || code.length < CODE_LENGTH}
+                        >
+                          {busy ? t('auth.checking') : t('auth.verify')}
+                        </button>
+                      </div>
+
+                      {/* Spoken as well as shown: pressing a resend otherwise
+                          changes nothing a screen reader can hear, and the
+                          second press that follows is a second message nobody
+                          needed. */}
+                      <p className="otp-sent" role="status">
+                        {resent ? t(`auth.resentVia.${sentVia}`) : ''}
+                      </p>
+
+                      {/* Three ways, side by side rather than escalated
+                          through. A deaf student needs voice never rather than
+                          third, and somebody whose operator is dropping SMS
+                          needs WhatsApp first rather than after two more
+                          failures. They share one countdown because it is one
+                          exchange on MSG91's side whichever road the code
+                          takes. */}
+                      <div className="otp-retry">
+                        <span className="muted" id="reg-retry">{t('auth.noCode')}</span>
+                        <div className="otp-channels" role="group" aria-labelledby="reg-retry">
+                          <button type="button" className="quiet" onClick={() => resend('sms')} disabled={busy || secondsLeft > 0}>{t('auth.viaSms')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('whatsapp')} disabled={busy || secondsLeft > 0}>{t('auth.viaWhatsapp')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('voice')} disabled={busy || secondsLeft > 0}>{t('auth.viaVoice')}</button>
+                        </div>
+                        {secondsLeft > 0 && (
+                          <p className="muted">{t('auth.resendIn', { n: secondsLeft })}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </Field>
+          )}
+
+          <Field label={t('reg.email')} hint={t('reg.emailHint')} required={false}>
+            {props => (
+              <input
+                {...props}
+                type="email"
+                autoComplete="email"
+                placeholder={t('reg.emailPlaceholder')}
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+            )}
+          </Field>
+
+          <h2 className="register-section">{t('reg.disability')}</h2>
+
+          <Field label={t('reg.udid')} hint={t('reg.udidHint')} error={problems.udid || undefined} required>
+            {props => (
+              <input
+                {...props}
+                type="text"
+                placeholder={t('reg.udidPlaceholder')}
+                value={udid}
+                onChange={e => { setUdid(e.target.value); clearProblem('udid') }}
+              />
+            )}
+          </Field>
+
+          <Field
+            label={t('reg.certificate')}
+            hint={t('reg.certificateHint')}
+            error={problems.file || undefined}
+            required={!profile}
+          >
+            {props => (
+              <input
+                {...props}
+                ref={fileInput}
+                type="file"
+                className="file-input"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                // capture is deliberately absent: offering the camera by
+                // default is wrong for somebody who has already scanned the
+                // certificate, and the picker offers the camera anyway.
+                onChange={e => chooseFile(e.target.files?.[0] ?? null)}
+              />
+            )}
+          </Field>
+
+          {/* Not a Field: the control is a group of twenty-one chips with its
+              own <legend>, and Field's <label for> would have nothing single to
+              point at. The label is rendered here and the group names itself. */}
+          <div className="field">
+            <span className="field-label" id="reg-disability">
+              {t('reg.disabilityType')}
+              <span className="req" aria-hidden="true"> *</span>
+              <span className="hint"> {t('reg.selectAll')}</span>
+            </span>
+            <ChipSelector
+              legend={`${t('reg.disabilityType')} — ${t('reg.selectAll')}`}
+              name="disability"
+              options={disabilityChips()}
+              selected={disabilities}
+              multi
+              onChange={v => { setDisabilities(v); clearProblem('disability') }}
+            />
+            {problems.disability && (
+              <span className="error" role="alert">{problems.disability}</span>
+            )}
+          </div>
+
+          <Field
+            label={t('reg.percent')}
+            hint={t('reg.percentHint')}
+            error={problems.percent || undefined}
+            required
+          >
+            {props => (
+              <input
+                {...props}
+                type="number"
+                inputMode="numeric"
+                className="input-short"
+                // step 1 so the spinner moves in whole numbers and a phone
+                // keypad offers no decimal point: disability_percent is an int
+                // on the API, and 40.5 fails to decode.
+                step={1}
+                min={0}
+                max={100}
+                placeholder={t('reg.percentPlaceholder')}
+                value={percent}
+                onChange={e => { setPercent(e.target.value); clearProblem('percent') }}
+              />
+            )}
+          </Field>
+
+          <h2 className="register-section">{t('reg.education')}</h2>
+
+          <Field label={t('reg.state')} error={problems.state || undefined} required>
+            {props => (
+              <SearchableSelect
+                {...props}
+                options={stateChoices()}
+                value={state}
+                onChange={v => { setState(v); clearProblem('state') }}
+                placeholder={t('reg.statePlaceholder')}
+              />
+            )}
+          </Field>
+
+          <div className="field">
+            <span className="field-label" id="reg-program">
+              {t('reg.program')}
+              <span className="req" aria-hidden="true"> *</span>
+            </span>
+
+            {/* Three groups and a single answer across all of them. The
+                headings are headings rather than selectable chips, because
+                "Graduation" is not a program somebody is enrolled on — and a
+                chip that looks identical to its neighbours and does nothing
+                when pressed is worse than a word that never looked pressable. */}
+            <ChipSelector
+              legend={t('reg.program')}
+              name="program"
+              options={asChoices(PROGRAMS_TOP)}
+              selected={program ? [program] : []}
+              onChange={v => { setProgram(v[0] ?? ''); setYear(''); clearProblem('program') }}
+            />
+
+            <p className="chip-heading">{t('reg.graduation')}</p>
+            <ChipSelector
+              legend={t('reg.graduation')}
+              name="program"
+              options={asChoices(PROGRAMS_GRADUATION)}
+              selected={program ? [program] : []}
+              onChange={v => { setProgram(v[0] ?? ''); setYear(''); clearProblem('program') }}
+            />
+
+            <p className="chip-heading">{t('reg.postgraduation')}</p>
+            <ChipSelector
+              legend={t('reg.postgraduation')}
+              name="program"
+              /* Stored prefixed — "Others" is in both grouped lists and MD is a
+                 postgraduate degree, so the label alone cannot say which group
+                 an answer came from. See pgValue in lib/fields. */
+              options={PROGRAMS_PG.map(p => ({ value: `PG: ${p}`, label: p }))}
+              selected={program ? [program] : []}
+              onChange={v => { setProgram(v[0] ?? ''); setYear(''); clearProblem('program') }}
+            />
+
+            <p className="chip-heading sr-only">{PROGRAM_PHD}</p>
+            <ChipSelector
+              legend={PROGRAM_PHD}
+              name="program"
+              options={asChoices([PROGRAM_PHD])}
+              selected={program ? [program] : []}
+              onChange={v => { setProgram(v[0] ?? ''); setYear(''); clearProblem('program') }}
+            />
+
+            {problems.program && <span className="error" role="alert">{problems.program}</span>}
+          </div>
+
+          {/* PhD has no year to give, so the question goes rather than sitting
+              there with every chip greyed out. */}
+          {category !== 'phd' && (
+            <div className="field">
+              <span className="field-label" id="reg-year">
+                {t('reg.year')}
+                <span className="req" aria-hidden="true"> *</span>
+                {!program && <span className="hint"> {t('reg.yearAfterProgram')}</span>}
+              </span>
+              <ChipSelector
+                legend={t('reg.year')}
+                name="year"
+                options={ALL_YEARS.map(y => ({ value: y.label, label: y.label }))}
+                selected={year ? [year] : []}
+                disabledValues={yearsOff}
+                onChange={v => { setYear(v[0] ?? ''); clearProblem('year') }}
+              />
+              {problems.year && <span className="error" role="alert">{problems.year}</span>}
+            </div>
+          )}
+
+          <Field label={t('reg.institution')} error={problems.institution || undefined} required>
+            {props => (
+              <input
+                {...props}
+                type="text"
+                placeholder={t('reg.institutionPlaceholder')}
+                value={institution}
+                onChange={e => { setInstitution(e.target.value); clearProblem('institution') }}
+              />
+            )}
+          </Field>
+
+          <button type="submit" className="primary wide register-cta" disabled={busy}>
+            {busy ? t('reg.saving') : profile ? t('reg.saveChanges') : t('reg.cta')}
+          </button>
+
+          {/* Said in words rather than only by a disabled button, because a
+              button that cannot be pressed and does not say why is the single
+              most common reason a form is abandoned at the last step. */}
+          {!verified && (
+            <p className="register-gate">
+              <span className="mark" aria-hidden="true">!</span>
+              <span>{t('reg.verifyFirst')}</span>
+            </p>
+          )}
+        </form>
+
+        {!verified && (
+          <p className="register-alt">
+            {t('reg.already')} <Link to="/signin">{t('reg.login')}</Link>
+          </p>
+        )}
+      </div>
+    </div>
+  )
 }
