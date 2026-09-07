@@ -735,7 +735,32 @@ button, .btn {
   text-decoration: none;
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
 }
-button:hover:not(:disabled), .btn:hover { background: var(--surface-sunken); }
+/* :not(.primary) is load-bearing, and the specificity arithmetic is the reason.
+ *
+ * `button:hover:not(:disabled)` scores (0,2,1) — the element, the :hover, and
+ * the :disabled inside the :not(), which counts. `button.primary` below scores
+ * (0,1,1). This rule is the more specific of the two, so it took the primary
+ * button's background whatever order they sat in, and it took *only* the
+ * background: border-color stayed --accent and color stayed --accent-text.
+ *
+ * Every primary button in the product therefore became a green outline holding
+ * white text on a near-white ground the moment a pointer touched it — white on
+ * --surface-sunken is 1.04:1, which is not low contrast, it is an empty box.
+ * The label was gone. On the landing page's search button that is the first
+ * control anybody meets, and the same hover sat on "Check now", both OTP sends,
+ * "Verify", the register CTA and "Add document".
+ *
+ * It hid for so long because a.btn.primary is immune by accident: `.btn:hover`
+ * and `.btn.primary` are both (0,2,0), so source order decides and .primary,
+ * being later, keeps its ground. The hero has one of each side by side and only
+ * the <button> was wrong, which makes it look like a one-off rather than a rule.
+ *
+ * So this rule now claims only the ground it actually owns — the default
+ * button's — and .primary restates its own below instead of trusting the
+ * cascade to leave it alone. */
+button:hover:not(:disabled):not(.primary), .btn:hover:not(.primary) {
+  background: var(--surface-sunken);
+}
 button:disabled:not([aria-busy="true"]) { cursor: not-allowed; }
 
 /* What a control does when a pointer arrives.
@@ -782,7 +807,12 @@ button:active:not(:disabled), .btn:active, .chip-link:active {
 button.primary, .btn.primary {
   background: var(--accent); border-color: var(--accent); color: var(--accent-text);
 }
-button.primary:hover:not(:disabled), .btn.primary:hover { filter: brightness(1.12); }
+button.primary:hover:not(:disabled), .btn.primary:hover {
+  /* Restated, not inherited — see the note on the generic hover rule above.
+   * The brightness is the whole hover signal; the ground must not move. */
+  background: var(--accent);
+  filter: brightness(1.12);
+}
 button.quiet { border-color: transparent; background: transparent; color: var(--accent); }
 button.quiet:hover:not(:disabled) { background: var(--accent-weak); }
 
