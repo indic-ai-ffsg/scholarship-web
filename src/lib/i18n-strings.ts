@@ -21,6 +21,7 @@ export const en: Dict = {
   /* Still used: the tab title for a page that has no name of its own. */
   'app.tagline': 'For students with disabilities',
 
+  'nav.home': 'Home',
   'nav.check': 'Check eligibility',
   /* The bar names the place, not the verb: a nav item is a destination, and
    * "Find scholarships" read as an instruction sitting beside three nouns. */
@@ -438,6 +439,14 @@ export const en: Dict = {
   'home.browseAll': 'Browse all scholarships',
   'home.openNow': 'scholarships open right now',
   'home.noAccount': 'No account needed to look.',
+  /* What the same line says when the directory is empty.
+   *
+   * It rendered "0 scholarships open right now" — directly under a headline
+   * promising every scholarship you are eligible for. A count is the right
+   * thing to show when there is one; zero is not a count, it is a different
+   * situation, and the honest version of it says so and says what to expect. */
+  'home.openNone': 'No scholarships are listed here yet.',
+  'home.openNoneBody': 'The directory is being filled now. Nothing here sits behind an account — when schemes are listed you will see them without signing in.',
 
   'home.how': 'How it works',
   'home.step1': 'Check if you qualify',

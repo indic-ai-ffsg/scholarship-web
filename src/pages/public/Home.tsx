@@ -86,6 +86,32 @@ export default function Home() {
         <h1>{t('home.title')}</h1>
         <p className="lede">{t('home.lede')}</p>
 
+        {/* The two ways in, before the search rather than after it.
+          *
+          * They were below it, on the reasoning that a visitor who already
+          * knows what they want should not have to read a pitch first. The
+          * reasoning is sound and the position was still wrong, because of
+          * where the fold falls: measured at 1280x800, the search box ended at
+          * 775 and this row ran 834 to 883 — entirely off screen. So the
+          * minority who arrive knowing what to search for were served above the
+          * fold, and everybody else, who is here to find out whether any of
+          * this applies to them, had no visible way forward at all.
+          *
+          * The search box is also labelled "(optional)", which settles it: an
+          * optional control should not outrank the two primary ones. It is one
+          * scroll-free glance away, directly underneath.
+          *
+          * This is the same test the band above was already shortened to pass —
+          * see the note on .slides, which cut a full-screen hero for putting
+          * "the search box, the live count and the schemes closing this week
+          * below the fold". */}
+        <div className="row">
+          {/* The full sentence here, where there is room for it. The masthead
+              and the footer use the shorter nav label. */}
+          <Link className="btn primary" to="/check">{t('public.cta')}</Link>
+          <Link className="btn" to="/scholarships">{t('home.browseAll')}</Link>
+        </div>
+
         <form onSubmit={search} className="hero-search" role="search">
           <Field label={t('home.search')}>
             {props => (
@@ -102,28 +128,30 @@ export default function Home() {
           <button type="submit" className="primary">{t('home.searchGo')}</button>
         </form>
 
-        <p className="hero-meta">
-          {/* Rendered only once the number is known. A count that appears as
-              "0 scholarships open right now" for half a second while the
-              request is in flight is worse than nothing at all. */}
-          {typeof total === 'number' && (
-            <strong>{count(total)} {t('home.openNow')}</strong>
-          )}
-          {' '}
-          <span className="muted">{t('home.noAccount')}</span>
-        </p>
-
-        {/* The check first, browsing second.
-            A visitor who already knows what they want has the search box above;
-            everybody else is here to find out whether any of this applies to
-            them, and a list of forty schemes does not answer that. Both are
-            offered, so neither route is a wall. */}
-        <div className="row">
-          {/* The full sentence here, where there is room for it. The masthead
-              and the footer use the shorter nav label. */}
-          <Link className="btn primary" to="/check">{t('public.cta')}</Link>
-          <Link className="btn" to="/scholarships">{t('home.browseAll')}</Link>
-        </div>
+        {/* Rendered only once the number is known. A count that appears as
+            "0 scholarships open right now" for half a second while the request
+            is in flight is worse than nothing at all.
+            *
+            * Zero is not a small count, it is a different situation, and it
+            * needs different words. "0 scholarships open right now" sat
+            * directly under a headline promising every scholarship you are
+            * eligible for, and under two buttons leading into an empty list —
+            * the page contradicting itself in three places at once. This is
+            * what production has actually been serving. */}
+        {total === 0 ? (
+          <p className="hero-meta hero-meta-empty">
+            <strong>{t('home.openNone')}</strong>{' '}
+            <span className="muted">{t('home.openNoneBody')}</span>
+          </p>
+        ) : (
+          <p className="hero-meta">
+            {typeof total === 'number' && (
+              <strong>{count(total)} {t('home.openNow')}</strong>
+            )}
+            {' '}
+            <span className="muted">{t('home.noAccount')}</span>
+          </p>
+        )}
         </div>
 
         {listings.length > 0 && (

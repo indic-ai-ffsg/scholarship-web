@@ -112,6 +112,42 @@
   --step-2: 1.375rem;
   --step-3: 1.625rem;
 
+  /* --- weight ------------------------------------------------------------
+   *
+   * The scale above came down once already — 20/24/30px to 18/22/26 — because
+   * the pages read as shouting. It helped and it did not fix it, and measuring
+   * the landing page says why: of the twenty-odd distinct text styles on it,
+   * exactly three were lighter than 600. Body copy at 400, and everything else
+   * — every heading, every button, every label, every link in a card, the
+   * ticks under the headline — at 600 or 700.
+   *
+   * A page where almost nothing is light does not read as emphatic, it reads as
+   * large-print. Weight had stopped distinguishing anything because there was
+   * nothing for it to be heavier than, so hierarchy fell entirely to size, and
+   * size had just been reduced. That is the combination that makes a page look
+   * like a leaflet rather than a product.
+   *
+   * Headings were the worst of it and nobody chose them: `h1, h2, h3` set only
+   * font-size, so all three inherited the browser's `bold` — 700 by default,
+   * on every heading on the site, by omission.
+   *
+   * Three weights, and each has one job:
+   *
+   *   400  reading. Paragraphs, list items, anything made of sentences.
+   *   500  controls and labels — the things you act on rather than read.
+   *   600  headings, and inline emphasis inside a paragraph.
+   *
+   * Nothing is 700. At these sizes the step from 600 to 700 buys almost no
+   * apparent weight on a system UI face and costs the page its lightest note.
+   *
+   * None of this touches the reading sizes, which the note above defends and
+   * which are the part a low-vision student actually depends on. Weight is not
+   * legibility: 17px at 400 is the same size as 17px at 700, and the lighter
+   * one has more counter space at magnification, not less. */
+  --w-body: 400;
+  --w-medium: 500;
+  --w-strong: 600;
+
   --gap: 1rem;
   --measure: 38rem;   /* ~70 characters; longer lines are harder to track back */
 }
@@ -152,11 +188,24 @@ body {
  * reached — and on a page running the full width of a 27-inch monitor it is
  * what stops an h1 becoming one hundred-character line, which is harder to read
  * than the narrow column it replaced. */
-h1, h2, h3 { line-height: 1.25; margin: 0 0 0.5rem; letter-spacing: -0.01em; max-width: 40ch; }
+h1, h2, h3, h4 {
+  line-height: 1.25; margin: 0 0 0.5rem; max-width: 40ch;
+  /* Stated, where it used to be the browser's `bold`. Every heading on the
+     site was 700 by omission. */
+  font-weight: var(--w-strong);
+  /* A shade tighter than before. Dropping a heading from 700 to 600 opens
+     the letter-fit slightly at the same size, and closing it back up is what
+     keeps the line reading as one word-shape rather than as spaced-out
+     type. It is the difference between lighter and weaker. */
+  letter-spacing: -0.015em;
+}
 h1 { font-size: var(--step-3); }
 h2 { font-size: var(--step-2); }
 h3 { font-size: var(--step-1); }
 p { margin: 0 0 1rem; max-width: var(--measure); }
+/* 600, not the browser's 700. Inside a 400 paragraph that is already a clear
+   step, and 700 next to 400 reads as a shout rather than as emphasis. */
+strong, b { font-weight: var(--w-strong); }
 
 a { color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
 a:hover { text-decoration-thickness: 3px; }
@@ -292,7 +341,7 @@ main { scroll-margin-top: 5rem; }
   line-height: 1.1;
 }
 .masthead .brand-name {
-  font-weight: 700; font-size: var(--step--1);
+  font-weight: var(--w-strong); font-size: var(--step--1);
   white-space: nowrap;
 }
 
@@ -428,6 +477,7 @@ main { scroll-margin-top: 5rem; }
 .masthead nav a,
 .masthead .nav-end > a,
 .masthead .menu > summary {
+  font-weight: var(--w-medium);
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 48px;
   padding: 0.5rem 0.875rem;
@@ -444,7 +494,11 @@ main { scroll-margin-top: 5rem; }
  * rule sits under the word, so the current place survives a monochrome screen
  * and a reader who cannot separate the accent from the text. */
 .masthead nav a[aria-current="page"] {
-  background: var(--accent-weak); color: var(--accent); font-weight: 700;
+  /* 600 against the bar's 500, not 700. The weight step still reads, and it is
+     the third signal here rather than the only one — there is a tint behind the
+     word and a rule under it, so the current place survives a monochrome screen
+     without the bar having to shout. */
+  background: var(--accent-weak); color: var(--accent); font-weight: var(--w-strong);
   box-shadow: inset 0 -3px 0 var(--accent);
 }
 
@@ -453,7 +507,9 @@ main { scroll-margin-top: 5rem; }
  * it, which left the bar with six controls and no answer to "what do I press". */
 .masthead a.signin {
   background: var(--accent); color: var(--accent-text);
-  font-weight: 700; border: 2px solid var(--accent);
+  /* Filled, bordered and the only solid thing in the bar. 700 on top of all
+     three was belt and braces. */
+  font-weight: var(--w-strong); border: 2px solid var(--accent);
   text-decoration: none;
 }
 .masthead a.signin:hover { background: var(--accent); filter: brightness(1.12); }
@@ -469,7 +525,7 @@ main { scroll-margin-top: 5rem; }
  * rather than hidden; the caret is the affordance that says this opens. */
 
 .masthead .menu { position: relative; }
-.masthead .menu > summary { list-style: none; gap: 0.4rem; font-weight: 600; }
+.masthead .menu > summary { list-style: none; gap: 0.4rem; font-weight: var(--w-medium); }
 .masthead .menu > summary::-webkit-details-marker { display: none; }
 .masthead .menu[open] > summary { background: var(--surface-sunken); }
 .masthead .menu .caret { font-size: 0.8em; transition: transform 120ms ease-out; }
@@ -614,7 +670,11 @@ main { scroll-margin-top: 5rem; }
  * motor control operating a phone one-handed. */
 
 button, .btn {
-  font: 600 var(--step-0)/1.2 var(--font);
+  /* 500. A button is already marked out by its box, its border and its
+     48px of height; 600 on top of all three was the single loudest thing on
+     the landing page after the headline. The target size is untouched — it
+     comes from the padding and min-height below, not from the type. */
+  font: var(--w-medium) var(--step-0)/1.2 var(--font);
   padding: 0.75rem 1.25rem;
   min-height: 48px;
   border-radius: var(--radius);
@@ -709,9 +769,9 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
  * so the label, hint and error stay the same width as the thing they describe;
  * inside a filter track or a wizard column it is never reached. */
 .field { display: grid; gap: 0.375rem; margin-bottom: 1.25rem; max-width: var(--measure); }
-.field > label { font-weight: 600; font-size: var(--step-0); }
+.field > label { font-weight: var(--w-medium); font-size: var(--step-0); }
 .field .hint { color: var(--text-muted); font-size: var(--step--1); max-width: var(--measure); }
-.field .error { color: var(--danger); font-weight: 600; font-size: var(--step--1); }
+.field .error { color: var(--danger); font-weight: var(--w-strong); font-size: var(--step--1); }
 
 /* Radio and checkbox groups are the profile wizard's main input. Presented as
  * large tappable rows rather than small controls beside labels. */
@@ -727,7 +787,7 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 .choice:hover { background: var(--surface-sunken); }
 .choice input { width: 1.375rem; height: 1.375rem; min-height: 0; margin: 0.125rem 0 0; flex: none; accent-color: var(--accent); }
 .choice:has(input:checked) { border-color: var(--accent); background: var(--accent-weak); }
-.choice .label { font-weight: 600; }
+.choice .label { font-weight: var(--w-medium); }
 .choice .sub { display: block; font-weight: 400; color: var(--text-muted); font-size: var(--step--1); }
 
 /* --- eligibility states (Table 4.2) ----------------------------------------------
@@ -767,8 +827,8 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 }
 .next-action .mark { flex: none; font-size: 1.1em; line-height: 1.4; }
 
-.amount { font-weight: 700; font-size: var(--step-1); }
-.deadline { font-weight: 600; }
+.amount { font-weight: var(--w-strong); font-size: var(--step-1); }
+.deadline { font-weight: var(--w-medium); }
 .deadline.soon { color: var(--danger); }
 
 /* --- wizard -----------------------------------------------------------------------
@@ -1233,7 +1293,10 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   margin: 0; padding: 0;
   display: flex; flex-wrap: wrap;
   gap: 0.5rem 1.5rem;
-  font-weight: 600;
+  /* 400. These are three short sentences — "Completely free", "6
+     languages" — and they were set at the same weight as the buttons below
+     them. The tick already marks each one; the words are for reading. */
+  font-weight: var(--w-body);
 }
 .lead-points li { display: flex; align-items: center; gap: 0.5rem; }
 /* A filled disc rather than a bare character. Three loose ticks in a row read as
@@ -1529,7 +1592,7 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
    * above, and subgrid does that. */
   align-self: end;
 }
-.figure .figure-label { font-weight: 600; }
+.figure .figure-label { font-weight: var(--w-medium); }
 .figure .muted { font-size: var(--step--1); }
 
 /* A .figure that is also a link, on the student dashboard.
@@ -1577,7 +1640,7 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   overflow: hidden;
 }
 .bar-fill { display: block; height: 100%; background: var(--accent); }
-.bar-count { font-variant-numeric: tabular-nums; font-weight: 600; }
+.bar-count { font-variant-numeric: tabular-nums; font-weight: var(--w-medium); }
 
 .impact-honest { margin-top: 2.5rem; }
 .impact-honest h2 { font-size: var(--step-1); margin-top: 0; }
@@ -1614,7 +1677,7 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 /* The invitation at the foot of the results, not welded to the last card. */
 .directory-results .notice { margin-top: 1.5rem; }
 
-.result-count { margin: 0 0 0.875rem; font-weight: 700; font-size: var(--step-1); }
+.result-count { margin: 0 0 0.875rem; font-weight: var(--w-strong); font-size: var(--step-1); }
 
 @media (max-width: 64rem) {
   /* One column, filters first: they are the control for what follows, and the
@@ -1682,7 +1745,7 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 
 .facts { display: grid; gap: 0.875rem; margin: 0; }
 .facts dt { font-size: var(--step--1); margin-bottom: 0.125rem; }
-.facts dd { margin: 0; font-weight: 600; }
+.facts dd { margin: 0; font-weight: var(--w-medium); }
 .facts .block { display: block; font-weight: 400; font-size: var(--step--1); }
 
 .scheme-facts .card { display: grid; gap: 1rem; }
@@ -1712,17 +1775,38 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
  * rows does not. Below 64rem the panel drops under the pitch — it is a
  * supporting fact, and on a phone the sentence explaining the site has to come
  * first. */
+/* One column, and a second only when there is something to put in it.
+ *
+ * The two-column rule used to be unconditional, and .hero-side renders only
+ * when the directory returned something. With an empty directory — which is
+ * what production has been serving — the grid still reserved its 22rem track,
+ * so the headline, the lede and both buttons were squeezed into what was left
+ * while a third of the screen stayed blank beside them. The page looked like it
+ * had failed to load, which was nearly true and not the impression to give.
+ *
+ * :has() rather than a class toggled in React, so the layout follows what is
+ * actually rendered. A flag passed down from the query would be a second
+ * statement of the same fact, and the two would eventually disagree — the
+ * aside's own condition is `listings.length > 0`, which is not the same test as
+ * `total > 0` and would drift the first time one changed. */
 .hero {
   padding-top: 0.5rem;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem 3rem;
   align-items: start;
 }
+.hero:has(.hero-side) {
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+}
 .hero h1 { max-width: 20ch; }
 @media (max-width: 64rem) {
-  .hero { grid-template-columns: 1fr; }
+  .hero, .hero:has(.hero-side) { grid-template-columns: 1fr; }
 }
+
+/* The empty directory's line wraps to two, so it needs the measure every other
+   paragraph has — without it the sentence runs the full width of a monitor. */
+.hero-meta-empty { max-width: 62ch; }
 
 .hero-side .card { display: grid; gap: 0.5rem; }
 .hero-side h2 { font-size: var(--step-1); margin: 0; }
@@ -1734,7 +1818,7 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 .deadline-list { list-style: none; margin: 0; padding: 0; display: grid; }
 .deadline-list li { padding: 0.75rem 0; border-top: 1px solid var(--border); }
 .deadline-list li:first-child { border-top: 0; }
-.deadline-list a { font-weight: 600; }
+.deadline-list a { font-weight: var(--w-medium); }
 .deadline-list p {
   margin: 0.25rem 0 0;
   display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem;
@@ -1748,6 +1832,14 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   display: flex; gap: 0.75rem; align-items: flex-end;
   max-width: var(--measure);
   margin-bottom: 0.75rem;
+  /* Clear of the buttons above it, which it did not need when it came first.
+   *
+   * More space than the gap inside the hero, deliberately: the two buttons and
+   * this box are alternatives, not steps, and a tight stack reads as one
+   * control group where the search label looks like a caption on the buttons.
+   * That is what it did at 0 — "Browse all scholarships" sat directly on top of
+   * "Search scholarships (optional)". */
+  margin-top: 1.5rem;
 }
 .hero-search .field { flex: 1; margin-bottom: 0; }
 @media (max-width: 30rem) {
@@ -1799,7 +1891,7 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   border: 2px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-weight: 600;
+  font-weight: var(--w-medium);
   text-decoration: none;
 }
 .chip-link:hover { background: var(--accent-weak); border-color: var(--accent); }
@@ -2370,3 +2462,37 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
 @media (prefers-reduced-motion: reduce) {
   .refetching::after { animation: none; left: 0; width: 100%; }
 }
+
+/* --- pages written in the admin panel ------------------------------------------
+ *
+ * Two blocks need styles of their own; the rest — headings, paragraphs, the
+ * button — use the same rules as every coded page, which is the whole point of
+ * a closed set of block types. See pages/public/Page.tsx.
+ */
+
+/* A set-apart paragraph: a deadline, a caveat.
+ *
+ * A left rule and a tinted ground, and a border on all four sides so it reads
+ * as a distinct block on a monochrome screen and at any zoom. No colour choice
+ * is offered to the operator — a palette here would let a routine note be
+ * marked in the danger colour, and colour is the one signal this site will not
+ * let carry meaning by itself. */
+.page-notice {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0.875rem 1rem;
+  margin: 0 0 1rem;
+  max-width: var(--measure);
+}
+.page-notice p { margin: 0; }
+
+/* Questions and answers as a description list rather than as collapsible
+   panels: content behind a disclosure does not appear in the browser's own
+   find-on-page, and this audience includes people who rely on one. */
+.page-faq { margin: 0 0 1.5rem; max-width: var(--measure); }
+.page-faq > div { padding: 0.875rem 0; border-top: 1px solid var(--border); }
+.page-faq > div:first-child { border-top: 0; }
+.page-faq dt { font-weight: var(--w-strong); margin-bottom: 0.25rem; }
+.page-faq dd { margin: 0; color: var(--text-muted); }

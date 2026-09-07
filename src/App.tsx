@@ -15,6 +15,7 @@ import { Loading } from './components/ui'
  * redirect printed on outreach material. Everything else is reached by a press
  * on a page that is already up, where the fetch overlaps with reading. */
 import Home from './pages/public/Home'
+import CustomPage from './pages/public/Page'
 import SignIn from './pages/SignIn'
 import Register from './pages/Register'
 
@@ -99,6 +100,14 @@ export default function App() {
         {/* Reachable by somebody who holds no student profile at all: a parent
             with an account and nothing in it still has invitations to answer. */}
 
+        {/* Pages written in the admin panel (backend migration 0042).
+            *
+            * Second to last, and the order is load-bearing: this matches
+            * anything, so above any route here it would swallow it. The server
+            * refuses to save a page whose address collides with a compiled
+            * route — both guards, because either alone leaves a page that saves
+            * successfully and can never be seen. */}
+        <Route path="/*" element={<CustomPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

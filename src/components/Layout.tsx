@@ -1,7 +1,9 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
+import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
+import { useQuery } from '../lib/hooks'
 import { SOCIAL } from '../lib/social'
 import { useI18n } from '../lib/i18n-context'
 import { OfflineBanner } from './ui'
@@ -38,6 +40,14 @@ import { OfflineBanner } from './ui'
  * costs discoverability, and this audience pays that cost twice — once for the
  * icon and again for a target that shrank.
  */
+/* The five addresses the router already answers.
+ *
+ * Their rows come back from the menu endpoint like any other, and rendering
+ * them would draw each of them twice — once from the compiled list above and
+ * once from the API. Kept as a set here rather than derived from the nav markup
+ * because the markup is conditional on being signed in and this is not. */
+const BUILTIN_SLUGS = new Set(['', 'check', 'scholarships', 'partner', 'impact'])
+
 export default function Layout() {
   const { t } = useI18n()
   const { status, signOut } = useAuth()
@@ -48,6 +58,23 @@ export default function Layout() {
   const lastPath = useRef(location.pathname)
 
   const signedIn = status === 'authenticated'
+
+  /* The menu items an operator has published, beyond the five compiled in.
+   *
+   * `BUILTIN` rows are filtered out rather than asked for separately: the
+   * endpoint returns the whole menu, because the ORDER is the point — a new
+   * page can be placed between two existing ones — and this is where that
+   * ordering is currently lost. Appending is the deliberate trade described at
+   * the call site; honouring the position properly means the masthead becoming
+   * data, and with it a masthead that can fail to load.
+   *
+   * A failure leaves the list empty, which is the whole safety of the design:
+   * the site's own five destinations do not depend on this request at all. */
+  const nav = useQuery<{ items: { slug: string; label: string }[] }>(
+    signal => api.get('/public/pages/nav', undefined, signal),
+    [],
+  )
+  const extraPages = (nav.data?.items ?? []).filter(p => !BUILTIN_SLUGS.has(p.slug))
 
   /* Three things a single-page app does not do for itself on navigation, and
    * which the browser would have done on a full page load:
@@ -157,10 +184,24 @@ export default function Layout() {
            * destinations sit in the centre of the bar and the two edges hold
            * identity and action. Nothing floats. */}
           <nav aria-label="Main" className="nav-main">
-            {/* A visitor's first destination, and first in the bar because it is
-                first in the flow: check, then find, then apply. A signed-in
-                student has the same thing better — their matched list, computed
-                from a saved profile — so it is not repeated for them. */}
+            {/* Home, named.
+              *
+              * The wordmark to the left already links here, and that was the
+              * whole of it — which assumes the reader knows a logo is a link.
+              * It is a convention rather than a signpost, it is invisible to
+              * anybody scanning the words in the bar, and on this site the
+              * wordmark is a small mark and 15px of text rather than the
+              * obvious button a logo usually is.
+              *
+              * Only for a visitor. A signed-in student's home is their
+              * dashboard, which is already in the bar below, and two links
+              * called Home and Dashboard pointing at different pages is worse
+              * than neither. */}
+            {!signedIn && <NavLink to="/" end>{t('nav.home')}</NavLink>}
+            {/* Then the visitor's first destination, first in the flow: check,
+                then find, then apply. A signed-in student has the same thing
+                better — their matched list, computed from a saved profile — so
+                it is not repeated for them. */}
             {!signedIn && <NavLink to="/check">{t('nav.check')}</NavLink>}
             <NavLink to="/scholarships">{t('nav.find')}</NavLink>
             {signedIn && <NavLink to="/dashboard">{t('nav.dashboard')}</NavLink>}
@@ -173,6 +214,24 @@ export default function Layout() {
                 diluting with two that are not theirs. */}
             {!signedIn && <NavLink to="/partner">{t('nav.partner')}</NavLink>}
             {!signedIn && <NavLink to="/impact">{t('nav.impact')}</NavLink>}
+
+            {/* Pages added in the admin panel (backend migration 0042).
+              *
+              * Appended rather than replacing the five above, and that is the
+              * cautious half of the design. The menu could be drawn entirely
+              * from GET /public/pages/nav — the endpoint returns the built-in
+              * pages too — and doing so would put the whole masthead behind one
+              * request that can fail, on the page a visitor most often arrives
+              * at from a forwarded message. A site whose navigation disappears
+              * when an API call times out is worse than one whose menu is a
+              * deploy behind.
+              *
+              * So the five that always exist are compiled in and always render,
+              * and this adds whatever the operator has published since. A
+              * failed request costs the new pages and nothing else. */}
+            {!signedIn && extraPages.map(p => (
+              <NavLink key={p.slug} to={`/${p.slug}`}>{p.label}</NavLink>
+            ))}
           </nav>
 
           {/* The actions are a child of the bar in their own right, not part of
