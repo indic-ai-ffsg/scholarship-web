@@ -361,6 +361,7 @@ function Results({
                 title={r.title}
                 slug={r.slug}
                 award={r.award_amount}
+                benefit={r.benefit_summary}
                 organisation={r.organisation_name}
                 daysRemaining={r.days_remaining}
                 nextAction={instruction(r, answers, t)}
@@ -413,6 +414,7 @@ function Results({
                   title={r.title}
                   slug={r.slug}
                   award={r.award_amount}
+                  benefit={r.benefit_summary}
                   organisation={r.organisation_name}
                   daysRemaining={r.days_remaining}
                   nextAction={r.next_action}

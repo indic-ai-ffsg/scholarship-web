@@ -53,11 +53,17 @@ export interface Match {
   summary: string
   organisation_name: string
   org_type: string
-  award_amount: number
+  /* Absent when the award is not money â a laptop, a bicycle, fees paid
+     directly. `benefit_summary` says what it is instead; see format.awardLabel.
+     A NULL here crashed the whole directory once, so it is a pointer on the
+     server and optional here rather than coalesced to 0: "₹0" on a
+     scholarship card is worse than saying nothing. */
+  award_amount?: number
+  benefit_summary?: string
   currency: string
   /* Both optional since backend 0043: a curated listing is allowed to have no
      window, and the directory now shows those rather than hiding them. Absent
-     means open-ended — NOT closing today, which is what a 0 would read as. */
+     means open-ended â NOT closing today, which is what a 0 would read as. */
   closes_at?: string
   days_remaining?: number
   state: EligibilityState
@@ -81,13 +87,19 @@ export interface Listing {
   description_hi?: string
   organisation_name: string
   org_type: string
-  award_amount: number
+  /* Absent when the award is not money â a laptop, a bicycle, fees paid
+     directly. `benefit_summary` says what it is instead; see format.awardLabel.
+     A NULL here crashed the whole directory once, so it is a pointer on the
+     server and optional here rather than coalesced to 0: "₹0" on a
+     scholarship card is worse than saying nothing. */
+  award_amount?: number
+  benefit_summary?: string
   currency: string
   is_renewable: boolean
   opens_at: string
   /* Both optional since backend 0043: a curated listing is allowed to have no
      window, and the directory now shows those rather than hiding them. Absent
-     means open-ended — NOT closing today, which is what a 0 would read as. */
+     means open-ended â NOT closing today, which is what a 0 would read as. */
   closes_at?: string
   days_remaining?: number
   slots_available?: number
@@ -98,8 +110,8 @@ export interface Listing {
 export interface Facet { value: string; label: string; count: number }
 
 /* One announcement on the landing page, written by the platform in the admin
- * panel. Both languages arrive together — the response is identical for every
- * caller and therefore cacheable — and a slide with no Hindi falls back to the
+ * panel. Both languages arrive together â the response is identical for every
+ * caller and therefore cacheable â and a slide with no Hindi falls back to the
  * English text rather than disappearing for half the audience. */
 export interface Slide {
   slide_id: string
@@ -127,7 +139,7 @@ export interface Slide {
  *
  * The same four states a signed-in student sees, computed from answers that
  * were never saved anywhere (FR-17). Field-compatible with Match wherever the
- * two overlap, because one card component renders both — what is absent is what
+ * two overlap, because one card component renders both â what is absent is what
  * a visitor has no account to have: whether they already applied. */
 export interface CheckedScheme {
   scholarship_id: string
@@ -137,11 +149,17 @@ export interface CheckedScheme {
   summary_hi?: string
   organisation_name: string
   org_type: string
-  award_amount: number
+  /* Absent when the award is not money â a laptop, a bicycle, fees paid
+     directly. `benefit_summary` says what it is instead; see format.awardLabel.
+     A NULL here crashed the whole directory once, so it is a pointer on the
+     server and optional here rather than coalesced to 0: "₹0" on a
+     scholarship card is worse than saying nothing. */
+  award_amount?: number
+  benefit_summary?: string
   currency: string
   /* Both optional since backend 0043: a curated listing is allowed to have no
      window, and the directory now shows those rather than hiding them. Absent
-     means open-ended — NOT closing today, which is what a 0 would read as. */
+     means open-ended â NOT closing today, which is what a 0 would read as. */
   closes_at?: string
   days_remaining?: number
   state: EligibilityState

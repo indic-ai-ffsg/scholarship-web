@@ -46,7 +46,11 @@ export default function Impact() {
   const facets = query.data?.facets ?? {}
 
   const total = query.meta?.total ?? listings.length
-  const onOffer = listings.reduce((sum, l) => sum + l.award_amount, 0)
+  /* Money only. A laptop has a value and this figure is a sum of rupees, so a
+     non-cash award contributes nothing to it rather than counting as zero
+     rupees of something — the two are the same arithmetic and different
+     claims, and this number is published. */
+  const onOffer = listings.reduce((sum, l) => sum + (l.award_amount ?? 0), 0)
   const providers = new Set(listings.map(l => l.organisation_name)).size
   const states = facets.state_code?.length ?? 0
 

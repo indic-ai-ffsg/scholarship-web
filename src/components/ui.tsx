@@ -11,7 +11,7 @@ import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useI18n } from '../lib/i18n-context'
-import { deadlineLabel, money } from '../lib/format'
+import { awardLabel, deadlineLabel } from '../lib/format'
 import { stateClass, stateHelpKey, stateLabelKey, stateMark } from '../lib/eligibility'
 import type { EligibilityState } from '../lib/types'
 
@@ -146,12 +146,15 @@ export function StateBadge({ state }: { state: EligibilityState }) {
  * are the caller's, passed as children, and the state's explanation can be
  * overridden where the standard one would not be true for that caller. */
 export function ResultCard({
-  state, title, slug, award, organisation, daysRemaining, nextAction, help, children,
+  state, title, slug, award, benefit, organisation, daysRemaining, nextAction, help, children,
 }: {
   state: EligibilityState
   title: string
   slug: string
-  award: number
+  /* Optional: not every award is money. The caller passes benefit_summary
+     alongside it and awardLabel picks. */
+  award?: number
+  benefit?: string
   organisation: string
   /* Optional since backend 0043: a curated listing may have no window, and
      an open-ended scheme is not urgent. See format.deadlineLabel. */
@@ -175,7 +178,7 @@ export function ResultCard({
         <Link to={`/scholarships/${slug}`}>{title}</Link>
       </h3>
       <p className="muted" style={{ marginBottom: '0.5rem' }}>
-        {money(award)} · {organisation}
+        {awardLabel(t, award, benefit)} · {organisation}
       </p>
 
       <p className="muted" style={{ fontSize: 'var(--step--1)' }}>{help ?? t(stateHelpKey(state))}</p>

@@ -118,6 +118,7 @@ function MatchCard({ match }: { match: Match }) {
       title={match.title}
       slug={match.slug}
       award={match.award_amount}
+      benefit={match.benefit_summary}
       organisation={match.organisation_name}
       daysRemaining={match.days_remaining}
       nextAction={match.next_action}

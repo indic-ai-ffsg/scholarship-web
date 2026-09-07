@@ -74,3 +74,32 @@ export function deadlineLabel(
   if (days <= 7) return { text: t('public.closingSoon'), soon: true }
   return { text: t('public.closesIn', { n: days }), soon: false }
 }
+
+/* What the student gets, in one line.
+ *
+ * A scholarship's award is not always a sum. The scheme published on
+ * 2026-09-07 gives a laptop: `award_amount` is null and `benefit_summary`
+ * carries "Laptop / Laptop for educational and career preparation". Every card
+ * on the site rendered `money(award_amount)` unconditionally, which for that
+ * scheme printed nothing at all — after the API had already returned 500 on the
+ * whole directory for the same null.
+ *
+ * The order matters. A figure wins when there is one, because "₹50,000" is what
+ * a student is scanning for; the benefit line is the fallback, not a
+ * supplement. Showing both would double the width of the busiest row on the
+ * card for the minority of schemes that have both.
+ *
+ * Coalescing to 0 upstream would have been less code and a lie: "₹0" reads as a
+ * scholarship worth nothing.
+ */
+export function awardLabel(
+  t: (key: string) => string,
+  amount: number | undefined,
+  benefit?: string,
+): string {
+  if (amount !== undefined && amount !== null) return money(amount)
+  if (benefit && benefit.trim()) return benefit.trim()
+  // Neither. Said rather than left blank, so a card with no award reads as
+  // incomplete data rather than as a rendering fault.
+  return t('public.awardUnstated')
+}

@@ -4,7 +4,7 @@ import * as api from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
 import { useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
-import { date, deadlineLabel, money } from '../../lib/format'
+import { awardLabel, date, deadlineLabel } from '../../lib/format'
 import { ErrorState, Loading } from '../../components/ui'
 import type { Listing } from '../../lib/types'
 
@@ -106,7 +106,7 @@ export default function Scheme() {
           <div className="card">
             <p className="fact-award">
               <span className="muted">{t('public.award')}</span>
-              <strong>{money(s.award_amount)}</strong>
+              <strong>{awardLabel(t, s.award_amount, s.benefit_summary)}</strong>
               {s.is_renewable && <span className="muted">{t('public.renewable')}</span>}
             </p>
 

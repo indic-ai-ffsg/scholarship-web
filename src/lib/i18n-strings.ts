@@ -101,6 +101,7 @@ export const en: Dict = {
   'public.about': 'About this scholarship',
   'public.atAGlance': 'At a glance',
   'public.closes': 'Closes',
+  'public.awardUnstated': 'Award not stated',
   'public.noClose': 'No closing date',
   'public.closesIn': 'Closes in {n} days',
   'public.closingSoon': 'Closing soon',

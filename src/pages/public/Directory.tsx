@@ -5,7 +5,7 @@ import { useAuth } from '../../lib/auth-context'
 import { useDebounced, useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
 import { courseChoices, disabilityChoices, stateChoices, type Choice } from '../../lib/fields'
-import { deadlineLabel, money, shortDate } from '../../lib/format'
+import { awardLabel, deadlineLabel, shortDate } from '../../lib/format'
 import { Empty, ErrorState, Field, Loading, Notice } from '../../components/ui'
 import type { Facet, Listing } from '../../lib/types'
 
@@ -373,7 +373,9 @@ export function ListingCard({ listing }: { listing: Listing }) {
       <p>{listing.summary}</p>
 
       <div className="row" style={{ gap: '1.25rem' }}>
-        <span className="amount">{money(listing.award_amount)}</span>
+        <span className="amount">
+          {awardLabel(t, listing.award_amount, listing.benefit_summary)}
+        </span>
         <span className={`deadline ${soon ? 'soon' : ''}`}>
           {closing}
           {/* The exact date, for a screen reader, when there is one. "Closing
