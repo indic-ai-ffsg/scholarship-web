@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { lazy } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { useAuth } from './lib/auth-context'
@@ -58,7 +58,6 @@ export default function App() {
    * logged in. Everything else renders immediately and finds out about the
    * session when the answer arrives. */
   return (
-    <Suspense fallback={<div className="page"><Loading /></div>}>
     <Routes>
       <Route element={<Layout />}>
         {/* Public. No authentication anywhere in this group (FR-17). */}
@@ -115,7 +114,6 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
-    </Suspense>
   )
 }
 

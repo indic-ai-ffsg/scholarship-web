@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { Suspense, useEffect, useRef, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import * as api from '../lib/api'
@@ -6,7 +6,7 @@ import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { SOCIAL } from '../lib/social'
 import { useI18n } from '../lib/i18n-context'
-import { OfflineBanner } from './ui'
+import { Loading, OfflineBanner } from './ui'
 
 /* The shell.
  *
@@ -439,11 +439,29 @@ export default function Layout() {
       {/* tabIndex -1 so the skip link and the route change above can move focus
           here, which is what makes either do anything for a screen reader
           rather than only scrolling the page. */}
+      {/* The boundary belongs here, around the content, and not around the
+          router.
+          *
+          * It used to wrap <Routes> in App, which put it above this component:
+          * a lazy page suspending therefore replaced the entire shell — the
+          * masthead, the main region and the footer — with a one-line
+          * "Loading…". React Router keeps the old tree alive across a
+          * transition often enough that this was invisible in testing and
+          * showed up on a throttled connection, where the document collapsed
+          * from 2514px to 1067px mid-navigation and the footer was yanked up
+          * into the fold and dropped back. That is the white flash at the
+          * bottom of the page.
+          *
+          * Inside <main>, the worst a slow chunk can do is swap the content
+          * region. The bar stays put, the footer stays put, and .route-loading
+          * holds the height so neither moves while the chunk arrives. */}
       <main id="main" tabIndex={-1} ref={mainRef}>
-        <Outlet />
+        <Suspense fallback={<div className="route-loading"><Loading /></div>}>
+          <Outlet />
+        </Suspense>
       </main>
 
-      {showsFooter(location.pathname, signedIn) && <SiteFooter />}
+      {showsFooter(location.pathname, status) && <SiteFooter />}
     </>
   )
 }
@@ -514,10 +532,26 @@ function under(prefixes: string[], path: string): boolean {
  */
 const TASK = ['/register']
 
-function showsFooter(path: string, signedIn: boolean): boolean {
+/* Takes the status rather than a boolean, and the difference is a visible
+ * flash.
+ *
+ * It used to take `signedIn`, which is `status === 'authenticated'` — false
+ * while the session is still being refreshed. So on the one route whose footer
+ * depends on who is reading it, a signed-in student got the footer on the first
+ * paint and lost it a moment later when /auth/refresh answered. 269px vanishing
+ * from under a reader who has already started scrolling is the same artifact
+ * from the other direction.
+ *
+ * Waiting for the answer makes the footer appear late instead of disappearing
+ * late, and appearing is the harmless direction: the footer is below the fold
+ * on every page that has this problem, so nothing the reader is looking at
+ * moves. `=== 'anonymous'` rather than `!== 'authenticated'` is what does the
+ * waiting — 'loading' is not yet an answer to the question being asked.
+ */
+function showsFooter(path: string, status: string): boolean {
   if (under(PORTAL, path)) return false
   if (under(TASK, path)) return false
-  if (signedIn && under(BROWSE, path)) return false
+  if (under(BROWSE, path)) return status === 'anonymous'
   return true
 }
 

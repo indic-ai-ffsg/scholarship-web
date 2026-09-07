@@ -47,6 +47,7 @@
  */
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 
 import * as api from '../lib/api'
@@ -327,18 +328,39 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     e.preventDefault()
 
     const found = check()
-    setProblems(found)
     if (Object.keys(found).length > 0) {
       /* Focus the first thing that is wrong, in document order rather than in
-         the order the checks happen to run. A summary at the top telling
-         somebody that four fields need attention, with no way to reach the
-         first of them, is the failure mode this avoids. */
-      setFormError(t('reg.fix'))
+       * the order the checks happen to run. A summary at the top telling
+       * somebody that four fields need attention, with no way to reach the
+       * first of them, is the failure mode this avoids — and on a form three
+       * thousand pixels tall it is the difference between a fixable error and
+       * a hunt.
+       *
+       * flushSync, because the thing being searched for is drawn by the state
+       * update on the line above it. aria-invalid reaches the DOM when React
+       * commits, and React batches an update made inside an event handler to
+       * after the handler returns — so the querySelector below ran against the
+       * previous DOM, matched nothing, and focus stayed on the body. Nothing
+       * about it looked broken: the errors all appeared correctly a frame
+       * later, and only the focus silently did not move.
+       *
+       * A rAF or a zero timeout would also work and would be worse: both say
+       * "wait a moment and hope", where this says which paint is being waited
+       * for. The cost is one synchronous re-render on a path that has just
+       * refused to submit, which is not a path worth optimising. */
+      flushSync(() => {
+        setProblems(found)
+        setFormError(t('reg.fix'))
+      })
       const first = form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')
       first?.focus()
+      /* Centred rather than scrolled to the top: the label and the hint sit
+         above the control, and a field aligned to the top of the viewport puts
+         both of them under the sticky masthead. */
       first?.scrollIntoView({ block: 'center', behavior: 'smooth' })
       return
     }
+    setProblems(found)
 
     setBusy(true)
     setFormError(null)
