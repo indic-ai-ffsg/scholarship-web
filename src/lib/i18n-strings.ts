@@ -84,8 +84,19 @@ export const en: Dict = {
   'public.filters': 'Filters',
   'public.clear': 'Clear',
   'public.results': 'scholarships open now',
+  /* Two empty states, because they are two situations and the page was
+   * telling the wrong one.
+   *
+   * It said "No scholarships match those filters. Try removing a filter" with
+   * every filter unset — blaming the reader for something they had not done,
+   * on a directory that was simply empty. The first pair is for a search that
+   * genuinely narrowed to nothing; the second is for a directory with nothing
+   * in it, which is what a new deployment looks like. */
   'public.none': 'No scholarships match those filters',
   'public.none.hint': 'Try removing a filter. New schemes open through the year.',
+  'public.none.clear': 'Clear all filters',
+  'public.empty': 'No scholarships are listed here yet',
+  'public.empty.hint': 'Providers are being added now. Nothing here sits behind an account — when schemes are listed you will see them without signing in.',
   'public.whoFor': 'Who this is for',
   'public.about': 'About this scholarship',
   'public.atAGlance': 'At a glance',

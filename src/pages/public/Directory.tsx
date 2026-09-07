@@ -74,9 +74,33 @@ export default function Directory() {
   const facets = query.data?.facets ?? {}
   const listings = query.data?.listings ?? []
 
-  // Whether anything is narrowing the list, which decides whether a way back
-  // out of it is offered at all.
+  /* Whether anything is narrowing the list.
+   *
+   * It decides two things. It always decided whether to offer a way back out of
+   * a filtered list; it now also decides WHICH empty state the results column
+   * shows — "nothing matches those filters" against "nothing is listed here
+   * yet" — which the page used to get wrong by assuming the first
+   * unconditionally, and so told a reader with no filters set to remove one.
+   *
+   * Read from the URL rather than from form state, because the URL is the
+   * state: a link a counsellor forwarded arrives filtered with no keystroke
+   * behind it, and that reader needs the advice as much as anyone who typed it. */
   const narrowed = Boolean(term || disability || course || state || orgType)
+
+  /* The count, and whether there is one to show.
+   *
+   * `total` is the server's, which is the number of matches rather than the
+   * number on this page — the two differ at the page size and the smaller one
+   * would understate the list. */
+  const total = query.meta?.total
+
+  /* Hide the filters only when the directory itself is empty.
+   *
+   * Not "when there are no results": a filtered search that found nothing needs
+   * its filters on screen more than ever. `!narrowed` is what separates the
+   * two, and `total === 0` rather than listings.length so a page of results
+   * still loading does not blink the panel away and back. */
+  const hideFilters = !narrowed && total === 0 && !query.stale
 
   return (
     <div className="page">
@@ -94,7 +118,20 @@ export default function Directory() {
         * On a narrow screen it collapses to one column with the filters first:
         * they are the control for what follows, and reading order has to say so
         * whatever the screen is. */}
-      <div className="directory">
+      {/* `one-col` when there is nothing to filter.
+        *
+        * The panel is four controls whose only power is to narrow, and an empty
+        * directory cannot be narrowed. Rendered anyway it was the largest thing
+        * on the page — a tall card of dropdowns beside a column saying there
+        * was nothing — which reads as a search tool that has broken rather than
+        * as a directory waiting to be filled.
+        *
+        * Only when nothing is narrowing it. A filtered search that found
+        * nothing MUST keep its filters on screen: they are the reason for the
+        * result and taking them away would leave the reader unable to see, let
+        * alone undo, what they had asked for. */}
+      <div className={`directory${hideFilters ? ' one-col' : ''}`}>
+        {!hideFilters && (
         <aside className="directory-filters">
           <div className="card">
             <div className="filter-head">
@@ -173,6 +210,7 @@ export default function Directory() {
             />
           </div>
         </aside>
+        )}
 
         <div className="directory-results">
       {query.loading && !query.data && <Loading />}
@@ -191,12 +229,41 @@ export default function Directory() {
               adjust a filter, rather than having to go looking for it. Held
               back while a search is in flight: announcing the previous count
               as though it were the new one is worse than announcing nothing. */}
+          {/* Suppressed at zero, because the empty state below says it in
+              words. "0 scholarships open now" above "No scholarships are listed
+              here yet" is the same news twice, and the first version of it is
+              the one that reads as a number nobody wanted. */}
           <p className="result-count" role="status" aria-live="polite">
-            {query.stale ? '\u00a0' : `${query.meta?.total ?? listings.length} ${t('public.results')}`}
+            {query.stale || total === 0
+              ? '\u00a0'
+              : `${total ?? listings.length} ${t('public.results')}`}
           </p>
 
           {listings.length === 0 && !query.stale ? (
-            <Empty title={t('public.none')} hint={t('public.none.hint')} />
+            /* Which of the two is a question about the filters, not the count.
+             *
+             * This said "No scholarships match those filters. Try removing a
+             * filter" whether or not one was set \u2014 so on an empty directory it
+             * told the reader to undo something they had not done, and pointed
+             * them at three selects all reading "Any". The page was blaming
+             * them for its own emptiness.
+             *
+             * Filtered, the advice is right and now comes with the button that
+             * takes it: clearing four controls by hand is the work the reader
+             * was being asked to do, and clearAll already existed unused. */
+            narrowed ? (
+              <Empty
+                title={t('public.none')}
+                hint={t('public.none.hint')}
+                action={
+                  <button className="btn" onClick={clearAll}>
+                    {t('public.none.clear')}
+                  </button>
+                }
+              />
+            ) : (
+              <Empty title={t('public.empty')} hint={t('public.empty.hint')} />
+            )
           ) : (
             <ul role="list" className="card-grid">
               {listings.map(l => (

@@ -1671,6 +1671,14 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
  * out of reach the moment the results began. The column is fixed-width so the
  * results take the slack — a grid of cards can use another 200px, a stack of
  * four selects cannot. */
+/* One column when the filter panel is not rendered.
+ *
+ * Without this the grid keeps its 17rem track and the empty state sits in the
+ * right-hand column with a third of the page blank beside it — which is what
+ * the hero did before .hero:has(.hero-side), and reads the same way: as a
+ * layout that failed to load rather than a directory with nothing in it. */
+.directory.one-col { grid-template-columns: minmax(0, 1fr); }
+
 .directory {
   display: grid;
   grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
