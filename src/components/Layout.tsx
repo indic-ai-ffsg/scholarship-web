@@ -74,7 +74,32 @@ export default function Layout() {
     signal => api.get('/public/pages/nav', undefined, signal),
     [],
   )
-  const extraPages = (nav.data?.items ?? []).filter(p => !BUILTIN_SLUGS.has(p.slug))
+
+  /* Three questions, one answer, and the distinction between the first two is
+   * the whole of the resilience argument.
+   *
+   * `known` is whether the menu was read at all. Until it is — and forever, if
+   * the request fails — the compiled five render with their compiled labels, so
+   * a visitor arriving from a forwarded message during an API outage still gets
+   * a working masthead. That is why the five are in the markup below rather
+   * than mapped out of `items`.
+   *
+   * Once it IS known, the answer governs: a page the operator has taken out of
+   * the menu disappears, and one they have relabelled shows the new word. The
+   * first version of this appended custom pages and ignored the rest, which
+   * meant the "In the menu" checkbox on the Website screen did nothing at all
+   * for the five built-ins — a panel control that reports success and changes
+   * nothing, which is the exact failure this codebase keeps finding.
+   */
+  const navItems = nav.data?.items
+  const known = !!navItems
+  const navLabels = new Map((navItems ?? []).map(p => [p.slug, p.label]))
+  /** Whether a built-in page is in the menu. Unknown means yes. */
+  const inMenu = (slug: string) => !known || navLabels.has(slug)
+  /** Its label, which the operator may have changed. */
+  const menuLabel = (slug: string, fallback: string) => navLabels.get(slug) ?? fallback
+
+  const extraPages = (navItems ?? []).filter(p => !BUILTIN_SLUGS.has(p.slug))
 
   /* Three things a single-page app does not do for itself on navigation, and
    * which the browser would have done on a full page load:
@@ -245,7 +270,10 @@ export default function Layout() {
               * question a forwarded link cannot — what IS this — and it is an
               * anchor because inventing a page to hold three paragraphs that
               * already exist would leave two copies of them. */}
-            <NavLink to="/scholarships">{t('nav.find')}</NavLink>
+            {signedIn && <NavLink to="/scholarships">{t('nav.find')}</NavLink>}
+            {!signedIn && inMenu('scholarships') && (
+              <NavLink to="/scholarships">{menuLabel('scholarships', t('nav.find'))}</NavLink>
+            )}
             {/* Link, not NavLink, and it is not a style preference.
               *
               * NavLink matches on the pathname, and this one's pathname is "/"
@@ -265,8 +293,12 @@ export default function Layout() {
                 to join and a student halfway through an application are not the
                 same reader, and the student's four destinations are not worth
                 diluting with two that are not theirs. */}
-            {!signedIn && <NavLink to="/impact">{t('nav.impact')}</NavLink>}
-            {!signedIn && <NavLink to="/partner">{t('nav.partner')}</NavLink>}
+            {!signedIn && inMenu('impact') && (
+              <NavLink to="/impact">{menuLabel('impact', t('nav.impact'))}</NavLink>
+            )}
+            {!signedIn && inMenu('partner') && (
+              <NavLink to="/partner">{menuLabel('partner', t('nav.partner'))}</NavLink>
+            )}
 
             {/* Pages added in the admin panel (backend migration 0042).
               *
