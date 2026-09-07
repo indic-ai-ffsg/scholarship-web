@@ -540,8 +540,17 @@ export const en: Dict = {
    * button at the bottom will not move until the code has been checked. */
   'reg.title': 'Register to find scholarships',
   'reg.editTitle': 'Update your details',
+  /* True of every required question now, which it was not before.
+   *
+   * The sentence is the old one; what changed is that the star it promises is
+   * actually on all eleven. It used to be on three — the two chip groups and
+   * the programme picker, which draw their own labels — while the other eight
+   * came from Field, which showed nothing and marked required for a screen
+   * reader only. A sighted reader was told to look for a mark that most of the
+   * required questions did not have, and could only read their silence as
+   * optional. Field draws the star now, so adding a required field cannot
+   * reintroduce that gap. */
   'reg.requiredNote': 'All fields marked with * are required.',
-  'reg.requiredNoteSr': 'Every question is required unless its label says optional.',
 
   'reg.personal': 'Personal details',
   'reg.disability': 'Disability details',

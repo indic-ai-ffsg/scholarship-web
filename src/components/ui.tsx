@@ -49,6 +49,13 @@ export function Field({ label, hint, error, required, optional = true, children 
     <div className="field">
       <label htmlFor={id}>
         {label}
+        {/* The star for the eye, the word for the ear. The sentence at the
+            top of a form promises a star, so every required control Field draws
+            has to carry one — leaving it to the call sites is what let eight of
+            them ship without it. aria-hidden because "asterisk" read aloud is
+            noise, and the sr-only word is the accessible half of the same
+            mark. */}
+        {required && <span className="req" aria-hidden="true"> *</span>}
         {required && <span className="sr-only"> ({t('common.required')})</span>}
         {!required && optional && <span className="muted"> ({t('common.optional')})</span>}
       </label>

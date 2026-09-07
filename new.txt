@@ -1,0 +1,25 @@
+Please find the following accessibility report for Indic ai admin scholarship pages. I will provide the students log in pages in 2 days page by page more detaily as they are facing vider audience.
+Indic AI  Accessibility Testing Report
+Accessibility Audit Summary
+The Indic AI application was reviewed using keyboard navigation and NVDA screen reader testing. The majority of the tested functionality was found to be accessible. However, the following accessibility issues were identified and should be addressed to improve compliance with WCAG and the experience for screen reader and keyboard users.
+
+S. No.	Page / Feature	Issue	Actual Result	Expected Result	Recommendation	WCAG SC	Level	Severity
+1	All Pages	Missing unique page titles	A single/common page title is provided across all pages. NVDA users are unable to identify the current page accurately when navigating between pages or browser tabs.	Every page should have a unique and descriptive page title that identifies the purpose or content of the current page.	Provide a unique and descriptive <title> for each page and ensure it updates appropriately when navigating between pages.	2.4.2 – Page Titled	A	Medium
+2	Scholarship Home Page	Heading markup is missing	The Scholarship Home page content is not structured with appropriate heading markup. NVDA users cannot efficiently navigate the page using heading navigation.	Page sections and headings should be marked up using appropriate semantic heading elements.	Use proper <h1>–<h6> heading elements to represent the page structure and hierarchy.	1.3.1 – Info and Relationships	A	Medium
+3	Users Page / All Pages	Incorrect heading hierarchy	The Users page starts with a Heading Level 3 instead of Heading Level 1. Similar heading hierarchy issues should be reviewed across all pages.	Each page should begin with an appropriate Heading Level 1 representing the primary page topic, followed by headings in a logical hierarchy.	Ensure each page has a meaningful <h1> and maintain a logical heading structure throughout the application.	1.3.1 – Info and Relationships	A	Medium
+4	Edit Scholarship Page	Save status is not announced to screen reader users	When required fields are left blank, validation messages are announced by NVDA. However, after successfully completing the fields and selecting Save Draft or Save and Publish, NVDA does not announce whether the scholarship has been successfully saved or published.	Success or status messages should be programmatically announced to screen reader users when the save or publish action is completed.	Implement an appropriate status message using role="status" or aria-live="polite" so that save and publish confirmation messages are automatically announced.	4.1.3 – Status Messages	AA	Medium
+5	AI Discovery Dialog	AI Discovery dialog is not keyboard accessible	When the AI Discovery button is activated using the keyboard, focus does not allow the user to interact properly with the dialog fields. NVDA announces the fields, but the user is unable to enter a search query or prompt before the form/action is submitted.	The dialog should open with keyboard focus moved to an appropriate interactive element, allowing the user to enter and edit a search query or prompt before submission.	Review the dialog's keyboard interaction and focus management. Ensure focus moves into the dialog, the prompt/input field can receive and retain keyboard focus, users can enter text, and submission occurs only when the appropriate submit action is intentionally activated.	2.1.1 – Keyboard2.4.3 – Focus Order4.1.2 – Name, Role, Value	A	Serious
+Overall Conclusion
+Based on the testing performed, the rest of the tested functionality was found to be accessible. The identified issues are primarily related to:
+
+Page identification
+
+Heading structure and semantic markup
+
+Screen reader announcement of status messages
+
+Keyboard and focus accessibility within the AI Discovery dialog
+
+Addressing the above five issues will further improve the accessibility and usability of the Indic AI application for screen reader and keyboard users.
+
+Audit Result: Accessible with minor to serious accessibility issues requiring remediation.

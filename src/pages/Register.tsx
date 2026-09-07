@@ -317,6 +317,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     const required = t('reg.required')
 
     if (!name.trim()) found.name = required
+    if (!gender) found.gender = required
     if (!verified) found.phone = t('reg.verifyFirst')
     if (!udid.trim()) found.udid = required
     /* Only on a first registration. An edit is re-opening a form whose
@@ -453,11 +454,11 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
       <div className="register-card">
         <h1>{profile ? t('reg.editTitle') : t('reg.title')}</h1>
         <p className="register-sub">
-          {/* The asterisk is decoration; Field puts "(required)" in every
-              required control's accessible name, so this sentence is for the
-              person reading the page and not the one hearing it. */}
-          <span aria-hidden="true">{t('reg.requiredNote')}</span>
-          <span className="sr-only">{t('reg.requiredNoteSr')}</span>
+          {/* One sentence for everybody. It was split in two — an aria-hidden
+              line about asterisks and a sr-only line stating the real rule —
+              which is two conventions to keep true instead of one, and only the
+              hidden half was right. Nothing here needs hiding now. */}
+          {t('reg.requiredNote')}
         </p>
 
         {authError && <Notice tone="danger">{authError}</Notice>}
@@ -635,6 +636,14 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
           <div className="field">
             <span className="field-label" id="reg-gender">
               {t('reg.gender')}
+              {/* Required, and checked as such — a star that does not stop a
+                  submission is the same broken promise as a sentence describing
+                  a star that is not there. "Prefer not to say" is why asking can
+                  be compulsory without compelling a disclosure: it is a stored
+                  answer that stops the matcher asking again, so nobody has to
+                  give a fact about themselves to get past this question. */}
+              <span className="req" aria-hidden="true"> *</span>
+              <span className="sr-only"> ({t('common.required')})</span>
               <span className="hint"> {t('reg.genderHint')}</span>
             </span>
             <ChipSelector
@@ -642,8 +651,11 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               name="gender"
               options={genderChoices()}
               selected={gender ? [gender] : []}
-              onChange={v => setGender(v[0] ?? '')}
+              onChange={v => { setGender(v[0] ?? ''); clearProblem('gender') }}
             />
+            {problems.gender && (
+              <span className="error" role="alert">{problems.gender}</span>
+            )}
           </div>
 
           <h2 className="register-section">{t('reg.disability')}</h2>
@@ -687,7 +699,14 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
           <div className="field">
             <span className="field-label" id="reg-disability">
               {t('reg.disabilityType')}
+              {/* Both marks, and each is for one audience. The star is the one the
+                  sentence at the top of the form promises, and it is aria-hidden
+                  because "star" is not a word anybody needs read to them. The
+                  sr-only "(required)" is what replaces it in the accessible
+                  name — Field's inputs also carry the native `required`, but a
+                  chip group has nothing to carry it. */}
               <span className="req" aria-hidden="true"> *</span>
+              <span className="sr-only"> ({t('common.required')})</span>
               <span className="hint"> {t('reg.selectAll')}</span>
             </span>
             <ChipSelector
@@ -745,7 +764,14 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
           <div className="field">
             <span className="field-label" id="reg-program">
               {t('reg.program')}
+              {/* Both marks, and each is for one audience. The star is the one the
+                  sentence at the top of the form promises, and it is aria-hidden
+                  because "star" is not a word anybody needs read to them. The
+                  sr-only "(required)" is what replaces it in the accessible
+                  name — Field's inputs also carry the native `required`, but a
+                  chip group has nothing to carry it. */}
               <span className="req" aria-hidden="true"> *</span>
+              <span className="sr-only"> ({t('common.required')})</span>
             </span>
 
             {/* Three groups and a single answer across all of them. The
@@ -800,7 +826,14 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             <div className="field">
               <span className="field-label" id="reg-year">
                 {t('reg.year')}
+                {/* Both marks, and each is for one audience. The star is the one the
+                    sentence at the top of the form promises, and it is aria-hidden
+                    because "star" is not a word anybody needs read to them. The
+                    sr-only "(required)" is what replaces it in the accessible
+                    name — Field's inputs also carry the native `required`, but a
+                    chip group has nothing to carry it. */}
                 <span className="req" aria-hidden="true"> *</span>
+                <span className="sr-only"> ({t('common.required')})</span>
                 {!program && <span className="hint"> {t('reg.yearAfterProgram')}</span>}
               </span>
               <ChipSelector
