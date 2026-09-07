@@ -25,11 +25,14 @@ import { OfflineBanner } from './ui'
  * portal's brief — "complete one task at a time without anxiety" (Table 4.1).
  *
  * So the row now carries only the four places a student actually moves between
- * while doing the thing they came to do: find a scheme, see what they match,
- * track what they applied for, and keep their documents current. Everything
- * else — the profile, the data rights screen, the people helping them, the
- * language and the colours — is account business, done occasionally and
- * deliberately, and lives behind one labelled control.
+ * while doing the thing they came to do: where they are, what they match, what
+ * they have sent, and what the vault still needs. Everything else — the
+ * profile, the data rights screen, the people helping them, the language and
+ * the colours — is account business, done occasionally and deliberately, and
+ * lives behind one labelled control.
+ *
+ * "Find scholarships" was a fifth and is not one of them; the reasoning is at
+ * the item itself, below.
  *
  * A <details> rather than a scripted menu: it is keyboard-operable, announces
  * its own expanded state, and works before JavaScript has loaded on a slow
@@ -315,7 +318,21 @@ export default function Layout() {
               * question a forwarded link cannot — what IS this — and it is an
               * anchor because inventing a page to hold three paragraphs that
               * already exist would leave two copies of them. */}
-            {signedIn && <NavLink to="/scholarships">{t('nav.find')}</NavLink>}
+            {/* Not for a signed-in student, and this is the fourth thing to
+              * come out of this row rather than the first.
+              *
+              * /scholarships is the matches page with the answer taken out: the
+              * same schemes, in no particular order, with nothing saying which
+              * of them this student qualifies for. Carrying both meant asking
+              * somebody to choose between a list and a strictly better version
+              * of the same list, every time they wanted a scheme — and it is
+              * the choice, not the item, that costs them. The row is now the
+              * four things a student moves between: where they are, what they
+              * match, what they sent, and what the vault still needs.
+              *
+              * The directory has not gone away. The matches page links to it
+              * directly, which is the one place where "show me the ones you did
+              * not match" is a question somebody is actually asking. */}
             {!signedIn && inMenu('scholarships') && (
               <NavLink to="/scholarships">{menuLabel('scholarships', t('nav.find'))}</NavLink>
             )}

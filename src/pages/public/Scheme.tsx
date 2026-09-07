@@ -130,18 +130,21 @@ export default function Scheme() {
               </div>
             </dl>
 
-            <hr />
-
             {/* The one action, in the panel rather than at the foot of the page.
                 A visitor who has read two criteria and decided should not have
-                to scroll past the rest to act on it. */}
-            {status === 'authenticated' ? (
+                to scroll past the rest to act on it.
+
+                For a visitor only. A signed-in student used to get "My matches"
+                in this slot — a filled button whose whole effect is to leave the
+                scheme they came here to read, for a list they arrived from. The
+                panel's job on this page is the award, the closing date and the
+                provider, and for somebody who already has an account those three
+                are the entire answer. The rule goes with the button: a divider
+                under the last fact, separating it from nothing, is a line the
+                eye stops at for no reason. */}
+            {status !== 'authenticated' && (
               <>
-                <Link className="btn primary wide" to="/matches">{t('nav.matches')}</Link>
-                <p className="muted small">{t('public.signedInHelp')}</p>
-              </>
-            ) : (
-              <>
+                <hr />
                 <Link className="btn primary wide" to="/check">{t('check.go')}</Link>
                 <p className="muted small">{t('public.ctaHelp')}</p>
               </>

@@ -57,6 +57,14 @@ export default function Matches() {
       <h1>{t('match.title')}</h1>
       <p className="lede">{t('match.lede')}</p>
 
+      {/* The directory, as a link here rather than as a fifth item in the
+          masthead. For a signed-in student /scholarships is this page with the
+          answer taken out — the same schemes, in no particular order, with
+          nothing saying which of them they qualify for — so it is not a place
+          they move between. It is the escape hatch for "show me the ones you
+          did not match", and it belongs beside the list it widens. */}
+      <p className="breadcrumb"><Link to="/scholarships">{t('home.browseAll')}</Link></p>
+
       {profile.completeness_score < 60 && profile.next_steps?.length ? (
         <Notice tone="warn" title={t('profile.complete', { n: profile.completeness_score })}>
           {/* The single highest-weight gap, not all of them. The list is
@@ -70,10 +78,15 @@ export default function Matches() {
       {query.error ? <ErrorState error={query.error} onRetry={query.reload} /> : null}
 
       {query.data && matches.length === 0 && (
+        /* Not a retry. Nothing failed here — query.error has that case and
+           prints its own — the matcher has simply not produced a row yet, so
+           pressing "Try again" returns the same empty list and teaches a
+           student that the button is decoration. The directory is the one
+           thing that does have something to show them meanwhile. */
         <Empty
           title={t('match.none')}
           hint={t('match.working')}
-          action={<button onClick={query.reload}>{t('common.retry')}</button>}
+          action={<Link className="btn" to="/scholarships">{t('home.browseAll')}</Link>}
         />
       )}
 
@@ -123,8 +136,14 @@ function MatchCard({ match }: { match: Match }) {
         // that page offers this one nothing.
         <Link className="btn" to="/documents">{t('nav.documents')}</Link>
       ) : null}
+      {/* No "See details" beside it. The card's own title is a link to that
+          same page, so the pair was one destination offered twice — and the
+          second copy was a control sitting next to the single thing the card
+          is actually asking the student to do, competing with it. One card,
+          one action, and it is the action.
 
-      <Link className="btn quiet" to={`/scholarships/${match.slug}`}>{t('match.view')}</Link>
+          An ineligible card therefore has no button at all, which is right:
+          there is nothing to do about it except read the reason. */}
     </ResultCard>
   )
 }

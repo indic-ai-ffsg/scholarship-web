@@ -386,8 +386,10 @@ function Results({
                     {signedIn ? t('match.apply') : t('check.applyRegister')}
                   </Link>
                 )}
-
-                <Link className="btn quiet" to={`/scholarships/${r.slug}`}>{t('match.view')}</Link>
+                {/* Same rule as the matches page: the card's title already
+                    links to the scheme, so a "See details" button beside the
+                    apply button was the second copy of one destination,
+                    dressed as a second choice. */}
               </ResultCard>
             </li>
           ))}
@@ -414,20 +416,21 @@ function Results({
                   organisation={r.organisation_name}
                   daysRemaining={r.days_remaining}
                   nextAction={r.next_action}
-                >
-                  <Link className="btn quiet" to={`/scholarships/${r.slug}`}>{t('match.view')}</Link>
-                </ResultCard>
+                />
               </li>
             ))}
           </ul>
         </section>
       )}
 
+      {/* One way on, not two. "Browse all scholarships" sat beside this and
+          led to the same directory with the filters taken off — offered to
+          somebody who has just told us their disability, their course and
+          their state, which is precisely the information the filtered link is
+          carrying. Undoing that for them is not a second option, it is the
+          first one made worse. */}
       <div className="row" style={{ marginTop: '2rem' }}>
         <Link className="btn" to={browseUrl}>{t('check.browse')}</Link>
-        {browseUrl !== '/scholarships' && (
-          <Link className="btn quiet" to="/scholarships">{t('home.browseAll')}</Link>
-        )}
       </div>
 
       {!signedIn && (
