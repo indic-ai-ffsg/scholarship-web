@@ -163,7 +163,22 @@ html, body { height: 100%; }
  * it exists for. min-height keeps what the rule was for (a short page still
  * fills the screen, so the footer sits at the bottom) and lets the box grow
  * with the page. */
-#root { min-height: 100%; }
+#root { min-height: 100%; display: flex; flex-direction: column; }
+
+/* main takes the slack, which is what makes the comment above actually true.
+ *
+ * It claimed "a short page still fills the screen, so the footer sits at the
+ * bottom". min-height alone does not do that: it stretches #root, but nothing
+ * inside grows to fill it, so the footer sat directly under the content
+ * wherever that ended. Measured on a 900px viewport, /impact left 193px of page
+ * background below the footer and the 404 left 313px -- a white band floating
+ * above a near-white strip, which is what reads as a flash at the bottom of the
+ * page. Pinning it costs nothing on a long page.
+ *
+ * min-height:0 because a flex item defaults to min-height:auto, which refuses
+ * to shrink below its content and would reintroduce exactly the overflow the
+ * 320px reflow audit exists to catch. */
+main { flex: 1 0 auto; min-height: 0; }
 
 body {
   margin: 0;
@@ -372,7 +387,22 @@ main { scroll-margin-top: 5rem; }
 
 .site-footer {
   border-top: 1px solid var(--border);
-  background: var(--surface);
+  /* Recessed, not white.
+   *
+   * This was --surface: pure white, on a --bg of #fbfbfa. Two near-identical
+   * whites separated by a hairline do not read as "page" and "foot of page";
+   * they read as a white band that has appeared for no reason -- and every way
+   * this footer can move (a lazy chunk collapsing the document, a short page
+   * leaving a gap beneath it, an auth answer adding or removing it) turned that
+   * band into a flash. The band is the thing being seen, so the band is what
+   * changes.
+   *
+   * --surface-sunken is the token already used for a recessed region, and the
+   * contrast script already checks both text colours against it: 12.51:1 for
+   * body, 6.69:1 for secondary. Darker than the page rather than lighter, so it
+   * reads as the floor of the document and no movement of it can look like a
+   * flash of white. */
+  background: var(--surface-sunken);
   padding: 2rem clamp(1.25rem, 2.5vw, 3rem) 3rem;
   margin-top: 3rem;
 }
@@ -3031,3 +3061,23 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
  * and with the footer gone from this route (see showsFooter in Layout) there is
  * nothing below it to separate from. */
 .register-page { padding-bottom: 2rem; }
+
+/* The height a page occupies while its chunk is still arriving.
+ *
+ * The Suspense fallback used to be a bare .page holding one line of text, and
+ * it sat above the shell, so a lazy route swapping in collapsed the whole
+ * document -- 2514px to 1067px on a throttled connection -- and the footer was
+ * hauled up into the fold and dropped back a moment later. The boundary has
+ * moved inside <main> (see Layout); this is the other half, which keeps the
+ * region from collapsing while the chunk is in flight. Together they mean the
+ * bar and the footer do not move at all during a navigation.
+ *
+ * 60vh rather than 100vh. A full viewport would push the footer off the bottom
+ * of a genuinely short page once it loaded, trading a flash for a scrollbar
+ * that appears and disappears. 60vh is past the fold on every screen this
+ * product targets, which is all the reservation has to achieve. */
+.route-loading {
+  min-height: 60vh;
+  display: grid; place-items: center;
+  padding: 1.5rem clamp(1.25rem, 2.5vw, 3rem);
+}
