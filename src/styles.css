@@ -1055,8 +1055,35 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   max-width: 26ch;
   overflow-wrap: break-word;
 }
-.deadline { font-weight: var(--w-medium); }
-.deadline.soon { color: var(--danger); }
+/* A closing date, in four states, each a colour and a mark together.
+ *
+ * The mark is the point. This was one rule — `.soon { color: var(--danger) }` —
+ * so "closing soon" was red text and nothing else, and red text alone is
+ * exactly what every other status on this site avoids: .state-badge carries a
+ * glyph, .chip-choice carries one, and this did not. Somebody who cannot
+ * separate the red from the near-black beside it had no way to tell an urgent
+ * deadline from a comfortable one.
+ *
+ * Nothing here animates. A deadline is read, not noticed, and a date that
+ * flashes is a date nobody can finish reading.
+ *
+ * Colours are the status tokens rather than new ones: green for a scheme with
+ * room, amber for the last week, red for today and for shut. Amber is --blocked
+ * because that is this palette's "needs attention now" and it measures 6.8:1;
+ * --ineligible grey is the open-ended case, which is not a warning at all. */
+.deadline {
+  font-weight: var(--w-medium);
+  display: inline-flex; align-items: baseline; gap: 0.3rem;
+}
+/* Not a circle or a pill: the deadline sits inline in a row of card meta, and a
+ * badge here would compete with the eligibility badge already on the card. */
+.deadline .mark { font-weight: var(--w-strong); }
+
+.deadline.open   { color: var(--eligible); }
+.deadline.soon   { color: var(--blocked); }
+.deadline.today  { color: var(--danger); }
+.deadline.closed { color: var(--danger); }
+.deadline.none   { color: var(--text-muted); }
 
 /* --- wizard -----------------------------------------------------------------------
  * One question per screen. The progress bar is the reassurance that this ends. */

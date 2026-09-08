@@ -113,6 +113,11 @@ export const en: Dict = {
   'public.noClose': 'No closing date',
   'public.closesIn': 'Closes in {n} days',
   'public.closingSoon': 'Closing soon',
+  /* The two states the old two-way split had no words for. "Closing soon" was
+     shown for both, and for a scheme that had already closed it was an
+     invitation to apply for something nobody can. */
+  'public.closesToday': 'Closes today',
+  'public.closed': 'Closed',
   'public.award': 'Award',
   'public.renewable': 'Can be renewed each year',
   'public.offeredBy': 'Offered by',
@@ -124,7 +129,12 @@ export const en: Dict = {
   /* Under the Apply button for a scheme the platform lists but does not run.
      Says plainly that the application is not ours to receive, so a student who
      later cannot find it under "My applications" knows why. */
-  'public.applyExternal': "Apply on the sponsor's site",
+  /* Just "Apply". The sentence under it names the sponsor and says the
+     application is theirs and will not appear here, so the button had the whole
+     explanation in it and the paragraph repeated it — and at .wide it wrapped to
+     two lines on a phone. The arrow and the announced "opens in a new tab" say
+     it leaves the site; applyExternalHelp says whose it is. */
+  'public.applyExternal': 'Apply',
   'public.applyExternalHelp': '{org} runs this scholarship and takes the application on their own website. It will not appear under your applications here.',
   /* Spoken, never drawn. Appended to the accessible name of any link that opens
      a new tab, which is otherwise one of the most disorienting things a screen
@@ -630,7 +640,16 @@ export const en: Dict = {
   'reg.login': 'Login with OTP',
 
   /* The masthead's account door, and the profile view's one button. */
-  'nav.registerLogin': 'Register / Login',
+  /* Two doors, two buttons — see the note at the call site in Layout.
+   *
+   * "Register" and "Login" rather than "Sign up" and "Sign in": the two words
+   * differ in every letter. The in/up pair differs in two, and the note on
+   * nav.signin above already records that as a known confusion for readers with
+   * dyslexia, having chosen familiarity over distinctness at the time. Split
+   * into two adjacent controls the distinctness is worth more — they are now
+   * read against each other, an inch apart. */
+  'nav.registerCta': 'Register',
+  'nav.loginCta': 'Login',
   'profile.edit': 'Update your details',
 
 }

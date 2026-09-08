@@ -5,8 +5,8 @@ import { useAuth } from '../../lib/auth-context'
 import { useDebounced, useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
 import { disabilityChoices, qualificationChoices, stateChoices, type Choice } from '../../lib/fields'
-import { awardLabel, deadlineLabel, shortDate } from '../../lib/format'
-import { Empty, ErrorState, Field, Loading, Notice } from '../../components/ui'
+import { awardLabel, shortDate } from '../../lib/format'
+import { Deadline, Empty, ErrorState, Field, Loading, Notice } from '../../components/ui'
 import type { Facet, Listing } from '../../lib/types'
 
 /* The public directory (FR-17).
@@ -371,7 +371,7 @@ function FacetSelect({
 
 export function ListingCard({ listing }: { listing: Listing }) {
   const { t } = useI18n()
-  const { text: closing, soon } = deadlineLabel(t, listing.days_remaining)
+
 
   return (
     <article className="card">
@@ -385,16 +385,15 @@ export function ListingCard({ listing }: { listing: Listing }) {
         <span className="amount">
           {awardLabel(t, listing.award_amount, listing.benefit_summary)}
         </span>
-        <span className={`deadline ${soon ? 'soon' : ''}`}>
-          {closing}
-          {/* The exact date, for a screen reader, when there is one. "Closing
-              soon" is the scannable version and the date is the useful one;
-              omitted entirely rather than announced as an empty string when the
-              scheme has no window. */}
+        {/* The exact date goes to a screen reader, when there is one. "Closing
+            soon" is the scannable version and the date is the useful one;
+            omitted rather than announced as an empty string when the scheme has
+            no window. */}
+        <Deadline days={listing.days_remaining}>
           {listing.closes_at && (
             <span className="sr-only"> — {shortDate(listing.closes_at)}</span>
           )}
-        </span>
+        </Deadline>
       </div>
 
       <p className="muted" style={{ marginTop: '0.75rem', marginBottom: 0 }}>

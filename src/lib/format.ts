@@ -64,15 +64,32 @@ export function humanise(value: string) {
  * `t` is passed rather than imported: this file is pure formatting and has no
  * business holding a hook.
  */
+/* Four states, not two, and each one wears a mark as well as a colour.
+ *
+ * It returned `soon` and nothing else, so a deadline was either red or it was
+ * not — and red was the only signal, which is the one thing this file's own
+ * rules forbid: colour never carries meaning alone. Every other status here is
+ * a colour and a shape together (see stateMark, .state-badge), and this was the
+ * exception.
+ *
+ * The two states it did not have are the two that matter most. `days <= 7`
+ * swallowed 0 and every negative, so a scheme closing this afternoon and one
+ * that shut a fortnight ago both read "Closing soon" — an invitation, in the
+ * case where the answer is that it is too late. They are separate now.
+ */
+export type DeadlineState = 'open' | 'soon' | 'today' | 'closed' | 'none'
+
 export function deadlineLabel(
   t: (key: string, vars?: Record<string, string | number>) => string,
   days: number | undefined,
-): { text: string; soon: boolean } {
+): { text: string; state: DeadlineState; mark: string } {
   if (days === undefined || days === null) {
-    return { text: t('public.noClose'), soon: false }
+    return { text: t('public.noClose'), state: 'none', mark: '\u221e' }
   }
-  if (days <= 7) return { text: t('public.closingSoon'), soon: true }
-  return { text: t('public.closesIn', { n: days }), soon: false }
+  if (days < 0) return { text: t('public.closed'), state: 'closed', mark: '\u00d7' }
+  if (days === 0) return { text: t('public.closesToday'), state: 'today', mark: '!' }
+  if (days <= 7) return { text: t('public.closingSoon'), state: 'soon', mark: '!' }
+  return { text: t('public.closesIn', { n: days }), state: 'open', mark: '\u2713' }
 }
 
 /* What the student gets, in one line.

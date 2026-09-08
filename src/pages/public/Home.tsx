@@ -5,8 +5,8 @@ import * as api from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
 import { useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
-import { awardLabel, count, deadlineLabel } from '../../lib/format'
-import { Field } from '../../components/ui'
+import { awardLabel, count } from '../../lib/format'
+import { Deadline, Field } from '../../components/ui'
 import Slides from '../../components/Slides'
 import type { Facet, Listing } from '../../lib/types'
 
@@ -190,9 +190,7 @@ export default function Home() {
                       <span className="amount">
                         {awardLabel(t, l.award_amount, l.benefit_summary)}
                       </span>
-                      <span className={`deadline ${deadlineLabel(t, l.days_remaining).soon ? 'soon' : ''}`}>
-                        {deadlineLabel(t, l.days_remaining).text}
-                      </span>
+                      <Deadline days={l.days_remaining} />
                     </p>
                   </li>
                 ))}

@@ -434,34 +434,29 @@ export default function Layout() {
           {signedIn
             ? <AccountMenu onSignOut={signOut} />
             : (
-              /* One control, and it is the thing the site is asking for.
-
-                 There were two: a filled "Check eligibility" and a quiet
-                 "Register / Login" beside it. The check has gone — it asked a
-                 visitor the same questions the registration form asks, saved
-                 none of them, and handed them on to be typed again — so the
-                 pair collapses to the survivor, and the survivor takes the
-                 filled style because it is now the only thing being asked for.
-
-                 The product's proposition is unchanged: tell us about yourself
-                 and we will tell you what you qualify for. What changed is that
-                 there is one form for that rather than two, and it is the one
-                 that can keep the answer.
-
-                 The label is "Register / Login", and it names two things on
-                 purpose. It read "Sign in" for a while, on the argument that
-                 registering and signing in are one screen handling an unknown
-                 number by registering it — so naming both was describing a
-                 distinction that no longer existed. They are two screens again:
-                 /register is the form that asks the nine questions, /signin is
-                 the number-and-code door for somebody who has already answered
-                 them. A visitor cannot tell which of the two they are from the
-                 outside, and the pair of words is what lets either of them
-                 recognise themselves in it. It points at /register, because the
-                 form carries "Already registered? Login with OTP" at the bottom
-                 and the reverse trip is the shorter one. */
+              /* Two doors, so two controls.
+                 *
+                 * This was one button reading "Register / Login" and pointing
+                 * only at /register. The label named both because a visitor
+                 * cannot tell from the outside which of them they are — but a
+                 * label naming two destinations and going to one is a control
+                 * that is wrong half the time it is pressed, and the half it is
+                 * wrong for is the returning student, who landed on the nine
+                 * question form and had to find "Already registered? Login with
+                 * OTP" at the bottom of it to get back out.
+                 *
+                 * Two links take each of them straight to their own door, and
+                 * the words no longer have to do the disambiguating that the
+                 * destination should.
+                 *
+                 * Register keeps the fill: it is still what the site is asking
+                 * a first-time reader for. Login is the outline beside it —
+                 * .nav-signin, which has been in the stylesheet unused since the
+                 * pair was last collapsed — so the two are easy to tell apart
+                 * without reading as two equal demands. */
               <div className="nav-end">
-                <NavLink to="/register" className="nav-cta">{t('nav.registerLogin')}</NavLink>
+                <NavLink to="/register" className="nav-cta">{t('nav.registerCta')}</NavLink>
+                <NavLink to="/signin" className="nav-signin">{t('nav.loginCta')}</NavLink>
               </div>
             )}
         </div>

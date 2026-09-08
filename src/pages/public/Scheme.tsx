@@ -5,8 +5,8 @@ import { useAuth } from '../../lib/auth-context'
 import { useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
 import { usePageTitle } from '../../lib/page-title'
-import { awardLabel, date, deadlineLabel } from '../../lib/format'
-import { ErrorState, Loading } from '../../components/ui'
+import { awardLabel, date } from '../../lib/format'
+import { Deadline, ErrorState, Loading } from '../../components/ui'
 import type { Listing } from '../../lib/types'
 
 /* One scheme, in full, without an account.
@@ -51,7 +51,6 @@ export default function Scheme() {
   if (!query.data) return null
 
   const s = query.data
-  const { text: closing, soon } = deadlineLabel(t, s.days_remaining)
   const summary = s.summary
   const description = s.description
 
@@ -134,7 +133,7 @@ export default function Scheme() {
                   {/* The countdown first and the date under it. "24 August" is
                       a fact somebody has to convert; "closes in 2 days" is the
                       one that decides what they do this afternoon. */}
-                  <span className={`deadline ${soon ? 'soon' : ''}`}>{closing}</span>
+                  <Deadline days={s.days_remaining} />
                   {s.closes_at && <span className="muted block">{date(s.closes_at)}</span>}
                 </dd>
               </div>

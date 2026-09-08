@@ -167,13 +167,13 @@ export function ResultCard({
   children?: ReactNode
 }) {
   const { t } = useI18n()
-  const { text: closing, soon } = deadlineLabel(t, daysRemaining)
+
 
   return (
     <article className={`card match ${stateClass(state)}`}>
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: '0.5rem' }}>
         <StateBadge state={state} />
-        <span className={`deadline ${soon ? 'soon' : ''}`}>{closing}</span>
+        <Deadline days={daysRemaining} />
       </div>
 
       <h3 style={{ marginBottom: '0.25rem' }}>
@@ -306,5 +306,30 @@ export function Progress({ step, total }: { step: number; total: number }) {
         <span style={{ width: `${percent}%` }} />
       </div>
     </div>
+  )
+}
+
+/* A closing date, and how close it is.
+ *
+ * One component for all four places that showed one — the landing page's
+ * deadline list, the directory card, a scheme page and a match card — which
+ * previously each rebuilt the same span and the same `soon ? 'soon' : ''`. The
+ * mark comes from format.deadlineLabel with the text, so a state cannot be
+ * given a colour here and a shape somewhere else.
+ *
+ * The mark is aria-hidden and the text is the whole announcement: "Closes in 34
+ * days" needs no tick read out in front of it. Nothing animates — a deadline
+ * that flashes is a deadline nobody can read.
+ */
+export function Deadline({ days, children }: { days?: number; children?: ReactNode }) {
+  const { t } = useI18n()
+  const { text, state, mark } = deadlineLabel(t, days)
+
+  return (
+    <span className={`deadline ${state}`}>
+      <span className="mark" aria-hidden="true">{mark}</span>
+      {text}
+      {children}
+    </span>
   )
 }
