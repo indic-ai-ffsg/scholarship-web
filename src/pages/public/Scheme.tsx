@@ -4,6 +4,7 @@ import * as api from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
 import { useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
+import { usePageTitle } from '../../lib/page-title'
 import { awardLabel, date, deadlineLabel } from '../../lib/format'
 import { ErrorState, Loading } from '../../components/ui'
 import type { Listing } from '../../lib/types'
@@ -39,6 +40,11 @@ export default function Scheme() {
     signal => api.get(`/public/scholarships/${slug}`, undefined, signal),
     [slug],
   )
+
+  /* Before the early returns below, because it is a hook. Undefined while the
+     request is in flight, which leaves the route's own title standing rather
+     than blanking the tab for a second. */
+  usePageTitle(query.data?.title)
 
   if (query.loading) return <div className="page"><Loading /></div>
   if (query.error) return <div className="page"><ErrorState error={query.error} onRetry={query.reload} /></div>

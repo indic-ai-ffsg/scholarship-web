@@ -141,8 +141,20 @@ export function SearchableSelect({
          making them press Down first to select the only row on screen is the
          kind of thing that reads as the form ignoring them. */
       const exact = options.find(o => o.label.toLowerCase() === text.trim().toLowerCase())
-      if (exact) commit(exact)
-      else close(true)
+      if (exact) { commit(exact); return }
+
+      /* And the same for a prefix that has narrowed to one row, which is the
+       * ordinary way this field gets used: type "Ker", see Kerala and nothing
+       * else, press Enter. Only the full spelling committed before, so a unique
+       * prefix fell through to close(true) — which reverts the text to whatever
+       * was selected before, i.e. empties the field. The student is left having
+       * answered the question, watched it clear, and been given no reason why.
+       *
+       * Exactly one, never "the first of several": with two rows on screen a
+       * commit here would be a guess, and reverting is the honest answer. */
+      if (matches.length === 1) { commit(matches[0]); return }
+
+      close(true)
       return
     }
 

@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import * as api from '../../lib/api'
 import { useQuery } from '../../lib/hooks'
+import { usePageTitle } from '../../lib/page-title'
 import { ErrorState, Loading } from '../../components/ui'
 
 /* A page written in the admin panel rather than in this repository.
@@ -56,6 +57,11 @@ export default function Page() {
     signal => api.get(`/public/pages/${slug}`, undefined, signal),
     [slug],
   )
+
+  /* Before the early returns below, because it is a hook. Undefined while the
+     request is in flight, which leaves the route's own title standing rather
+     than blanking the tab for a second. */
+  usePageTitle(query.data?.title)
 
   if (query.loading) return <Loading label="Loading" />
   /* A missing page arrives here as a 404 from the API, and ErrorState says so.

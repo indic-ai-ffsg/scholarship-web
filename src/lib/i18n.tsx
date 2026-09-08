@@ -24,8 +24,25 @@ export function I18nProvider({ children }: { children: ReactNode }) {
    * is a blank space nobody notices until a student reports it. */
   const value = useMemo(() => ({
     t: (key: string, vars?: Record<string, string | number>) => {
-      const template = en[key] ?? key
+      let template = en[key] ?? key
       if (!vars) return template
+
+      /* "1 application not sent", not "1 applications not sent".
+       *
+       * A string may carry both forms separated by a pipe — singular first —
+       * and the one that agrees with {n} is chosen here. Written out, the three
+       * on the dashboard alone read "1 more need one thing", "2 application not
+       * sent" and "2 document expiring soon": the table had one form per string
+       * and a count that does not always match it.
+       *
+       * n === 1 is English's rule and only English's. A second language needs
+       * its own, and Hindi's is the same two-form split, so this holds for the
+       * table that exists — but a language with three forms needs more than a
+       * pipe, and that is the point to replace this rather than extend it. */
+      if (typeof vars.n === 'number' && template.includes('|')) {
+        const [one, many] = template.split('|')
+        template = (vars.n === 1 ? one : many).trim()
+      }
 
       return Object.entries(vars).reduce(
         (out, [name, value]) => out.replaceAll(`{${name}}`, String(value)),

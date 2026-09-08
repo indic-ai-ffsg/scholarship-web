@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, type ReactNode } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import * as api from '../lib/api'
@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { SOCIAL } from '../lib/social'
 import { useI18n } from '../lib/i18n-context'
+import { PageTitleContext } from '../lib/page-title'
 import { Loading, OfflineBanner } from './ui'
 
 /* The shell.
@@ -59,6 +60,18 @@ export default function Layout() {
   const barRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const lastPath = useRef(location.pathname)
+  /* Set by the pages whose name is their content — see lib/page-title.
+   *
+   * Stored with the path it was set for, rather than cleared on navigation.
+   * Clearing meant a setState inside an effect, which re-renders the whole
+   * shell to undo something that can simply be disregarded: an override left
+   * behind by the previous page is one whose path no longer matches, and the
+   * line below drops it without a second render. */
+  const [override, setOverride] = useState<{ path: string; title: string } | null>(null)
+  const setPageTitle = useCallback(
+    (title: string | null) => setOverride(title ? { path: location.pathname, title } : null),
+    [location.pathname],
+  )
 
   const signedIn = status === 'authenticated'
 
@@ -123,9 +136,26 @@ export default function Layout() {
    * on arrival — which scrolls it into view, and put the masthead 137px above
    * the top of the window on every single page load. The header was simply
    * gone, and no amount of reading the stylesheet would have found it. */
-  useEffect(() => {
-    document.title = `${titleFor(location.pathname, t)} · ${t('app.name')}`
+  /* The tab's name, in one place and written by one owner.
+   *
+   * Separate from the navigation effect below because it has a second input —
+   * a page's own title — and folding the two together would re-run the scroll
+   * and focus handling every time a scheme's name arrived from the API.
+   *
+   * The override is cleared on the way into a new path rather than on the way
+   * out of the old one, so a page that sets no title of its own cannot inherit
+   * the last one's. React runs a child's effect before its parent's, which is
+   * the whole reason the value is state here instead of a document.title write
+   * inside usePageTitle: the parent must be the last writer, not the first. */
+  const pageTitle = override?.path === location.pathname
+    ? override.title
+    : titleFor(location.pathname, t)
 
+  useEffect(() => {
+    document.title = `${pageTitle} · ${t('app.name')}`
+  }, [pageTitle, t])
+
+  useEffect(() => {
     /* A hash goes to its target instead of to the top.
       *
       * "How it works" in the masthead is an anchor into the landing page, so
@@ -179,6 +209,9 @@ export default function Layout() {
   }, [])
 
   return (
+    /* The setter, not the value: only Layout writes document.title, and the
+       pages below hand it the one thing the path cannot tell it. */
+    <PageTitleContext.Provider value={setPageTitle}>
     <>
       <a className="skip-link" href="#main">{t('nav.skip')}</a>
 
@@ -462,6 +495,7 @@ export default function Layout() {
 
       {showsFooter(location.pathname, status) && <SiteFooter />}
     </>
+    </PageTitleContext.Provider>
   )
 }
 
@@ -676,6 +710,12 @@ function titleFor(path: string, t: (key: string) => string): string {
   if (path.startsWith('/dashboard')) return t('nav.dashboard')
   if (path.startsWith('/matches')) return t('nav.matches')
   if (path.startsWith('/applications')) return t('nav.applications')
+  /* Matched before nothing at all: /apply/:id had no case here and took the
+     fallback, so the tab said "For students with disabilities" — the landing
+     page's title — on the screen where an application is actually sent. The
+     scheme's name would be better still and is not in the eligibility payload
+     this page loads; "Apply" is at least this page and no other. */
+  if (path.startsWith('/apply')) return t('apply.title')
   if (path.startsWith('/documents')) return t('nav.documents')
   if (path.startsWith('/profile')) return t('nav.profile')
   if (path.startsWith('/my-data')) return t('nav.privacy')

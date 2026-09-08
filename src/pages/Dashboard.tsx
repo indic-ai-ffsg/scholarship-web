@@ -128,7 +128,9 @@ export default function Dashboard() {
 
       {s && s.documents_expiring_soon > 0 && (
         <Notice tone="warn" title={t('dash.expiringTitle', { n: s.documents_expiring_soon })}>
-          <p>{t('dash.expiringBody')}</p>
+          {/* The count reaches the body as well as the title: it is the body
+              that says "it" or "them". */}
+          <p>{t('dash.expiringBody', { n: s.documents_expiring_soon })}</p>
           <Link className="btn" to="/documents">{t('dash.expiringAction')}</Link>
         </Notice>
       )}
@@ -153,10 +155,15 @@ export default function Dashboard() {
             to="/applications"
             label={t('dash.applications')}
             value={s.applications.in_progress}
-            hint={t('dash.applicationsHint', {
-              approved: s.applications.approved,
-              rejected: s.applications.rejected,
-            })}
+            /* The breakdown only once there is one. A student who has sent
+                nothing is told "Nothing sent yet" rather than counted three
+                zeros at. */
+            hint={s.applications.approved + s.applications.rejected > 0
+              ? t('dash.applicationsHint', {
+                approved: s.applications.approved,
+                rejected: s.applications.rejected,
+              })
+              : t('dash.applicationsNone')}
             go={t('dash.applicationsGo')}
           />
           <Figure

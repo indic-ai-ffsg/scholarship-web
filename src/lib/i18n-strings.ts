@@ -20,6 +20,11 @@ export const en: Dict = {
   'app.name': 'Indic AI scholarship',
   /* Still used: the tab title for a page that has no name of its own. */
   'app.tagline': 'For students with disabilities',
+  /* The tab name for one application, which is not the same page as the public
+     listing for the same scheme — and took the identical title until this
+     existed. Two tabs reading "HSBC Merit Scholarship" are two tabs a reader
+     has to open to tell apart. */
+  'app.yourApplication': 'Your application · {title}',
 
   'nav.home': 'Home',
   /* The bar names the place, not the verb: a nav item is a destination, and
@@ -210,19 +215,27 @@ export const en: Dict = {
      "3 open" reads as a fact, "3" alone reads as a score. */
   'nav.dashboard': 'Dashboard',
   'dash.title': 'Your dashboard',
-  'dash.lede': 'Where your scholarships, applications and documents stand.',
+  'dash.lede': 'Your scholarships, applications and documents, all in one place.',
   'dash.matches': 'Scholarships you can apply for',
-  'dash.matchesHint': 'Matched to the details you have given.',
-  'dash.matchesBlocked': '{n} more need one thing from you first.',
+  'dash.matchesHint': 'Based on the details you gave us.',
+  /* No verb to agree with {n}, which is how it stays right at 1 and at 7, and
+   * no "more" — the count above it is often 0, and "1 more" than nothing is
+   * not a thing anybody can count. It said "1 more need one thing from you
+   * first" on a tile reading 0. */
+  'dash.matchesBlocked': '{n} waiting on one more detail from you.',
   'dash.applications': 'Applications in progress',
   'dash.applicationsHint': '{approved} approved · {rejected} not successful',
+  /* Shown instead when there is nothing to count. "0 approved · 0 not
+   * successful" under a 0 is the same nothing said three times, and the word
+   * "successful" is the last one a student needs on their first visit. */
+  'dash.applicationsNone': 'Nothing sent yet.',
   'dash.documents': 'Documents verified',
-  'dash.documentsHint': 'Verified once, reused for every application.',
+  'dash.documentsHint': 'Checked once. Used for every application.',
   'dash.funding': 'Received so far',
   'dash.fundingHint': '{sanctioned} sanctioned in total.',
   'dash.recent': 'Recent applications',
   'dash.noApplications': 'No applications yet',
-  'dash.noApplicationsHint': 'When you apply for a scholarship it will appear here with its progress.',
+  'dash.noApplicationsHint': 'Anything you apply for will show up here.',
   'dash.findScholarships': 'Find scholarships',
   'dash.editDetails': 'View or edit your details',
   /* The dashboard's completeness panel. "to go" rather than "incomplete": the
@@ -235,11 +248,14 @@ export const en: Dict = {
   'dash.matchesGo': 'See your matches',
   'dash.applicationsGo': 'Track your applications',
   'dash.documentsGo': 'Manage documents',
-  'dash.draftsTitle': '{n} application not sent',
-  'dash.draftsBody': 'A started application is not a submitted one. Finish it before the scholarship closes.',
-  'dash.draftsAction': 'Finish it',
-  'dash.expiringTitle': '{n} document expiring soon',
-  'dash.expiringBody': 'Replace it now and it stays valid for every application you make.',
+  'dash.draftsTitle': '{n} application not sent | {n} applications not sent',
+  /* No pronoun to disagree with the count, and plainer than "a started
+   * application is not a submitted one" — which is a sentence you have to read
+   * twice to find the verb in. */
+  'dash.draftsBody': 'Starting an application does not send it. Finish before the scholarship closes.',
+  'dash.draftsAction': 'Finish now',
+  'dash.expiringTitle': '{n} document expiring soon | {n} documents expiring soon',
+  'dash.expiringBody': 'Replace it now so it works for every application. | Replace them now so they work for every application.',
   'dash.expiringAction': 'Check documents',
 
   /* Still "Login" because this one is a link inside a sentence addressed to
@@ -333,6 +349,13 @@ export const en: Dict = {
   'match.eligible': 'You qualify',
   'match.likely': 'You probably qualify',
   'match.blocked': 'One thing to do first',
+  /* The other list's heading. It had none: the cards are h3, so under the page
+     h1 they skipped h2 entirely, and a screen reader moving by heading went
+     from the page title straight into a scheme name with nothing saying which
+     of the two groups it belonged to — while "Not open to you" below did have
+     its heading. Both lists are named now. */
+  'match.actionable': 'Open to you',
+  'match.actionableHelp': 'Some may still need a document before you can apply.',
   'match.ineligible': 'Not open to you',
   'match.eligibleHelp': 'Everything we checked is verified.',
   'match.likelyHelp': 'Based on what you told us. Getting it verified makes your application stronger.',

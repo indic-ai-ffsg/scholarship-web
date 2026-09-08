@@ -91,9 +91,16 @@ export default function Matches() {
       )}
 
       {actionable.length > 0 && (
-        <ul role="list" className="stack" style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0 0' }}>
-          {actionable.map(m => <li key={m.scholarship_id}><MatchCard match={m} /></li>)}
-        </ul>
+        /* A section with a heading, matching the one below it. The list held
+           the page's only cards and no heading of its own, which left the h3
+           inside each card sitting directly under the h1. */
+        <section style={{ marginTop: '1.5rem' }}>
+          <h2 style={{ fontSize: 'var(--step-1)' }}>{t('match.actionable')}</h2>
+          <p className="muted">{t('match.actionableHelp')}</p>
+          <ul role="list" className="stack" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {actionable.map(m => <li key={m.scholarship_id}><MatchCard match={m} /></li>)}
+          </ul>
+        </section>
       )}
 
       {closed.length > 0 && (

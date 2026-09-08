@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import * as api from '../lib/api'
 import { useQuery } from '../lib/hooks'
 import { useI18n } from '../lib/i18n-context'
+import { usePageTitle } from '../lib/page-title'
 import { date, money } from '../lib/format'
 import { ErrorState, Loading, Notice } from '../components/ui'
 import type { Application, TimelineEvent } from '../lib/types'
@@ -43,6 +44,13 @@ export default function ApplicationDetail() {
     signal => api.get(`/applications/${applicationId}`, undefined, signal),
     [applicationId],
   )
+
+  /* Before the early returns below, because it is a hook. Undefined while the
+     request is in flight, which leaves the route's own title standing rather
+     than blanking the tab for a second. */
+  usePageTitle(query.data
+    ? t('app.yourApplication', { title: query.data.application.scholarship_title ?? query.data.application.reference_code })
+    : null)
 
   if (query.loading) return <div className="page"><Loading /></div>
   if (query.error) return <div className="page"><ErrorState error={query.error} onRetry={query.reload} /></div>
