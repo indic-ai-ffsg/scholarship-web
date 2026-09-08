@@ -88,6 +88,41 @@ export function courseChoices(): Choice[] {
   return COURSE_LEVELS.map(c => ({ value: c.value, label: c.label, sub: c.sub }))
 }
 
+/* The directory's qualification filter, in the words the register form uses.
+ *
+ * The same four stored values as COURSE_LEVELS — the directory filters through
+ * `scholarship_facet`, whose course_level rows hold the enum and nothing finer
+ * — but labelled the way a student describes themselves rather than the way the
+ * database does. "Undergraduate" is a word a form uses; "Graduation" is the
+ * word on the certificate, and it is what the program chips already say.
+ *
+ * Diploma and ITI are folded into the graduation row rather than given one of
+ * their own, and that is deliberate. courseLevelFor maps both to UNDERGRADUATE,
+ * so a separate "Diploma / ITI" option would be a second control returning an
+ * identical result set — a filter that appears to narrow and does not is worse
+ * than one that does not offer the choice. The sub-line names them instead, so
+ * a diploma student can see they are covered. Splitting them properly needs a
+ * DIPLOMA value in the course_level enum, which is a migration and a matcher
+ * change rather than a label.
+ *
+ * There is deliberately no year filter beside this. ALL_YEARS is a student's
+ * own answer, and `scholarship_facet` carries no current_year rows, so a year
+ * control here would either return everything or need a facet that does not
+ * exist yet.
+ */
+export function qualificationChoices(): Choice[] {
+  return [
+    { value: 'SCHOOL', label: 'School', sub: 'Class 1 to 12' },
+    {
+      value: 'UNDERGRADUATE',
+      label: 'Graduation',
+      sub: 'BA, BSc, BCom, BE / BTech, MBBS — and Diploma or ITI',
+    },
+    { value: 'POSTGRADUATE', label: 'Post-graduation', sub: 'MA, MSc, MTech, MBA and similar' },
+    { value: 'DOCTORAL', label: 'PhD / Doctorate' },
+  ]
+}
+
 export function stateChoices(): Choice[] {
   return Object.entries(STATES).map(([code, name]) => ({ value: code, label: name }))
 }

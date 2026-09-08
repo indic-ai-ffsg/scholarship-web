@@ -4,7 +4,7 @@ import * as api from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
 import { useDebounced, useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
-import { courseChoices, disabilityChoices, stateChoices, type Choice } from '../../lib/fields'
+import { disabilityChoices, qualificationChoices, stateChoices, type Choice } from '../../lib/fields'
 import { awardLabel, deadlineLabel, shortDate } from '../../lib/format'
 import { Empty, ErrorState, Field, Loading, Notice } from '../../components/ui'
 import type { Facet, Listing } from '../../lib/types'
@@ -188,10 +188,17 @@ export default function Directory() {
               value={disability}
               onChange={v => setFilter('disability_type', v)}
             />
+            {/* "Qualification", not "What you study".
+                *
+                * The question is what the student has reached, which is what a
+                * scheme restricts on — and the old label read as "what subject",
+                * which is a different question this platform does not ask. The
+                * values are unchanged, so an existing bookmark carrying
+                * ?course_level=UNDERGRADUATE still works. */}
             <VocabSelect
-              label={t('public.filter.course')}
-              options={courseChoices()}
-              anyLabel={t('public.filter.anyCourse')}
+              label={t('public.filter.qualification')}
+              options={qualificationChoices()}
+              anyLabel={t('public.filter.anyQualification')}
               value={course}
               onChange={v => setFilter('course_level', v)}
             />

@@ -11,7 +11,7 @@
  * reads — so a value shown here and a value written there cannot drift.
  */
 
-import { courseChoices, disabilityChoices, genderChoices, stateChoices } from './fields'
+import { disabilityChoices, genderChoices, stateChoices } from './fields'
 import type { Option } from '../components/ui'
 import { date as formatDate, money } from './format'
 
@@ -223,11 +223,28 @@ export function buildQuestions(): Question[] {
       question: 'When were you born?',
       help: 'Some scholarships have an age limit.',
     },
+    /* "What are you studying?" was here, offering the four course_level values.
+     *
+     * It is gone because the registration form asks the same question better
+     * and more precisely: the program chips name an actual course — BE / BTech,
+     * MBA, Diploma / ITI — and courseLevelFor maps whichever is chosen down to
+     * the enum. Keeping both meant the profile view listed "Undergraduate" on
+     * one row and "BE / BTech" on another, which is one answer shown twice, the
+     * coarser of the two first.
+     *
+     * course_level is still stored, still matched on, and still read back — it
+     * arrives through course_name and the program chips now, and the year row
+     * below reads it to know whether an ordinal means Class 10 or 3rd year. */
     {
-      field: 'course_level',
-      kind: 'choice',
+      /* The program, as the student picked it. Read-only here: the chips that
+         write it live on the registration form, and a second copy of a
+         forty-option grouped chooser on the review screen is the duplication
+         that removing "What are you studying?" above was about. */
+      field: 'course_name',
+      kind: 'text',
+      optional: true,
       question: 'What are you studying?',
-      options: courseChoices(),
+      help: 'The course you picked when you registered.',
     },
     {
       /* Free text rather than a chooser, and that is not laziness. The

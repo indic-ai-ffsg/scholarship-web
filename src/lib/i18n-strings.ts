@@ -76,14 +76,14 @@ export const en: Dict = {
   'public.lede': 'Every scholarship here is open to students with disabilities. You do not need an account to look.',
   'public.search': 'Search by name or keyword',
   'public.filter.disability': 'Type of disability',
-  'public.filter.course': 'What you study',
+  'public.filter.qualification': 'Qualification',
   'public.filter.state': 'Your state',
   'public.filter.provider': 'Who offers it',
   'public.filter.any': 'Any',
   /* Each filter says "any what", because "Any" four times over a column of
      dropdowns tells a reader nothing about which one they are looking at. */
   'public.filter.anyDisability': 'Any disability',
-  'public.filter.anyCourse': 'Any level of study',
+  'public.filter.anyQualification': 'Any qualification',
   'public.filter.allStates': 'All states',
   'public.filters': 'Filters',
   'public.clear': 'Clear',
