@@ -1525,6 +1525,24 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 .sheet-body h3 { font-size: var(--step-1); margin: 1.75rem 0 0.625rem; }
 .sheet-body p { max-width: var(--measure); }
 
+/* A hairline over each section, because seven of them in a column all set the
+ * same way is a wall.
+ *
+ * The rule does the grouping that spacing alone could not: at 1.75rem the gap
+ * between two sections and the gap between a heading and its own text were
+ * close enough that the eye had to read the words to find the boundary. A
+ * border is a cheaper signal than more space, and space is what a panel this
+ * long has least of.
+ *
+ * Not on the first: a rule directly under the facts strip reads as part of the
+ * strip's frame rather than as the start of what follows it. And not above the
+ * caveats, which are already a coloured band — a hairline over their own ground
+ * is a second boundary drawn on top of a boundary. */
+.sheet-body section + section {
+  border-top: 1px solid var(--border);
+  padding-top: 0.25rem;
+}
+
 .sheet-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.375rem; }
 .sheet-head .sponsor-mark { background: var(--surface-sunken); }
 .sheet-eyebrow { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
@@ -1539,15 +1557,56 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   background: var(--surface-sunken);
   border-radius: var(--radius);
 }
-.sheet-facts dt { font-size: var(--step--1); color: var(--text-muted); margin-bottom: 0.125rem; }
+.sheet-facts dt {
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  margin-bottom: 0.125rem;
+}
 .sheet-facts dd { margin: 0; }
 .sheet-facts .block { display: block; font-size: var(--step--1); }
+
+/* The award, at the size of the question it answers.
+ *
+ * "Is it worth an afternoon" is what a reader opens this panel to settle, and
+ * the figure that settles it was --step-1 — the same size as the section
+ * headings and a step above the prose, which made it one fact among four. It is
+ * the only number here that decides anything.
+ *
+ * Size rather than colour, and that is the rule this file keeps: the accent is
+ * spent on the deadline, which is the one thing on the panel that expires. Two
+ * coloured figures in one strip and neither of them leads. */
+.sheet-facts .amount {
+  font-size: var(--step-2);
+  line-height: 1.25;
+  display: block;
+}
 
 /* Discs, and deliberately not the criteria checklist a few sections above.
  * A tick there means "you already meet this"; these are things the reader has
  * to go and find, and wearing the same mark would say the opposite. */
 .sheet-docs { margin: 0 0 0.5rem; padding-left: 1.25rem; display: grid; gap: 0.375rem; }
 .sheet-docs li { max-width: var(--measure); }
+
+/* What the scheme covers, and what to do to get it — one line each, as the
+ * operator typed them. See the Prose component in SchemeSheet for why these are
+ * lists at all rather than a paragraph with the line breaks drawn in.
+ *
+ * The gap is the whole point. Items a line apart are countable at a glance;
+ * items on consecutive lines are a paragraph that happens to wrap oddly, which
+ * is exactly what these looked like. */
+.sheet-points,
+.sheet-steps {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+  max-width: var(--measure);
+}
+
+/* Numerals, aligned on the marker rather than hugging the text. A six-step
+ * process is a sequence and the reader's place in it is worth keeping. */
+.sheet-steps { list-style: decimal; }
+.sheet-steps li::marker { color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
 /* The caveats, last and visibly a different kind of thing. .notice supplies the
  * ground and the rule; this only stops its heading behaving like a section

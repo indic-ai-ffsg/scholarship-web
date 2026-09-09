@@ -170,3 +170,33 @@ export function awardLabel(
   // incomplete data rather than as a rendering fault.
   return t('public.awardUnstated')
 }
+
+/* Free text that is really a list, split back into its items.
+ *
+ * `benefit_description` and `application_process` are textareas in the admin
+ * panel captioned "one per line" and "the steps, in order", and operators fill
+ * them in that way — but the public sheet rendered them as one paragraph with
+ * `white-space: pre-line`, which draws the line breaks and nothing else. Six
+ * application steps arrived as a six-line block of text with no spacing, no
+ * markers, and no list semantics for a screen reader to announce a count from.
+ *
+ * Returns [] for anything that is genuinely one paragraph, so the caller can
+ * fall back to a <p> rather than wrapping a sentence in a one-item list.
+ */
+export function asLines(text: string): string[] {
+  const items = text.split('\n').map(l => l.trim()).filter(Boolean)
+  return items.length > 1 ? items : []
+}
+
+/* The author's own numbering, removed so an <ol> does not print a second one.
+ *
+ * Only when EVERY line carries it. A block where three lines of six begin with
+ * a number is not a numbered list with gaps — it is prose that happens to cite
+ * a figure, and stripping there would eat the "2." out of "2. 5 lakh".
+ */
+const NUMBERED = /^\d+[.)]\s+/
+export function stripNumbering(items: string[]): string[] {
+  return items.every(i => NUMBERED.test(i))
+    ? items.map(i => i.replace(NUMBERED, ''))
+    : items
+}

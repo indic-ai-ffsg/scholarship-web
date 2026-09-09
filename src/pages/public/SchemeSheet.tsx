@@ -5,7 +5,7 @@ import { useAuth } from '../../lib/auth-context'
 import { useQuery } from '../../lib/hooks'
 import { withNext } from '../../lib/next'
 import { useI18n } from '../../lib/i18n-context'
-import { awardLabel, date } from '../../lib/format'
+import { asLines, awardLabel, date, stripNumbering } from '../../lib/format'
 import { Deadline, ErrorState, Loading, SponsorLogo } from '../../components/ui'
 import { Sheet } from '../../components/Sheet'
 import { usePageTitle } from '../../lib/page-title'
@@ -214,7 +214,7 @@ export function SchemeSheet({
       <section aria-labelledby="sheet-about">
         <h3 id="sheet-about">{t('public.about')}</h3>
         <p>{s.summary}</p>
-        {s.description && <p style={{ whiteSpace: 'pre-line' }}>{s.description}</p>}
+        {s.description && <Prose text={s.description} />}
       </section>
 
       {/* What the operator wrote, in the order a reader asks for it.
@@ -240,14 +240,14 @@ export function SchemeSheet({
       {s.benefit_description && (
         <section aria-labelledby="sheet-get">
           <h3 id="sheet-get">{t('public.whatYouGet')}</h3>
-          <p style={{ whiteSpace: 'pre-line' }}>{s.benefit_description}</p>
+          <Prose text={s.benefit_description} />
         </section>
       )}
 
       {s.eligibility_summary && (
         <section aria-labelledby="sheet-elig">
           <h3 id="sheet-elig">{t('public.eligibilityDetail')}</h3>
-          <p style={{ whiteSpace: 'pre-line' }}>{s.eligibility_summary}</p>
+          <Prose text={s.eligibility_summary} />
         </section>
       )}
 
@@ -271,7 +271,7 @@ export function SchemeSheet({
       {s.application_process && (
         <section aria-labelledby="sheet-how">
           <h3 id="sheet-how">{t('public.howToApply')}</h3>
-          <p style={{ whiteSpace: 'pre-line' }}>{s.application_process}</p>
+          <Prose text={s.application_process} ordered />
         </section>
       )}
 
@@ -294,4 +294,33 @@ export function SchemeSheet({
       ) : null}
     </Sheet>
   )
+}
+
+/* Operator free text, rendered as the shape it was written in.
+ *
+ * Every one of these fields is a textarea in the admin panel, and three of them
+ * are captioned as lists — "the steps, in order", "instalments, what is covered,
+ * what is not". Operators write them that way. The sheet used to render all of
+ * them as one <p style="white-space: pre-line">, which draws the line breaks and
+ * stops there: six application steps arrived as a six-line slab with no spacing
+ * between them, no markers, and nothing for a screen reader to announce a count
+ * from. It read as a paragraph that had been damaged.
+ *
+ * So: more than one line means a list, and one line means a paragraph. The
+ * decision is the text's, not a flag on the column, because the same column
+ * genuinely holds both — "Full tuition and a monthly stipend" is a sentence and
+ * belongs in a <p>.
+ *
+ * `ordered` is for the one field that is a sequence rather than a set. It is not
+ * inferred from the author's "1." — a numbered <ol> is right for application
+ * steps whether or not somebody typed the digits, and wrong for a list of what a
+ * scholarship covers even when they did.
+ */
+function Prose({ text, ordered }: { text: string; ordered?: boolean }) {
+  const items = asLines(text)
+  if (items.length === 0) return <p>{text}</p>
+
+  return ordered
+    ? <ol className="sheet-steps">{stripNumbering(items).map((l, i) => <li key={i}>{l}</li>)}</ol>
+    : <ul className="sheet-points">{items.map((l, i) => <li key={i}>{l}</li>)}</ul>
 }

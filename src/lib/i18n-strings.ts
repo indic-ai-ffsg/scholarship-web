@@ -178,7 +178,7 @@ export const en: Dict = {
    * for a visitor that was a button that lies: /apply is behind a guard, so the
    * press ended at a sign-in screen they had not asked for and had not been
    * warned about. Naming the step costs nothing and removes the surprise. */
-  'public.registerToApply': 'Register to apply',
+  'public.registerToApply': 'Apply',
   'public.registerToApplyHelp': 'Applications are made through your account. Registering also shows you every other scholarship you qualify for.',
   /* Named separately from the closed deadline badge. The badge says when, this
      says what it means for the button that is no longer there. */
