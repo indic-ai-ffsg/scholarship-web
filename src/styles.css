@@ -2571,18 +2571,25 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
-/* Never a caret over a digit. With a complete code .next is the sixth box,
- * which is filled, and a bar through the 6 reads as a strikethrough. */
-.code-boxes:has(input:focus) .box.next:not(.filled)::after {
-  content: '';
-  width: 2px; height: 1.75rem;
-  background: var(--accent);
-  animation: code-caret 1.06s steps(1) infinite;
-}
-/* The hidden half is the second one, so the reduced-motion rule at the top of
- * the file â which cuts every animation to a single 0.01ms pass â leaves a
- * steady bar rather than no bar at all. */
-@keyframes code-caret { 50% { opacity: 0; } }
+/* No drawn caret, and nothing blinking.
+ *
+ * There was one: a 2px bar in the active box, blinking on a 1.06s step. It is
+ * gone for two reasons and either would do.
+ *
+ * It said what the box already says. .box.next carries an accent border and an
+ * inset accent edge, and that is both the position and the focus indicator for
+ * the whole control — a bar inside it is a second mark for one fact, and the
+ * one that moves is the one that pulls the eye off the digits somebody is
+ * reading across from a phone.
+ *
+ * Held still instead of removed, it would have been worse: a 2px vertical bar
+ * alone in a box, in a row that reads 0 5 1 _ , is a shape a reader can take
+ * for a 1. A caret may only stop blinking if it stops looking like a digit,
+ * and on a numeric field it cannot.
+ *
+ * Removed here as well as in the panel, because the two are meant to be the
+ * same control — a student and an operator reading the same six digits should
+ * not meet two different fields. */
 
 .code-boxes input {
   position: absolute; inset: 0;
