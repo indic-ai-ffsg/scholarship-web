@@ -79,6 +79,21 @@ export function humanise(value: string) {
  */
 export type DeadlineState = 'open' | 'closing' | 'soon' | 'today' | 'closed' | 'none'
 
+/* The mark on an urgent deadline.
+ *
+ * A clock rather than the "!" it was until 2026-09-10. Both are aria-hidden and
+ * say nothing to a screen reader — the text carries the whole announcement —
+ * so this is purely what the eye catches, and a clock names the thing being
+ * measured where an exclamation mark only insists.
+ *
+ * Written as the escape rather than the glyph so it survives a file being
+ * re-saved in the wrong encoding, which is how the rest of the marks here are
+ * written. U+23F0 renders in colour on every platform that has it, so it does
+ * not take the danger red the words beside it do — that is the trade for
+ * choosing an emoji, and the red is still on the text where the meaning is.
+ */
+const URGENT_MARK = '\u23f0'
+
 export function deadlineLabel(
   t: (key: string, vars?: Record<string, string | number>) => string,
   days: number | undefined,
@@ -87,8 +102,8 @@ export function deadlineLabel(
     return { text: t('public.noClose'), state: 'none', mark: '\u221e' }
   }
   if (days < 0) return { text: t('public.closed'), state: 'closed', mark: '\u00d7' }
-  if (days === 0) return { text: t('public.closesToday'), state: 'today', mark: '!' }
-  if (days <= 7) return { text: t('public.closingSoon'), state: 'soon', mark: '!' }
+  if (days === 0) return { text: t('public.closesToday'), state: 'today', mark: URGENT_MARK }
+  if (days <= 7) return { text: t('public.closingSoon'), state: 'soon', mark: URGENT_MARK }
   /* Eight to thirty days: the count, in the warning ink.
    *
    * A band rather than colouring every dated scheme, and the difference is the
@@ -103,7 +118,7 @@ export function deadlineLabel(
    * It keeps the day count rather than becoming "Closing soon". The number is
    * what a reader plans around, and above a week they still have a choice to
    * make rather than a warning to obey. */
-  if (days <= 30) return { text: t('public.closesIn', { n: days }), state: 'closing', mark: '!' }
+  if (days <= 30) return { text: t('public.closesIn', { n: days }), state: 'closing', mark: URGENT_MARK }
   /* Past a month: the count, and no colour at all.
    *
    * It was the eligible green with a tick, which read as reassurance about a
