@@ -1510,8 +1510,6 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   border-top: 1px solid var(--border);
 }
 .sheet-foot .btn { width: 100%; }
-.sheet-permalink { font-size: var(--step--1); }
-
 /* A bottom sheet on a phone.
  *
  * Not full height: the strip of list left showing above it is what says the

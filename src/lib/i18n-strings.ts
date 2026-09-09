@@ -173,7 +173,6 @@ export const en: Dict = {
   /* The way out of the panel to a real address, for somebody who wants to
      forward, bookmark or print the scheme. A panel has no URL of its own to
      copy, so the offer has to be explicit. */
-  'sheet.fullPage': 'Open the full page',
 
   /* The panel's sections, from backend 0027's columns.
    *

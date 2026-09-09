@@ -74,7 +74,6 @@ export function SchemeSheet({
     (s.listing_kind ?? 'TENANT') === 'CURATED' && s.external_url ? s.external_url : null
 
   const closed = s.days_remaining !== undefined && s.days_remaining < 0
-  const detailPath = `/scholarships/${s.slug}`
 
   return (
     <Sheet open onClose={onClose} labelledBy="sheet-title" footer={
@@ -97,13 +96,6 @@ export function SchemeSheet({
             {t('public.applyNow')}
           </Link>
         )}
-
-        {/* The way out to the real page, kept deliberately.
-            *
-            * A reader who wants to keep this scheme, send it to somebody or
-            * print it needs an address, and a panel has none. This is also the
-            * only route from the sheet to a URL a counsellor can forward. */}
-        <Link className="sheet-permalink" to={detailPath}>{t('sheet.fullPage')}</Link>
       </>
     }>
       <div className="sheet-head">
