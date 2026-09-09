@@ -27,7 +27,6 @@ import Register from './pages/Register'
  * than a handful of these in a session, and a student who never applies sees
  * none of them. */
 const Directory = lazy(() => import('./pages/public/Directory'))
-const Scheme = lazy(() => import('./pages/public/Scheme'))
 const Partner = lazy(() => import('./pages/public/Partner'))
 const Impact = lazy(() => import('./pages/public/Impact'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -88,7 +87,13 @@ export default function App() {
             what the platform is carrying. */}
         <Route path="/partner" element={<Partner />} />
         <Route path="/impact" element={<Impact />} />
-        <Route path="/scholarships/:slug" element={<Scheme />} />
+        {/* The scheme is a panel over the list, at this address as well as at
+            ?scheme=. It was a page of its own; the panel replaced it, and the
+            path is kept rather than redirected because it is the address
+            already in circulation — forwarded by counsellors, indexed, and
+            produced by "copy link address" on every row. Same component, so a
+            sent link and a pressed row now give the same thing. */}
+        <Route path="/scholarships/:slug" element={<Directory />} />
         <Route path="/register" element={<Register />} />
         <Route path="/signin" element={<SignIn />} />
 

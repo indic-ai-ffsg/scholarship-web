@@ -2415,10 +2415,39 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 .deadline-list { list-style: none; margin: 0; padding: 0; display: grid; }
 .deadline-list li { padding: 0.75rem 0; border-top: 1px solid var(--border); }
 .deadline-list li:first-child { border-top: 0; }
-.deadline-list a { font-weight: var(--w-medium); }
+
+/* No underline on the titles, and this is the one place on the site that is
+ * true of a link in running colour.
+ *
+ * 1.4.1 wants a link inside a block of text to be marked by more than its
+ * colour, because there the underline is the only thing separating it from the
+ * words around it. These are not in a block of text: each is the whole of its
+ * own row, in a bordered list, one per line, at a heavier weight than anything
+ * near it, and the row's remaining content sits underneath rather than beside.
+ * Nothing here can be mistaken for prose, so the underline is decoration — and
+ * on three titles that wrap to three lines each ("SBI Platinum Jubilee Asha
+ * Scholarship for Undergraduate students") it was nine underlined lines in a
+ * 17rem column, which is the densest thing on the landing page.
+ *
+ * It comes back on hover and on focus, where it is doing work again: it is the
+ * confirmation that this row is the one about to be followed. */
+.deadline-list a {
+  font-weight: var(--w-strong);
+  text-decoration: none;
+  color: var(--text);
+  /* The row is the target, not the words. */
+  display: block;
+  line-height: 1.35;
+}
+.deadline-list a:hover,
+.deadline-list a:focus-visible { text-decoration: underline; color: var(--accent); }
+
 .deadline-list p {
-  margin: 0.25rem 0 0;
-  display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem;
+  /* The award and the date, one line apart from the title rather than crowding
+     it: at --step--1 against a --w-strong title they are two levels, and the
+     0.375rem is what stops three-line titles running into their own numbers. */
+  margin: 0.375rem 0 0;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem;
   font-size: var(--step--1);
 }
 

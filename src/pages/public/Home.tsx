@@ -71,6 +71,11 @@ export default function Home() {
 
   const total = query.meta?.total
   const listings = query.data?.listings ?? []
+  /* Whether anything in the panel is genuinely close. Seven days is the same
+     threshold format.deadlineLabel uses for its "soon" state, deliberately: one
+     definition of urgent, so the heading and the rows agree. */
+  const soonest = listings.slice(0, 3)
+  const urgent = soonest.some(l => l.days_remaining !== undefined && l.days_remaining <= 7)
   const facets = query.data?.facets ?? {}
 
   function search(e: FormEvent) {
@@ -175,15 +180,20 @@ export default function Home() {
         {listings.length > 0 && (
           <aside className="hero-side" aria-labelledby="closing-soon">
             <div className="card">
-              <h2 id="closing-soon">{t('home.closing')}</h2>
-              <p className="muted small">{t('home.closingLede')}</p>
+              {/* The heading follows the data. `urgent` is the same seven days
+                  the deadline mark uses, so the panel's title and the rows
+                  under it can no longer disagree. */}
+              <h2 id="closing-soon">{t(urgent ? 'home.closing' : 'home.closingNext')}</h2>
+              <p className="muted small">
+                {t(urgent ? 'home.closingLede' : 'home.closingNextLede')}
+              </p>
 
               {/* A compact list, not the full cards used in the directory: the
                   job here is "there is a deadline this week", and the summary
                   that helps somebody choose is one tap away on the scheme's own
                   page. */}
               <ul role="list" className="deadline-list">
-                {listings.slice(0, 3).map(l => (
+                {soonest.map(l => (
                   <li key={l.scholarship_id}>
                     <Link to={`/scholarships/${l.slug}`}>{l.title}</Link>
                     <p>
@@ -196,7 +206,7 @@ export default function Home() {
                 ))}
               </ul>
 
-              <Link className="btn quiet" to="/scholarships">{t('home.browseAll')}</Link>
+              <Link className="btn quiet" to="/scholarships">{t('home.allDeadlines')}</Link>
             </div>
           </aside>
         )}

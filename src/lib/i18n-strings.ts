@@ -618,8 +618,28 @@ export const en: Dict = {
   'home.helpBody': 'Call and someone will take you through it.',
   'home.helpCall': 'Call {number}',
 
+  /* Two headings, because the list is "the three closing soonest" and that is
+   * not the same claim as "closing soon".
+   *
+   * It said "Closing soon / Apply to these first" whatever the dates were, and
+   * on a directory whose nearest deadline is twelve days out that is false
+   * urgency — with every row underneath it showing a green tick and "Closes in
+   * 12 days", which is the panel contradicting itself in the same glance. The
+   * urgent pair is used only when something in the list actually is urgent;
+   * otherwise the panel says what it is, which is a list of dates.
+   *
+   * Worth stating plainly: manufactured urgency is a dark pattern anywhere, and
+   * on a site whose readers are deciding whether to spend twenty minutes on a
+   * form they may not qualify for, it costs trust that is not cheap to get
+   * back. */
   'home.closing': 'Closing soon',
   'home.closingLede': 'Apply to these first.',
+  'home.closingNext': 'Next deadlines',
+  'home.closingNextLede': 'The three closing soonest.',
+  /* Its own label, because "Browse all scholarships" already sits in the hero
+     four hundred pixels away, pointing at the same page. Two identical buttons
+     on one screen read as two different things that happen to share a name. */
+  'home.allDeadlines': 'See all scholarships',
   'home.browse': 'Browse by',
   'home.browseWho': 'Who offers it',
   'home.browseLevel': 'Your level of study',

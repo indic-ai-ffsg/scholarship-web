@@ -8,6 +8,7 @@ import { useI18n } from '../../lib/i18n-context'
 import { awardLabel, date } from '../../lib/format'
 import { Deadline, ErrorState, Loading, SponsorLogo } from '../../components/ui'
 import { Sheet } from '../../components/Sheet'
+import { usePageTitle } from '../../lib/page-title'
 import type { Listing } from '../../lib/types'
 
 /* One scheme, read without leaving the list.
@@ -62,6 +63,19 @@ export function SchemeSheet({
 
   const s = query.data ?? seed
 
+  /* The tab takes the scheme's name while the panel is open.
+   *
+   * The full page used to do this and 2.4.2 asks for it: /scholarships/<slug>
+   * is now this panel, so without it every forwarded scheme link opens a tab
+   * reading "Scholarships" — the same words as the directory it is sitting on,
+   * which is precisely the case that criterion exists for.
+   *
+   * Above the early return, because it is a hook and the loading branch below
+   * returns before it otherwise. Undefined until the name arrives, which
+   * usePageTitle treats as "no override" and leaves the directory's title
+   * standing; it also clears on unmount, so closing hands the tab back. */
+  usePageTitle(s?.title)
+
   if (!s) {
     return (
       <Sheet open onClose={onClose} title={t('sheet.loading')}>
@@ -83,12 +97,24 @@ export function SchemeSheet({
     (s.listing_kind ?? 'TENANT') === 'CURATED' && s.external_url ? s.external_url : null
 
   const closed = s.days_remaining !== undefined && s.days_remaining < 0
+  /* Deduplicated: two rules that render to the same sentence are one thing to
+     read, and printed twice they read as a fault rather than as two rules that
+     agree. */
+  const criteria = [...new Set(s.criteria ?? [])]
 
   return (
     <Sheet open onClose={onClose} labelledBy="sheet-title" footer={
       <>
+        {/* The same branch the row uses, in the same order and for the same
+            reasons — the long note is at ListingCard's rail. Closed, then the
+            session, then where a signed-in student is sent. The panel and the
+            row that opened it must not offer different doors. */}
         {closed ? (
           <p className="muted" style={{ margin: 0 }}>{t('public.closedNote')}</p>
+        ) : status === 'loading' ? null : status !== 'authenticated' ? (
+          <Link className="btn primary wide" to={withNext('/register', '/matches')}>
+            {t('public.registerToApply')}
+          </Link>
         ) : external ? (
           <a
             className="btn primary wide"
@@ -100,16 +126,9 @@ export function SchemeSheet({
             <span aria-hidden="true"> ↗</span>
             <span className="sr-only"> ({t('common.newTab')})</span>
           </a>
-        ) : status === 'loading' ? null : status === 'authenticated' ? (
+        ) : (
           <Link className="btn primary wide" to={`/apply/${s.scholarship_id}`}>
             {t('public.applyNow')}
-          </Link>
-        ) : (
-          /* The same three-way branch the row uses, in the same order and for
-             the same reasons — see the long note at ListingCard's rail. The
-             panel and the row it opened from must not offer different doors. */
-          <Link className="btn primary wide" to={withNext('/register', '/matches')}>
-            {t('public.registerToApply')}
           </Link>
         )}
       </>
@@ -165,6 +184,32 @@ export function SchemeSheet({
           </div>
         )}
       </dl>
+
+      {/* Who qualifies, back in the panel because the panel is now the only
+          place a scheme is read — /scholarships/<slug> renders this too. It was
+          taken out while the full page still existed and still carried it; with
+          that page gone, removing it here would take the criteria out of the
+          product altogether.
+          *
+          * Below the facts rather than above them, which is where the page had
+          * it. The reader pressed a row that already showed them the first two
+          * rules; what they came for is the award and the window. */}
+      {criteria.length > 0 && (
+        <section aria-labelledby="sheet-who">
+          <h3 id="sheet-who">{t('public.whoFor')}</h3>
+          {/* A checklist rather than bullets: each line is something to measure
+              yourself against, and the mark says so where a disc says only
+              "list item". */}
+          <ul role="list" className="criteria">
+            {criteria.map((c, i) => (
+              <li key={i}>
+                <span className="mark" aria-hidden="true">✓</span>
+                <span>{c}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section aria-labelledby="sheet-about">
         <h3 id="sheet-about">{t('public.about')}</h3>

@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import * as api from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
@@ -34,6 +34,18 @@ export default function Directory() {
    * filters. It also gives the back button the behaviour everybody expects —
    * undo my last filter — for free. */
   const [params, setParams] = useSearchParams()
+  /* /scholarships/<slug> renders this page with the panel already open.
+   *
+   * The scheme used to be a page of its own. It is the panel now, at both
+   * addresses: the row opens ?scheme=, and a link somebody was sent opens the
+   * path — the same component either way, so a forwarded link and a pressed row
+   * give the reader the same thing, which they did not before.
+   *
+   * The path is kept rather than redirected to ?scheme= because it is the
+   * address already in circulation: in counsellors' messages, in search
+   * results, and in every "copy link address" taken off a row. */
+  const { slug: pathSlug } = useParams()
+  const navigate = useNavigate()
 
   const term = params.get('q') ?? ''
   const disability = params.get('disability_type') ?? ''
@@ -57,7 +69,7 @@ export default function Directory() {
    * the panel are the same page with something open on top of it, and swapping
    * the path would make it a different page that happens to look like this one.
    * The full page still exists at that address for anyone who arrives there. */
-  const openSlug = params.get('scheme')
+  const openSlug = pathSlug ?? params.get('scheme')
 
   /** Opens the panel on one scheme, as a new history entry. */
   function openScheme(slug: string) {
@@ -71,16 +83,30 @@ export default function Directory() {
 
   /** Shuts the panel, leaving every filter as it was. */
   function closeScheme() {
+    /* Two ways in, so two ways out.
+     *
+     * Arrived at /scholarships/<slug>, the panel is named by the path and
+     * deleting a query parameter would close nothing — the sheet would shut
+     * itself and React would immediately reopen it from the path. So that case
+     * navigates to the list, carrying the filters across.
+     *
+     * Both replace rather than push, so closing does not leave a "directory
+     * with nothing open" entry between the panel and where the reader came
+     * from. Back from a closed panel goes back to the list they arrived at, and
+     * Back from an OPEN one closes it — the browser undoing openScheme's push,
+     * not this. */
+    if (pathSlug) {
+      const rest = new URLSearchParams(params)
+      rest.delete('scheme')
+      const qs = rest.toString()
+      navigate(`/scholarships${qs ? `?${qs}` : ''}`, { replace: true })
+      return
+    }
     setParams(prev => {
       const next = new URLSearchParams(prev)
       next.delete('scheme')
       return next
     }, { replace: true })
-    /* Replaced rather than pushed, so closing does not leave a "directory with
-     * nothing open" entry between the panel and where the reader came from.
-     * Back from a closed panel goes back to the list they arrived at, and Back
-     * from an OPEN one closes it — which is the browser undoing the push above,
-     * not this. */
   }
 
   /** Empties every filter at once, back to the whole list. */
@@ -619,35 +645,63 @@ export function ListingCard({
 
           {/* Apply, and where it goes.
             *
-            * Three destinations, and the order of the tests is the whole of it.
+            * Four outcomes, and the order of the tests is the whole of it.
             *
             * CLOSED first, because it is a fact about the scheme and outranks
             * everything about the reader. An Apply button on a scheme that shut
             * last week is an invitation to spend an afternoon on an application
             * nobody can receive.
             *
-            * EXTERNAL second, and above the session test rather than below it.
-            * A CURATED scheme is run by somebody else — the platform lists it,
-            * a database trigger (backend 0026) refuses any application row
-            * against it, and the sponsor's own form is where it happens. That
-            * form needs no account here, so an anonymous reader must reach it
-            * without being asked for one. Testing the session first would send
-            * them to register for a scheme this platform will never process.
+            * THE SESSION second, and above the external test rather than below
+            * it. Nothing on the public site hands a visitor an apply route
+            * before they have an account — not even a CURATED scheme, whose
+            * application this platform never receives and whose sponsor's form
+            * would take them without one.
             *
-            * Only then the session. A visitor gets "Register to apply", which
-            * is what the press actually does; they used to get "Apply now" and
-            * a redirect out of /apply, which is a button that lies and then
-            * bounces you.
+            * That is a product decision and not an oversight, so here is the
+            * argument for it. A visitor who leaves on an external link has been
+            * given one scheme and nothing else: no profile, so no matching, and
+            * no way to learn about the thirty other schemes they qualify for —
+            * which is the entire thing this platform does that a search engine
+            * does not. Registering costs them one form and produces the matched
+            * list; the sponsor's link is still there afterwards, on the same
+            * scheme, unchanged. The order of those two steps is what decides
+            * whether somebody arriving from a printed notice leaves with one
+            * scholarship or with all of the ones that apply to them.
             *
-            * Nothing is drawn while `status` is 'loading'. The two branches
-            * have different destinations, so drawing either one early puts a
-            * door under the reader's finger and swaps it for another door a
-            * moment later. The rail is the shorter of the row's two columns in
-            * almost every case, so the button arriving costs no reflow — and
-            * where it would, a moment of one missing button is cheaper than a
-            * press that goes somewhere unintended. */}
+            * The cost is real and is worth naming: a curated scheme's
+            * application is made on the sponsor's site whether or not the
+            * student has an account here, so registering buys them the matched
+            * list rather than a smoother application. public.applyExternalHelp
+            * says as much once they get there.
+            *
+            * EXTERNAL third, deciding only between the two doors a signed-in
+            * student can be sent through: the sponsor's own site for a scheme
+            * we merely list, /apply for one we run.
+            *
+            * Nothing is drawn while `status` is 'loading'. The branches have
+            * different destinations, so drawing one early puts a door under the
+            * reader's finger and swaps it for another a moment later. The rail
+            * is the shorter of the row's two columns in almost every case, so
+            * the button arriving costs no reflow — and where it would, a moment
+            * of one missing button is cheaper than a press that goes somewhere
+            * unintended. */}
           {closed ? (
             <p className="listing-closed">{t('public.closedNote')}</p>
+          ) : status === 'loading' ? null : status !== 'authenticated' ? (
+            /* To the matches list, not back to this row.
+             *
+             * `next` could carry them to /apply for this scheme and lib/next.ts
+             * was built to do exactly that. It is the wrong destination here.
+             * Registering is what makes matching possible, and the screen that
+             * shows what it bought them is the matched list: every open scheme
+             * scored against the profile they have just filled in, this one
+             * among them with a real verdict on it rather than the "who this is
+             * for" they were reading a minute ago. Handing them straight back
+             * to one application skips the answer they just paid for. */
+            <Link className="btn primary" to={withNext('/register', '/matches')}>
+              {t('public.registerToApply')}{forThis}
+            </Link>
           ) : external ? (
             /* A real anchor, not a Link: this leaves the site. noopener denies
                the opened page a handle on this one, noreferrer keeps our URL
@@ -664,23 +718,9 @@ export function ListingCard({
               <span aria-hidden="true"> ↗</span>
               <span className="sr-only"> — {listing.title} ({t('common.newTab')})</span>
             </a>
-          ) : status === 'loading' ? null : status === 'authenticated' ? (
+          ) : (
             <Link className="btn primary" to={`/apply/${listing.scholarship_id}`}>
               {t('public.applyNow')}{forThis}
-            </Link>
-          ) : (
-            /* To the matches list, not back to this row.
-             *
-             * `next` could carry them to /apply for this scheme and lib/next.ts
-             * was built to do exactly that. It is the wrong destination here.
-             * Registering is what makes matching possible, and the screen that
-             * shows what it bought them is the matched list: every open scheme
-             * scored against the profile they have just filled in, this one
-             * among them with a real verdict on it rather than the "who this is
-             * for" they were reading a minute ago. Handing them straight back
-             * to one application skips the answer they just paid for. */
-            <Link className="btn primary" to={withNext('/register', '/matches')}>
-              {t('public.registerToApply')}{forThis}
             </Link>
           )}
         </div>
