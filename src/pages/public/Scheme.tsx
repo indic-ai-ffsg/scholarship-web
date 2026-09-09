@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import * as api from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
 import { useQuery } from '../../lib/hooks'
+import { withNext } from '../../lib/next'
 import { useI18n } from '../../lib/i18n-context'
 import { usePageTitle } from '../../lib/page-title'
 import { awardLabel, date } from '../../lib/format'
@@ -120,7 +121,10 @@ export default function Scheme() {
           <div className="card">
             <p className="fact-award">
               <span className="muted">{t('public.award')}</span>
-              <strong>{awardLabel(t, s.award_amount, s.benefit_summary)}</strong>
+              <strong>
+                {awardLabel(t, s.award_amount, s.benefit_summary,
+                  s.award_amount_min, s.award_amount_max)}
+              </strong>
               {s.is_renewable && <span className="muted">{t('public.renewable')}</span>}
             </p>
 
@@ -186,12 +190,21 @@ export default function Scheme() {
             {status !== 'loading' && (
               <>
                 <hr />
-                {status !== 'authenticated' ? (
-                  <>
-                    <Link className="btn primary wide" to="/register">{t('public.cta')}</Link>
-                    <p className="muted small">{t('public.ctaHelp')}</p>
-                  </>
-                ) : external ? (
+                {/* External before the session, and it used to be the other way
+                    round.
+                    *
+                    * A CURATED scheme is administered somewhere else: no
+                    * organisation, no workflow here, and a trigger (backend
+                    * 0026) that refuses an application row against it. The
+                    * sponsor's own form takes anybody, account or not — so
+                    * testing the session first sent an anonymous reader to
+                    * register for a scheme this platform will never process,
+                    * and buried the one link that would have worked.
+                    *
+                    * The session decides only between the two doors that are
+                    * ours: /apply for somebody who has an account, and
+                    * registration for somebody who does not. */}
+                {external ? (
                   /* A real anchor, not a Link: this leaves the site.
                      *
                      * target=_blank keeps the student's place here — they are
@@ -220,12 +233,24 @@ export default function Scheme() {
                       {t('public.applyExternalHelp', { org: s.organisation_name })}
                     </p>
                   </>
-                ) : (
+                ) : status === 'authenticated' ? (
                   <>
                     <Link className="btn primary wide" to={`/apply/${s.scholarship_id}`}>
                       {t('match.apply')}
                     </Link>
                     <p className="muted small">{t('public.applyHelp')}</p>
+                  </>
+                ) : (
+                  /* "Register to apply", and it goes to the matched list rather
+                     than back to this page — the note at Directory's rail has
+                     the reasoning. The help line changes with it: the old one
+                     sold registration as a way to find scholarships, which is
+                     an odd pitch to somebody already reading one. */
+                  <>
+                    <Link className="btn primary wide" to={withNext('/register', '/matches')}>
+                      {t('public.registerToApply')}
+                    </Link>
+                    <p className="muted small">{t('public.registerToApplyHelp')}</p>
                   </>
                 )}
               </>

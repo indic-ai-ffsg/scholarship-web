@@ -283,32 +283,14 @@ export function OfflineBanner() {
   return <div className="offline" role="status">{t('common.offline')}</div>
 }
 
-/* --- progress -------------------------------------------------------------------------
- * The wizard's reassurance that this ends. */
-
-export function Progress({ step, total }: { step: number; total: number }) {
-  const { t } = useI18n()
-  const percent = Math.round((step / total) * 100)
-
-  return (
-    <div className="progress">
-      <div className="label">
-        <span>{t('profile.step', { n: step, total })}</span>
-        <span>{percent}%</span>
-      </div>
-      <div
-        className="bar"
-        role="progressbar"
-        aria-valuenow={step}
-        aria-valuemin={0}
-        aria-valuemax={total}
-        aria-label={t('profile.step', { n: step, total })}
-      >
-        <span style={{ width: `${percent}%` }} />
-      </div>
-    </div>
-  )
-}
+/* The wizard's progress meter used to live here, and went with the wizard —
+ * eleven screens became one form (see pages/Register). Nothing imported it.
+ *
+ * The .progress and .bar styles it used are still live: Dashboard and Profile
+ * both draw a completeness meter from the same classes, inline. If a third one
+ * ever appears, those two are the ones to fold into a shared component — this
+ * one was not that component, it was the counter for a flow that no longer
+ * exists ("Question 4 of 11"). */
 
 /* A closing date, and how close it is.
  *

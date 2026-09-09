@@ -1366,7 +1366,12 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   border-top: 1px solid var(--border);
   border-radius: 0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px);
 }
-.listing-actions .btn { width: 100%; }
+/* Narrower side padding than a button gets elsewhere, because width is not
+ * what makes this one hittable — it is already the full width of the rail, and
+ * min-height keeps the 48px target. The default 1.25rem each side was enough to
+ * wrap "Register to apply" onto two lines while 50px of rail sat empty beside
+ * it, which made the rails ragged down a list of forty. */
+.listing-actions .btn { width: 100%; padding-inline: 0.75rem; }
 /* Said in words where the Apply button would have been, not as a disabled one.
  * A greyed-out control invites the press that proves it is dead. */
 .listing-closed {
@@ -1377,7 +1382,7 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 /* Two columns, once the row itself is wide enough — not the window. 38rem is
  * where the rail stops squeezing the rules into three-word lines. */
 @container (min-width: 38rem) {
-  .listing-body { grid-template-columns: minmax(0, 1fr) minmax(11rem, 13.5rem); }
+  .listing-body { grid-template-columns: minmax(0, 1fr) minmax(11rem, 14.5rem); }
   .listing-actions {
     border-top: 0;
     border-inline-start: 1px solid var(--border);

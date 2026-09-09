@@ -113,7 +113,22 @@ export function awardLabel(
   t: (key: string) => string,
   amount: number | undefined,
   benefit?: string,
+  /* The two ends of a stated range, when the scheme has one.
+   *
+   * Taken before the single figure, which is the opposite of the order the
+   * other two arguments are in and is deliberate: award_amount for a scheme
+   * that states a range is whichever end the operator picked, and showing it
+   * alone is the understatement or the overstatement backend 0047 added these
+   * columns to stop. Where a range exists it is the truer answer.
+   *
+   * Both ends required. One alone — a floor with no ceiling — is not a range a
+   * student can plan around, and "from ₹20,000" invites reading the floor as
+   * the award, which is the overstatement in reverse. It falls through to the
+   * single figure, which is at least a number somebody entered on purpose. */
+  min?: number,
+  max?: number,
 ): string {
+  if (min != null && max != null && max > min) return `${money(min)} – ${money(max)}`
   if (amount !== undefined && amount !== null) return money(amount)
   if (benefit && benefit.trim()) return benefit.trim()
   // Neither. Said rather than left blank, so a card with no award reads as

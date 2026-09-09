@@ -26,7 +26,6 @@ export const en: Dict = {
      has to open to tell apart. */
   'app.yourApplication': 'Your application · {title}',
 
-  'nav.home': 'Home',
   /* The bar names the place, not the verb: a nav item is a destination, and
    * "Find scholarships" read as an instruction sitting beside three nouns. */
   'nav.find': 'Scholarships',
@@ -160,6 +159,14 @@ export const en: Dict = {
      repeated down the page, and the pair has to differ at a glance: "View
      details" reads, "Apply now" acts. */
   'public.applyNow': 'Apply now',
+  /* What a visitor without an account sees where "Apply now" would be.
+   *
+   * Says what the press does. It used to say "Apply now" for everybody, and
+   * for a visitor that was a button that lies: /apply is behind a guard, so the
+   * press ended at a sign-in screen they had not asked for and had not been
+   * warned about. Naming the step costs nothing and removes the surprise. */
+  'public.registerToApply': 'Register to apply',
+  'public.registerToApplyHelp': 'Applications are made through your account. Registering also shows you every other scholarship you qualify for.',
   /* Named separately from the closed deadline badge. The badge says when, this
      says what it means for the button that is no longer there. */
   'public.closedNote': 'This scheme is closed',
@@ -328,7 +335,6 @@ export const en: Dict = {
   'dash.noApplications': 'No applications yet',
   'dash.noApplicationsHint': 'Anything you apply for will show up here.',
   'dash.findScholarships': 'Find scholarships',
-  'dash.editDetails': 'View or edit your details',
   /* The dashboard's completeness panel. "to go" rather than "incomplete": the
      same number said as the distance left rather than as a deficiency. */
   'dash.profileTitle': 'Your profile',
@@ -349,12 +355,9 @@ export const en: Dict = {
   'dash.expiringBody': 'Replace it now so it works for every application. | Replace them now so they work for every application.',
   'dash.expiringAction': 'Check documents',
 
-  /* Still "Login" because this one is a link inside a sentence addressed to
-     someone who already has an account (Check.tsx: "Already have an
-     account?"). The page heading is auth.title, which has to speak to both. */
-  'auth.signin': 'Login',
+  /* One heading for both, because it is one screen: the number is asked for
+     first and the flow only then knows whether it belongs to an account. */
   'auth.title': 'Sign in or sign up',
-  'auth.register': 'Create your account',
   'auth.phone': 'Mobile number',
   'auth.phoneHint': 'We will send a 6-digit code to this number by SMS. The same number signs you in every time.',
   /* Said where the mistake is, in the terms the field itself uses: the leading
@@ -378,7 +381,6 @@ export const en: Dict = {
   'auth.privacy': 'Your number is used to sign you in and nothing else. There is no password to remember.',
   'auth.sendCode': 'Send code',
   'auth.sending': 'Sending…',
-  'auth.continue': 'Continue',
   'auth.checking': 'Checking…',
   /* Said on the code screen, once the number has been recognised or not. The
      flow checks before sending the code so a student is told which of the two
@@ -390,8 +392,6 @@ export const en: Dict = {
   'auth.codeHint': 'The message usually arrives within a few seconds.',
   'auth.noCode': 'No message yet? Try another way:',
   'auth.verify': 'Verify',
-  'auth.resend': 'Send it again',
-  'auth.resent': 'Sent. It can take a moment to arrive.',
   /* Three ways to receive the code, and three confirmations that name the one
      used. "Sent." alone cannot tell a student whether their choice of WhatsApp
      took effect, which leaves them watching the wrong app. */
@@ -406,34 +406,16 @@ export const en: Dict = {
      phone. */
   'auth.resendIn': 'Send it again in {n}s',
   'auth.changeNumber': 'Use a different number',
-  'auth.welcome': 'Welcome. Let us set up your details.',
 
   'profile.complete': '{n}% complete',
-  /* The profile review screen. "Change" rather than "Edit": the student is not
+  /* The profile review screen. "Change" rather than "edit": the student is not
      editing a record, they are correcting something that has changed. */
   'profile.viewLede': 'Everything you have told us. Change any answer and it is used for every scholarship from then on.',
-  'profile.change': 'Change',
-  'profile.add': 'Add',
-  'profile.save': 'Save',
-  'profile.saving': 'Saving…',
-  'profile.cancelEdit': 'Cancel',
   'profile.notAnswered': 'Not answered yet',
   'profile.verified': 'Verified',
   'profile.continue': 'Continue where you left off',
   'profile.start': 'Start your profile',
   'profile.saved': 'Saved',
-  'profile.savedLocally': 'Saved on this device. It will sync when you are back online.',
-  'profile.back': 'Back',
-  'profile.next': 'Next',
-  /* Shown instead of Next on an optional question with an empty box. "Skip"
-     alone read as discarding something; this says what actually happens. */
-  'profile.skip': 'Skip for now',
-  'profile.finish': 'Finish',
-  'profile.step': 'Question {n} of {total}',
-  'profile.done.title': 'Your profile is ready',
-  'profile.done.body': 'We are checking you against every scholarship now. This takes a moment.',
-  'profile.done.cta': 'See my matches',
-  'profile.done.dashboard': 'Go to my dashboard',
 
   'match.title': 'Scholarships for you',
   'match.lede': 'Checked against your profile. The ones you can apply to are first.',
@@ -525,7 +507,6 @@ export const en: Dict = {
   /* Guardians and assisted use. Written for the student rather than about the
    * feature: "someone to help you" is what this is, and "guardian link" is
    * what we call it among ourselves. */
-
 
 
   /* --- landing page ---------------------------------------------------------

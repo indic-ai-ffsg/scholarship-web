@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 
 import * as api from '../../lib/api'
+import { useAuth } from '../../lib/auth-context'
 import { useQuery } from '../../lib/hooks'
+import { withNext } from '../../lib/next'
 import { useI18n } from '../../lib/i18n-context'
 import { awardLabel, date } from '../../lib/format'
 import { Deadline, ErrorState, Loading, SponsorLogo } from '../../components/ui'
@@ -44,6 +46,7 @@ export function SchemeSheet({
   onClose: () => void
 }) {
   const { t } = useI18n()
+  const { status } = useAuth()
 
   const query = useQuery<Listing>(
     signal => api.get(`/public/scholarships/${slug}`, undefined, signal),
@@ -91,9 +94,16 @@ export function SchemeSheet({
             <span aria-hidden="true"> ↗</span>
             <span className="sr-only"> ({t('common.newTab')})</span>
           </a>
-        ) : (
+        ) : status === 'loading' ? null : status === 'authenticated' ? (
           <Link className="btn primary wide" to={`/apply/${s.scholarship_id}`}>
             {t('public.applyNow')}
+          </Link>
+        ) : (
+          /* The same three-way branch the row uses, in the same order and for
+             the same reasons — see the long note at ListingCard's rail. The
+             panel and the row it opened from must not offer different doors. */
+          <Link className="btn primary wide" to={withNext('/register', '/matches')}>
+            {t('public.registerToApply')}
           </Link>
         )}
       </>
@@ -117,7 +127,10 @@ export function SchemeSheet({
         <div>
           <dt>{t('public.award')}</dt>
           <dd>
-            <span className="amount">{awardLabel(t, s.award_amount, s.benefit_summary)}</span>
+            <span className="amount">
+              {awardLabel(t, s.award_amount, s.benefit_summary,
+                s.award_amount_min, s.award_amount_max)}
+            </span>
             {s.is_renewable && <span className="muted block">{t('public.renewable')}</span>}
           </dd>
         </div>

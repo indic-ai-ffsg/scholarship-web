@@ -93,6 +93,15 @@ export interface Listing {
      server and optional here rather than coalesced to 0: "₹0" on a
      scholarship card is worse than saying nothing. */
   award_amount?: number
+  /* The spread, when the scheme states one (backend 0047, carried by 0049).
+   *
+   * "₹20,000 to ₹2,00,000 depending on the course" is the ordinary case on a
+   * government notice. award_amount stays the one comparable figure — it is
+   * what the server sorts and filters on — and these describe the range around
+   * it. A listing may carry either, both or neither; see format.awardLabel,
+   * which prefers the range when both ends are present. */
+  award_amount_min?: number
+  award_amount_max?: number
   benefit_summary?: string
   currency: string
   is_renewable: boolean

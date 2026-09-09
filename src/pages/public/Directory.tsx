@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import * as api from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
 import { useDebounced, useQuery } from '../../lib/hooks'
+import { withNext } from '../../lib/next'
 import { useI18n } from '../../lib/i18n-context'
 import { disabilityChoices, qualificationChoices, stateChoices, type Choice } from '../../lib/fields'
 import { awardLabel, shortDate } from '../../lib/format'
@@ -471,6 +472,7 @@ export function ListingCard({
   onOpen?: () => void
 }) {
   const { t } = useI18n()
+  const { status } = useAuth()
 
   /* Turns a link into a press on the panel, but only when it really is one.
    *
@@ -601,7 +603,8 @@ export function ListingCard({
           <section className="listing-fact" aria-labelledby={`${id}-benefit`}>
             <h3 className="listing-label" id={`${id}-benefit`}>{t('public.benefits')}</h3>
             <p className="amount">
-              {awardLabel(t, listing.award_amount, listing.benefit_summary)}
+              {awardLabel(t, listing.award_amount, listing.benefit_summary,
+                listing.award_amount_min, listing.award_amount_max)}
             </p>
             {listing.is_renewable && (
               <p className="listing-renew muted">{t('public.renewable')}</p>
@@ -616,18 +619,33 @@ export function ListingCard({
 
           {/* Apply, and where it goes.
             *
-            * Nothing here branches on the session, and that is deliberate. The
-            * directory is a public page whose first paint happens before
-            * /auth/refresh answers, so a control that reads the session picks
-            * one destination, draws it under the reader's finger, and swaps it
-            * for another a moment later. /apply carries the guard already:
-            * RequireProfile sends a visitor to register or sign in and hands
-            * them back here afterwards.
+            * Three destinations, and the order of the tests is the whole of it.
             *
-            * A CURATED scheme is the exception, and it is a property of the
-            * scheme rather than of the reader — the platform lists it, somebody
-            * else runs it, and a database trigger (backend 0026) refuses any
-            * application row against it. */}
+            * CLOSED first, because it is a fact about the scheme and outranks
+            * everything about the reader. An Apply button on a scheme that shut
+            * last week is an invitation to spend an afternoon on an application
+            * nobody can receive.
+            *
+            * EXTERNAL second, and above the session test rather than below it.
+            * A CURATED scheme is run by somebody else — the platform lists it,
+            * a database trigger (backend 0026) refuses any application row
+            * against it, and the sponsor's own form is where it happens. That
+            * form needs no account here, so an anonymous reader must reach it
+            * without being asked for one. Testing the session first would send
+            * them to register for a scheme this platform will never process.
+            *
+            * Only then the session. A visitor gets "Register to apply", which
+            * is what the press actually does; they used to get "Apply now" and
+            * a redirect out of /apply, which is a button that lies and then
+            * bounces you.
+            *
+            * Nothing is drawn while `status` is 'loading'. The two branches
+            * have different destinations, so drawing either one early puts a
+            * door under the reader's finger and swaps it for another door a
+            * moment later. The rail is the shorter of the row's two columns in
+            * almost every case, so the button arriving costs no reflow — and
+            * where it would, a moment of one missing button is cheaper than a
+            * press that goes somewhere unintended. */}
           {closed ? (
             <p className="listing-closed">{t('public.closedNote')}</p>
           ) : external ? (
@@ -646,9 +664,23 @@ export function ListingCard({
               <span aria-hidden="true"> ↗</span>
               <span className="sr-only"> — {listing.title} ({t('common.newTab')})</span>
             </a>
-          ) : (
+          ) : status === 'loading' ? null : status === 'authenticated' ? (
             <Link className="btn primary" to={`/apply/${listing.scholarship_id}`}>
               {t('public.applyNow')}{forThis}
+            </Link>
+          ) : (
+            /* To the matches list, not back to this row.
+             *
+             * `next` could carry them to /apply for this scheme and lib/next.ts
+             * was built to do exactly that. It is the wrong destination here.
+             * Registering is what makes matching possible, and the screen that
+             * shows what it bought them is the matched list: every open scheme
+             * scored against the profile they have just filled in, this one
+             * among them with a real verdict on it rather than the "who this is
+             * for" they were reading a minute ago. Handing them straight back
+             * to one application skips the answer they just paid for. */
+            <Link className="btn primary" to={withNext('/register', '/matches')}>
+              {t('public.registerToApply')}{forThis}
             </Link>
           )}
         </div>
