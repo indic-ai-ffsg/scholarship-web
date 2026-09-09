@@ -84,6 +84,19 @@ export const en: Dict = {
   'public.filter.anyDisability': 'Any disability',
   'public.filter.anyQualification': 'Any qualification',
   'public.filter.allStates': 'All states',
+  /* The three filters added on 2026-09-10. "Course" rather than "Subject"
+     because that is the word on the sponsors' own pages, and "Where you study"
+     rather than "Country" because the choice is India or abroad rather than a
+     list of countries — the platform lists no scheme by the country it sends a
+     student to. */
+  'public.filter.gender': 'Gender',
+  'public.filter.anyGender': 'Any gender',
+  'public.filter.course': 'Course',
+  'public.filter.anyCourse': 'Any course',
+  'public.filter.where': 'Where you study',
+  'public.filter.anyWhere': 'India or abroad',
+  'public.filter.inIndia': 'In India',
+  'public.filter.abroad': 'Study abroad',
   'public.filters': 'Filters',
   'public.clear': 'Clear',
   'public.results': 'scholarships open now',

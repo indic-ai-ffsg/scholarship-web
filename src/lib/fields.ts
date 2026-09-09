@@ -123,6 +123,55 @@ export function qualificationChoices(): Choice[] {
   ]
 }
 
+/* The Course filter's vocabulary, mirroring listing_tag's SUBJECT rows.
+ *
+ * Hand-written rather than read off the facets, for the reason VocabSelect
+ * exists: a facet-driven control offers only what today's results happen to
+ * carry, so a subject nobody has tagged yet vanishes from the filter and can
+ * never be found. These are the values the admin panel offers when tagging a
+ * listing, so the two lists are the same question asked from both ends.
+ *
+ * all-courses is deliberately absent. It is not a subject a student looks for —
+ * it is a claim a listing makes about itself, and the directory reads it as
+ * "matches every subject" rather than as an option (see publicdir's tags
+ * filter). Offering it would ask a student to choose "all" from a control whose
+ * blank answer already means all.
+ */
+/* Named for the tag it filters, not for the control that shows it. `courseChoices`
+ * a few lines up is the four-value course_level enum — the LEVEL a student has
+ * reached — and two functions called course-something that answer different
+ * questions is how the wrong one gets imported. */
+export function subjectChoices(): Choice[] {
+  return [
+    { value: 'engineering', label: 'Engineering' },
+    { value: 'medical', label: 'Medical' },
+    { value: 'management', label: 'Management' },
+    { value: 'science', label: 'Science' },
+    { value: 'commerce', label: 'Commerce' },
+    { value: 'arts', label: 'Arts and humanities' },
+    { value: 'vocational', label: 'Vocational' },
+    { value: 'fellowship', label: 'Fellowship' },
+    { value: 'talent', label: 'Talent' },
+    { value: 'sports', label: 'Sports' },
+  ]
+}
+
+/* Gender, as the directory filters it.
+ *
+ * The same four stored values GENDERS carries, minus UNDISCLOSED: a scheme is
+ * never restricted to students who declined to say, so offering it here would
+ * be a filter with no possible match. A student who declined still sees every
+ * unrestricted scheme, because the query treats a scheme naming no gender as
+ * open to all.
+ */
+export function genderFilterChoices(): Choice[] {
+  return [
+    { value: 'FEMALE', label: 'Female' },
+    { value: 'MALE', label: 'Male' },
+    { value: 'TRANSGENDER', label: 'Third gender / transgender' },
+  ]
+}
+
 export function stateChoices(): Choice[] {
   return Object.entries(STATES).map(([code, name]) => ({ value: code, label: name }))
 }

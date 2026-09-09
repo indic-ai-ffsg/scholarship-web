@@ -5,7 +5,9 @@ import { useAuth } from '../../lib/auth-context'
 import { useDebounced, useQuery } from '../../lib/hooks'
 import { withNext } from '../../lib/next'
 import { useI18n } from '../../lib/i18n-context'
-import { disabilityChoices, qualificationChoices, stateChoices, type Choice } from '../../lib/fields'
+import {
+  disabilityChoices, genderFilterChoices, qualificationChoices, stateChoices, subjectChoices, type Choice,
+} from '../../lib/fields'
 import { awardLabel, shortDate } from '../../lib/format'
 import { Deadline, Empty, ErrorState, Field, Loading, Notice, SponsorLogo } from '../../components/ui'
 import { SchemeSheet } from './SchemeSheet'
@@ -52,6 +54,9 @@ export default function Directory() {
   const course = params.get('course_level') ?? ''
   const state = params.get('state_code') ?? ''
   const orgType = params.get('org_type') ?? ''
+  const gender = params.get('gender') ?? ''
+  const subject = params.get('tags') ?? ''
+  const overseas = params.get('overseas') ?? ''
 
   const search = useDebounced(term, 350)
 
@@ -133,10 +138,13 @@ export default function Directory() {
       course_level: course,
       state_code: state,
       org_type: orgType,
+      gender,
+      tags: subject,
+      overseas,
       sort: 'closing',
       page_size: 50,
     }, signal),
-    [search, disability, course, state, orgType],
+    [search, disability, course, state, orgType, gender, subject, overseas],
   )
 
   const facets = query.data?.facets ?? {}
@@ -153,7 +161,8 @@ export default function Directory() {
    * Read from the URL rather than from form state, because the URL is the
    * state: a link a counsellor forwarded arrives filtered with no keystroke
    * behind it, and that reader needs the advice as much as anyone who typed it. */
-  const narrowed = Boolean(term || disability || course || state || orgType)
+  const narrowed = Boolean(term || disability || course || state || orgType
+    || gender || subject || overseas)
 
   /* The count, and whether there is one to show.
    *
@@ -270,12 +279,50 @@ export default function Directory() {
               value={course}
               onChange={v => setFilter('course_level', v)}
             />
+            {/* Where, before which state: a student going abroad has no state
+                to give, and asking the narrower question first sends them
+                looking for an answer the next control makes irrelevant. */}
+            <Field label={t('public.filter.where')} optional={false}>
+              {props => (
+                <select
+                  {...props}
+                  value={overseas}
+                  onChange={e => setFilter('overseas', e.target.value)}
+                >
+                  <option value="">{t('public.filter.anyWhere')}</option>
+                  <option value="india">{t('public.filter.inIndia')}</option>
+                  <option value="abroad">{t('public.filter.abroad')}</option>
+                </select>
+              )}
+            </Field>
+
             <VocabSelect
               label={t('public.filter.state')}
               options={stateChoices()}
               anyLabel={t('public.filter.allStates')}
               value={state}
               onChange={v => setFilter('state_code', v)}
+            />
+
+            <VocabSelect
+              label={t('public.filter.gender')}
+              options={genderFilterChoices()}
+              anyLabel={t('public.filter.anyGender')}
+              value={gender}
+              onChange={v => setFilter('gender', v)}
+            />
+
+            {/* Course, and the one control here that means "names this" rather
+                than "is open to this". A subject tag is a claim the listing
+                makes about itself, so an untagged scheme is not silently
+                treated as covering every subject — see the Tags note in
+                publicdir. */}
+            <VocabSelect
+              label={t('public.filter.course')}
+              options={subjectChoices()}
+              anyLabel={t('public.filter.anyCourse')}
+              value={subject}
+              onChange={v => setFilter('tags', v)}
             />
             <FacetSelect
               label={t('public.filter.provider')}
