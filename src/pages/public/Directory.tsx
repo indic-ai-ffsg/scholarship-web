@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import * as api from '../../lib/api'
@@ -274,7 +275,7 @@ export default function Directory() {
               <Empty title={t('public.empty')} hint={t('public.empty.hint')} />
             )
           ) : (
-            <ul role="list" className="card-grid">
+            <ul role="list" className="listing-list">
               {listings.map(l => (
                 <li key={l.scholarship_id}>
                   <ListingCard listing={l} />
@@ -369,36 +370,208 @@ function FacetSelect({
   )
 }
 
+/* How many rules are shown before the row is folded.
+ *
+ * Two, because the row has to stay a row. The point of the full width is that
+ * the eligibility is on the page at all; the point of the fold is that forty
+ * schemes still fit on a screen somebody can scan. Most schemes state three or
+ * four rules and the first two are almost always the two that decide it — the
+ * disability and the level of study — so two lines answer "is this me?" for
+ * the majority and the rest is one press away without leaving the list. */
+const CRITERIA_SHOWN = 2
+
+/* One scheme, as a full-width row.
+ *
+ * This was a 20rem card in an auto-fit grid: three to a row on a desktop, which
+ * is the shape a shop uses for products and the wrong one for a rule set. A
+ * third of the page fits a title, a figure and a date — so the two things that
+ * actually decide whether a scheme is worth opening, who it is for and what it
+ * pays, were both on the other page. Forty schemes meant forty round trips to
+ * find the two that applied.
+ *
+ * One row each, and the width buys the eligibility. Three parts:
+ *
+ *   the head    the name and who is offering it, on its own band
+ *   the facts   eligibility with the closing date beside it, then the benefit
+ *   the rail    the two things there are to do, stacked and equal width
+ *
+ * The rail is a column rather than a row of buttons under the text because
+ * down a list of forty the two controls then land in the same place on every
+ * row — one target to aim at repeatedly rather than one that moves with the
+ * length of the summary above it. That matters here more than most places: the
+ * audience includes people with a tremor driving a phone one-handed.
+ *
+ * It folds on a container query, not a media query. This component is also
+ * rendered in the partner page's narrow aside, where the window is wide and
+ * the card is not, and a media query would give that column a two-column row
+ * eleven characters across.
+ */
 export function ListingCard({ listing }: { listing: Listing }) {
   const { t } = useI18n()
 
+  /* Folded by default, and expanded in place rather than by leaving.
+   *
+   * "Read more" that navigates is the same link as "View details" wearing a
+   * different word, and a reader comparing four schemes should not have to
+   * lose the list to finish reading one of them. */
+  const [expanded, setExpanded] = useState(false)
+
+  /* Deduplicated, for the reason the scheme page gives at more length: two
+   * rules that render to the same sentence are one thing to read, and printed
+   * twice they read as a broken page rather than as two rules that agree. */
+  const criteria = [...new Set(listing.criteria ?? [])]
+  const foldable = criteria.length > CRITERIA_SHOWN
+  const shown = expanded ? criteria : criteria.slice(0, CRITERIA_SHOWN)
+
+  /* The sponsor's own page, when this is a scheme the platform only lists.
+   *
+   * Both halves matter, and the scheme page carries the long version of why: a
+   * TENANT scheme may also have an external_url, and for one of those the
+   * application still belongs here. The kind decides; the URL only supplies the
+   * address. `?? 'TENANT'` because a cached response predating the field has
+   * none, and TENANT is the column's own default — falling back the other way
+   * would send every reader off-site on one stale response. */
+  const external =
+    (listing.listing_kind ?? 'TENANT') === 'CURATED' && listing.external_url
+      ? listing.external_url
+      : null
+
+  /* Closed, by the same test the deadline badge uses (format.deadlineLabel).
+   * An Apply button on a scheme that shut last week is an invitation to spend
+   * twenty minutes on an application nobody can receive. */
+  const closed = listing.days_remaining !== undefined && listing.days_remaining < 0
+
+  const detail = `/scholarships/${listing.slug}`
+  const id = `listing-${listing.scholarship_id}`
+
+  /* Appended to the accessible name of every control in the row.
+   *
+   * Visually "View details" is unambiguous — it is inside a box with the
+   * scheme's name at the top of it. In a screen reader's list of links it is
+   * forty identical entries reading "View details", which is the same page
+   * offering no way to choose. The scheme's name is what tells them apart, and
+   * it costs a sighted reader nothing. */
+  const forThis = <span className="sr-only"> — {listing.title}</span>
 
   return (
-    <article className="card">
-      <h2 style={{ fontSize: 'var(--step-1)' }}>
-        <Link to={`/scholarships/${listing.slug}`}>{listing.title}</Link>
-      </h2>
-
-      <p>{listing.summary}</p>
-
-      <div className="row" style={{ gap: '1.25rem' }}>
-        <span className="amount">
-          {awardLabel(t, listing.award_amount, listing.benefit_summary)}
-        </span>
-        {/* The exact date goes to a screen reader, when there is one. "Closing
-            soon" is the scannable version and the date is the useful one;
-            omitted rather than announced as an empty string when the scheme has
-            no window. */}
-        <Deadline days={listing.days_remaining}>
-          {listing.closes_at && (
-            <span className="sr-only"> — {shortDate(listing.closes_at)}</span>
-          )}
-        </Deadline>
+    <article className="listing" aria-labelledby={`${id}-title`}>
+      <div className="listing-head">
+        <h2 className="listing-title" id={`${id}-title`}>
+          <Link to={detail}>{listing.title}</Link>
+        </h2>
+        <p className="listing-org">
+          {t('public.offeredBy')} <strong>{listing.organisation_name}</strong>
+        </p>
       </div>
 
-      <p className="muted" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
-        {t('public.offeredBy')} {listing.organisation_name}
-      </p>
+      <div className="listing-body">
+        <div className="listing-facts">
+          <section className="listing-fact" aria-labelledby={`${id}-elig`}>
+            {/* The label and the deadline share a line: they are the two things
+                the eye lands on first, and the date has nowhere better to be
+                than the end of the line that starts "Eligibility". */}
+            <div className="listing-fact-head">
+              <h3 className="listing-label" id={`${id}-elig`}>{t('public.eligibility')}</h3>
+              {/* The exact date goes to a screen reader, when there is one.
+                  "Closing soon" is the scannable version and the date is the
+                  useful one; omitted rather than announced as an empty string
+                  when the scheme has no window. */}
+              <Deadline days={listing.days_remaining}>
+                {listing.closes_at && (
+                  <span className="sr-only"> — {shortDate(listing.closes_at)}</span>
+                )}
+              </Deadline>
+            </div>
+
+            {/* The summary is the fallback, not a companion.
+                *
+                * A scheme with criteria has something better than prose in this
+                * slot: the rules themselves, which is what the reader is
+                * measuring themselves against. A scheme with none — the API
+                * omits the array when the rule set is empty — would otherwise
+                * show a bare heading, so its own sentence stands in. */}
+            {shown.length > 0 ? (
+              <ul role="list" className="criteria" id={`${id}-elig-list`}>
+                {shown.map((c, i) => (
+                  <li key={i}>
+                    <span className="mark" aria-hidden="true">✓</span>
+                    <span>{c}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="listing-summary">{listing.summary}</p>
+            )}
+
+            {foldable && (
+              <button
+                type="button"
+                className="quiet listing-more"
+                aria-expanded={expanded}
+                aria-controls={`${id}-elig-list`}
+                onClick={() => setExpanded(v => !v)}
+              >
+                {expanded ? t('public.readLess') : t('public.readMore')}
+                {forThis}
+              </button>
+            )}
+          </section>
+
+          <section className="listing-fact" aria-labelledby={`${id}-benefit`}>
+            <h3 className="listing-label" id={`${id}-benefit`}>{t('public.benefits')}</h3>
+            <p className="amount">
+              {awardLabel(t, listing.award_amount, listing.benefit_summary)}
+            </p>
+            {listing.is_renewable && (
+              <p className="listing-renew muted">{t('public.renewable')}</p>
+            )}
+          </section>
+        </div>
+
+        <div className="listing-actions">
+          <Link className="btn" to={detail}>
+            {t('public.viewDetails')}{forThis}
+          </Link>
+
+          {/* Apply, and where it goes.
+            *
+            * Nothing here branches on the session, and that is deliberate. The
+            * directory is a public page whose first paint happens before
+            * /auth/refresh answers, so a control that reads the session picks
+            * one destination, draws it under the reader's finger, and swaps it
+            * for another a moment later. /apply carries the guard already:
+            * RequireProfile sends a visitor to register or sign in and hands
+            * them back here afterwards.
+            *
+            * A CURATED scheme is the exception, and it is a property of the
+            * scheme rather than of the reader — the platform lists it, somebody
+            * else runs it, and a database trigger (backend 0026) refuses any
+            * application row against it. */}
+          {closed ? (
+            <p className="listing-closed">{t('public.closedNote')}</p>
+          ) : external ? (
+            /* A real anchor, not a Link: this leaves the site. noopener denies
+               the opened page a handle on this one, noreferrer keeps our URL
+               out of their logs, and the new tab is announced rather than
+               implied by the arrow — an unannounced new tab is one of the most
+               disorienting things a screen reader user meets. */
+            <a
+              className="btn primary"
+              href={external}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('public.applyNow')}
+              <span aria-hidden="true"> ↗</span>
+              <span className="sr-only"> — {listing.title} ({t('common.newTab')})</span>
+            </a>
+          ) : (
+            <Link className="btn primary" to={`/apply/${listing.scholarship_id}`}>
+              {t('public.applyNow')}{forThis}
+            </Link>
+          )}
+        </div>
+      </div>
     </article>
   )
 }

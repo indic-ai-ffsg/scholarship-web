@@ -151,7 +151,18 @@ function RequireProfile({ children }: { children: React.ReactNode }) {
   // Still asking. Redirecting here would throw a signed-in student out to the
   // sign-in page every time they reloaded a portal page.
   if (status === 'loading') return <div className="page"><Loading /></div>
-  if (status !== 'authenticated') return <Navigate to="/signin" replace />
+  /* The destination travels on this branch too, and it did not.
+   *
+   * The paragraph above this function says it does, and the !profile branch
+   * below has always carried it — but a signed-OUT visitor was sent to a bare
+   * /signin, so signing in landed them on the dashboard with no way back to
+   * what they had pressed. That was mostly invisible while the only route in
+   * was the scheme page, whose own Apply button is drawn for signed-in readers
+   * only. The directory's rows now offer Apply to everybody, which is the
+   * point of them, and this is the path that press takes. */
+  if (status !== 'authenticated') {
+    return <Navigate to={withNext('/signin', location.pathname + location.search)} replace />
+  }
   if (!profile) {
     return <Navigate to={withNext('/register', location.pathname + location.search)} replace />
   }

@@ -1192,36 +1192,159 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   font-weight: 600; text-align: center;
 }
 
-/* --- card grid ------------------------------------------------------------------
+/* --- scheme rows ------------------------------------------------------------------
  *
- * The directory and the landing page both lay their scheme cards out this way.
+ * The directory lays one scheme per row, full width.
  *
- * auto-fit with a 20rem floor rather than a fixed column count: on a phone it
- * is one column, on a tablet two, on a desktop three, and at 200% text zoom it
- * collapses back to one on its own â which is the requirement (Table 3.3) that
- * a fixed grid-template-columns would break. The floor is 20rem rather than
- * the 16rem that would fit more, because the type here is deliberately large
- * and a narrower card turns a two-line scheme title into five.
+ * It was a `.card-grid` — auto-fit with a 20rem floor, one column on a phone,
+ * three on a desktop — and the grid was the problem rather than the cards in
+ * it. A third of a wide page fits a title, a figure and a date, which is a
+ * product tile: enough to recognise something you were already looking for and
+ * not enough to decide anything. Everything that answers "is this me?" lived
+ * on the scheme page, so choosing between forty schemes meant opening forty of
+ * them.
  *
- * A <ul> underneath, so a screen reader still says "list, twelve items". The
- * grid is presentation; the list is the thing. */
+ * A row spends the same pixels on one scheme instead of three, and buys the
+ * eligibility rules with them. Forty rows are also a list you can run your eye
+ * down a single edge of; forty tiles in a three-wide grid are a page you read
+ * in a boustrophedon.
+ *
+ * The `<ul role="list">` is unchanged and still load-bearing: WebKit drops the
+ * list role the moment `list-style` is none, and iOS Safari with VoiceOver is
+ * a first-class platform for this audience rather than an edge case.
+ */
 
-.card-grid {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: var(--gap);
-  /* Clamped to the container: below 20rem of available space the floor
-   * becomes 100% and the grid is one column, with no breakpoint. */
-  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+.listing-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; }
+
+/* Each row is its own container, and the layout below asks the row how wide it
+ * is rather than asking the window.
+ *
+ * The partner page renders this same component in a narrow aside beside a
+ * column of prose — a wide window and a 24rem card. Under a media query that
+ * card would get the two-column body and a rail eleven characters across; under
+ * a container query it folds, which is what it should do at that width whatever
+ * the window is doing. */
+.listing {
+  container-type: inline-size;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
-/* Cards fill their cell, so a row of three with different summary lengths has
- * their bottom edges aligned rather than ragged. */
-.card-grid > li { display: flex; }
-.card-grid > li > .card { width: 100%; display: flex; flex-direction: column; }
-/* The organisation line sits at the foot of every card whatever is above it. */
-.card-grid > li > .card > :last-child { margin-top: auto; padding-top: 0.5rem; }
+
+/* The name band.
+ *
+ * A tinted strip rather than a heading floating on white, because forty rows
+ * of the same shape need something that says where each one starts. It is
+ * --accent-weak, the palette's existing pale green: a fifth colour invented for
+ * this would be a fifth colour, and this one already means "this product" on
+ * every chip and quiet button on the site.
+ *
+ * The radius is the card's less its border, so the tint sits inside the corner
+ * rather than squaring it off. Not `overflow: hidden` on the card — that clips
+ * the focus ring off the title link, and the focus ring is not decoration. */
+.listing-head {
+  display: flex; flex-wrap: wrap;
+  align-items: baseline; justify-content: space-between;
+  gap: 0.25rem 1.25rem;
+  padding: 0.875rem 1.25rem;
+  background: var(--accent-weak);
+  border-bottom: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+}
+.listing-title { font-size: var(--step-1); margin: 0; }
+.listing-org { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
+.listing-org strong { font-weight: var(--w-medium); color: var(--text); }
+
+/* Folded by default: one column, the rail under the facts. The container query
+ * below is the only place the two-column row exists, so the narrow case needs
+ * no undoing anywhere. */
+.listing-body { display: grid; }
+
+.listing-facts {
+  padding: 1rem 1.25rem 1.125rem;
+  display: grid; gap: 1rem; align-content: start;
+}
+.listing-fact { min-width: 0; }
+
+/* "Eligibility" and "Benefits" — a heading in the markup, a label on the page.
+ *
+ * Not uppercase, which is the usual costume for a label this size. All-caps
+ * removes the word-shape a dyslexic reader tracks by, and this site has already
+ * chosen distinctness over tidiness once for the same reason (see
+ * nav.registerCta). Muted and 500 separate it from the sentences under it
+ * without touching the letters. */
+.listing-label {
+  margin: 0 0 0.375rem;
+  font-size: var(--step--1);
+  font-weight: var(--w-medium);
+  color: var(--text-muted);
+}
+
+/* The label and the closing date on one line. Wraps rather than shrinks: at
+ * 200% text zoom "Eligibility" and "Closes in 34 days" do not share a line at
+ * any width, and a squeezed date is worse than a second line. */
+.listing-fact-head {
+  display: flex; flex-wrap: wrap;
+  align-items: baseline; justify-content: space-between;
+  gap: 0 1rem;
+}
+.listing-fact-head .listing-label { margin-bottom: 0; }
+.listing-fact-head + .criteria, .listing-fact-head + .listing-summary { margin-top: 0.375rem; }
+
+/* Tighter than the scheme page's copy of the same list. There it is the page;
+ * here it is two lines inside a row, and 0.625rem between them opened a gap
+ * wide enough to read as two separate things. */
+.listing .criteria { gap: 0.375rem; }
+.listing .criteria li { grid-template-columns: 1.25rem 1fr; }
+
+.listing-summary { margin: 0; color: var(--text-muted); max-width: var(--measure); }
+
+/* The fold. A quiet button keeps the 48px target the rest of the site has —
+ * this is a control, not a word inside a sentence — and loses the box, which
+ * would otherwise compete with the two real buttons in the rail. */
+.listing-more {
+  margin-top: 0.25rem;
+  padding-inline: 0;
+  justify-content: flex-start;
+  text-decoration: underline;
+}
+.listing-more:hover:not(:disabled) { background: transparent; }
+
+.listing .amount { margin: 0; }
+.listing-renew { margin: 0.25rem 0 0; font-size: var(--step--1); }
+
+/* The rail.
+ *
+ * Sunken rather than white, so the two controls read as a place to act rather
+ * than as buttons that happen to be at the end of the text. Buttons full width
+ * and stacked: down a list of forty they then land in the same place on every
+ * row, which is one target to aim at repeatedly rather than one that moves with
+ * the length of the rules above it. */
+.listing-actions {
+  display: grid; gap: 0.625rem; align-content: start;
+  padding: 1rem 1.25rem 1.125rem;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px);
+}
+.listing-actions .btn { width: 100%; }
+/* Said in words where the Apply button would have been, not as a disabled one.
+ * A greyed-out control invites the press that proves it is dead. */
+.listing-closed {
+  margin: 0; align-self: center;
+  font-size: var(--step--1); color: var(--text-muted);
+}
+
+/* Two columns, once the row itself is wide enough — not the window. 38rem is
+ * where the rail stops squeezing the rules into three-word lines. */
+@container (min-width: 38rem) {
+  .listing-body { grid-template-columns: minmax(0, 1fr) minmax(11rem, 13.5rem); }
+  .listing-actions {
+    border-top: 0;
+    border-inline-start: 1px solid var(--border);
+    border-radius: 0 0 calc(var(--radius) - 1px) 0;
+  }
+}
 
 /* --- announcement band ------------------------------------------------------
  *

@@ -121,6 +121,30 @@ export const en: Dict = {
   'public.award': 'Award',
   'public.renewable': 'Can be renewed each year',
   'public.offeredBy': 'Offered by',
+
+  /* The row card's two section labels, and the sketch's own words.
+   *
+   * "Eligibility" rather than the scheme page's "Who this is for": on a page of
+   * forty rows the label is a column header the eye returns to, and a
+   * four-word phrase repeated forty times reads as prose rather than as a
+   * heading. The long form stays on the detail page, where there is one of it
+   * and it is addressing the reader. */
+  'public.eligibility': 'Eligibility',
+  'public.benefits': 'Benefits',
+  /* Offered only when the criteria are actually cut off — see ListingCard.
+     A "Read more" under a rule set that is already complete is a promise of
+     something more that the next page does not have. */
+  'public.readMore': 'Read more',
+  'public.readLess': 'Show less',
+  'public.viewDetails': 'View details',
+  /* Distinct from 'match.apply' ("Apply"), which sits alone in a panel where
+     the scheme is the only subject. Here it is one of two buttons in a rail
+     repeated down the page, and the pair has to differ at a glance: "View
+     details" reads, "Apply now" acts. */
+  'public.applyNow': 'Apply now',
+  /* Named separately from the closed deadline badge. The badge says when, this
+     says what it means for the button that is no longer there. */
+  'public.closedNote': 'This scheme is closed',
   'public.cta': 'Find scholarships for you',
   /* Under the Apply button on a scheme page, for somebody who has an account.
      It says the press is safe: the next screen checks the profile and the
