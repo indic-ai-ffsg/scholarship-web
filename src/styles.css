@@ -1079,11 +1079,26 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
  * badge here would compete with the eligibility badge already on the card. */
 .deadline .mark { font-weight: var(--w-strong); }
 
-.deadline.open   { color: var(--eligible); }
-.deadline.soon   { color: var(--blocked); }
-.deadline.today  { color: var(--danger); }
-.deadline.closed { color: var(--danger); }
-.deadline.none   { color: var(--text-muted); }
+/* Graded, and the grading is the point: if every deadline were red none of
+   them would be. See deadlineLabel for where the bands come from. */
+.deadline.open    { color: var(--text-muted); }
+.deadline.closing { color: var(--danger); }
+.deadline.soon    { color: var(--danger); }
+.deadline.today   { color: var(--danger); }
+.deadline.closed  { color: var(--danger); }
+.deadline.none    { color: var(--text-muted); }
+
+/* In the action column the deadline is on its own line rather than inline in a
+   row of meta, so it gets the space a line needs and sits under the buttons it
+   qualifies. */
+.listing-actions .deadline {
+  /* flex, not block: .deadline is inline-flex with a gap that separates the
+     mark from the words, and block threw that away — "!Closes in 12 days". */
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+  font-size: var(--step--1);
+}
 
 /* --- wizard -----------------------------------------------------------------------
  * One question per screen. The progress bar is the reassurance that this ends. */

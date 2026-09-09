@@ -349,7 +349,11 @@ export function Deadline({ days, children }: { days?: number; children?: ReactNo
 
   return (
     <span className={`deadline ${state}`}>
-      <span className="mark" aria-hidden="true">{mark}</span>
+      {/* Only when there is one. A deadline past a month carries no mark — see
+          deadlineLabel — and an empty span would still spend the flex gap in
+          front of the text, indenting that one state out of line with the
+          others. */}
+      {mark && <span className="mark" aria-hidden="true">{mark}</span>}
       {text}
       {children}
     </span>

@@ -77,7 +77,7 @@ export function humanise(value: string) {
  * that shut a fortnight ago both read "Closing soon" — an invitation, in the
  * case where the answer is that it is too late. They are separate now.
  */
-export type DeadlineState = 'open' | 'soon' | 'today' | 'closed' | 'none'
+export type DeadlineState = 'open' | 'closing' | 'soon' | 'today' | 'closed' | 'none'
 
 export function deadlineLabel(
   t: (key: string, vars?: Record<string, string | number>) => string,
@@ -89,7 +89,27 @@ export function deadlineLabel(
   if (days < 0) return { text: t('public.closed'), state: 'closed', mark: '\u00d7' }
   if (days === 0) return { text: t('public.closesToday'), state: 'today', mark: '!' }
   if (days <= 7) return { text: t('public.closingSoon'), state: 'soon', mark: '!' }
-  return { text: t('public.closesIn', { n: days }), state: 'open', mark: '\u2713' }
+  /* Eight to thirty days: the count, in the warning ink.
+   *
+   * A band rather than colouring every dated scheme, and the difference is the
+   * one i18n-strings.ts argues for at 'home.closing' — a directory whose
+   * nearest deadline is a year out, painted red, is manufactured urgency, and
+   * on a site whose readers are deciding whether to spend twenty minutes on a
+   * form they may not qualify for that costs trust which is not cheap to get
+   * back. Thirty days is the last month, which for a scholarship application —
+   * certificates to gather, a form to sit down with — is genuinely the point at
+   * which leaving it is a risk.
+   *
+   * It keeps the day count rather than becoming "Closing soon". The number is
+   * what a reader plans around, and above a week they still have a choice to
+   * make rather than a warning to obey. */
+  if (days <= 30) return { text: t('public.closesIn', { n: days }), state: 'closing', mark: '!' }
+  /* Past a month: the count, and no colour at all.
+   *
+   * It was the eligible green with a tick, which read as reassurance about a
+   * deadline — a tick beside "Closes in 300 days" is the card congratulating
+   * the reader for nothing. Neutral says the same fact without an opinion. */
+  return { text: t('public.closesIn', { n: days }), state: 'open', mark: '' }
 }
 
 /* What the student gets, in one line.

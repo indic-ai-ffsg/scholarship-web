@@ -667,24 +667,19 @@ export function ListingCard({
           </section>
           )}
 
-          {/* The closing date is a fact about the scheme, so it is labelled as
-              one beside the award rather than tucked against "To be eligible".
-              Sharing that line made it read as a condition of qualifying —
-              "To be eligible: closes in 12 days" — which is the grouping a
-              reader gets for free from the layout and cannot argue with.
-              Award and Closes are the pair the sheet already shows together. */}
+          {/* The deadline moved out of this line on 2026-09-10, to the action
+              column. It was here rather than against "To be eligible" because
+              sharing that line read as a condition of qualifying — "To be
+              eligible: closes in 12 days" — and beside the award it was at
+              least a fact next to a fact.
+              *
+              * What the move buys is that the deadline now sits with the thing
+              * it governs. "Closes in 12 days" is not a property of the money,
+              * it is the answer to "have I still got time to press this", and
+              * the button is what it qualifies. */}
           <section className="listing-fact" aria-labelledby={`${id}-benefit`}>
             <div className="listing-fact-head">
               <h3 className="listing-label" id={`${id}-benefit`}>{t('public.benefits')}</h3>
-              {/* The exact date goes to a screen reader, when there is one.
-                  "Closing soon" is the scannable version and the date is the
-                  useful one; omitted rather than announced as an empty string
-                  when the scheme has no window. */}
-              <Deadline days={listing.days_remaining}>
-                {listing.closes_at && (
-                  <span className="sr-only"> — {shortDate(listing.closes_at)}</span>
-                )}
-              </Deadline>
             </div>
             <p className="amount">
               {awardLabel(t, listing.award_amount, listing.benefit_summary,
@@ -781,6 +776,24 @@ export function ListingCard({
               {t('public.applyNow')}{forThis}
             </Link>
           )}
+
+          {/* Under the buttons, because it is the condition on pressing one.
+              *
+              * Last rather than first on purpose: read in order this column
+              * says "here is what you can do, and here is how long you have"
+              * — which is the sentence a reader is assembling anyway. Leading
+              * with the deadline would put a countdown in front of the offer,
+              * which is the shape of a sales page rather than of a directory.
+              *
+              * The exact date goes to a screen reader when there is one. The
+              * countdown is the scannable version and the date is the useful
+              * one; omitted rather than announced as an empty string when the
+              * scheme has no window. */}
+          <Deadline days={listing.days_remaining}>
+            {listing.closes_at && (
+              <span className="sr-only"> — {shortDate(listing.closes_at)}</span>
+            )}
+          </Deadline>
         </div>
       </div>
     </article>
