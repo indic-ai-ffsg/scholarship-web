@@ -12,11 +12,18 @@ import type { Listing } from '../../lib/types'
 
 /* One scheme, read without leaving the list.
  *
- * The panel is the same content as /scholarships/<slug> and deliberately not a
- * second implementation of it: both render the criteria the provider wrote, the
- * three facts and the one action, in that order. What differs is the frame — a
- * reader comparing four schemes stays in the list, and a reader who arrived on
- * a shared link gets a page.
+ * The panel is the shorter form of /scholarships/<slug> and deliberately not a
+ * second implementation of it: the three facts, the prose, and the one action.
+ * What differs is the frame — a reader comparing four schemes stays in the
+ * list, and a reader who arrived on a shared link gets a page.
+ *
+ * The criteria checklist is the one thing the page has and this does not. The
+ * panel is read against three other schemes, and a tick-list of provider
+ * sentences ("This scheme is open to students who are male and female") is the
+ * longest and least scannable thing that could sit between the award and the
+ * Apply button. `eligibility_summary` below says the same in prose for anyone
+ * who wants it here, and the full page has the checklist for anyone who wants
+ * to measure themselves against it line by line.
  *
  * ---------------------------------------------------------------------------
  * It opens filled in, then fills in further
@@ -68,7 +75,6 @@ export function SchemeSheet({
   /* Deduplicated, as on the scheme page: a scheme with the same rule entered
    * twice renders the same sentence twice, which reads as a broken panel rather
    * than as two rules that agree. */
-  const criteria = [...new Set(s.criteria ?? [])]
 
   /* The sponsor's own page, when this is a scheme the platform only lists.
    * The kind decides and the URL only supplies the address — see the note at
@@ -122,7 +128,8 @@ export function SchemeSheet({
           * panel beside them, because there is room for both at once. There is
           * not here: the panel is one column, and the reader pressed "view
           * details" on a row that already showed them the first two rules. What
-          * they do not yet know is what it pays and how long they have. */}
+          * they do not yet know is what it pays and how long they have — so
+          * that is what this opens with, and the rules are left to the page. */}
       <dl className="sheet-facts">
         <div>
           <dt>{t('public.award')}</dt>
@@ -158,23 +165,6 @@ export function SchemeSheet({
           </div>
         )}
       </dl>
-
-      {criteria.length > 0 && (
-        <section aria-labelledby="sheet-who">
-          <h3 id="sheet-who">{t('public.whoFor')}</h3>
-          {/* A checklist rather than bullets, the same as the page: each line is
-              something to measure yourself against, and the mark says so where
-              a disc says only "list item". */}
-          <ul role="list" className="criteria">
-            {criteria.map((c, i) => (
-              <li key={i}>
-                <span className="mark" aria-hidden="true">✓</span>
-                <span>{c}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       <section aria-labelledby="sheet-about">
         <h3 id="sheet-about">{t('public.about')}</h3>
