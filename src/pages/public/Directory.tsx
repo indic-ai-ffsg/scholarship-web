@@ -576,22 +576,17 @@ export function ListingCard({
 
       <div className="listing-body">
         <div className="listing-facts">
+          {/* Only when there are rules to show. The lead-in used to fall back
+              to listing.summary, which is the "About this scholarship" prose —
+              so a scheme with no criteria printed its description under a
+              heading reading "To be eligible", labelling a paragraph about the
+              scheme as the conditions a reader has to meet. That is the one
+              thing this row must not get wrong, and it was worse than the
+              empty lead-in the fallback existed to avoid: an absent section
+              says nothing, a mislabelled one says something false. */}
+          {shown.length > 0 && (
           <section className="listing-fact" aria-labelledby={`${id}-elig`}>
-            {/* The label and the deadline share a line: they are the two things
-                the eye lands on first, and the date has nowhere better to be
-                than the end of the line that starts "Eligibility". */}
-            <div className="listing-fact-head">
-              <h3 className="listing-label" id={`${id}-elig`}>{t('public.eligibility')}</h3>
-              {/* The exact date goes to a screen reader, when there is one.
-                  "Closing soon" is the scannable version and the date is the
-                  useful one; omitted rather than announced as an empty string
-                  when the scheme has no window. */}
-              <Deadline days={listing.days_remaining}>
-                {listing.closes_at && (
-                  <span className="sr-only"> — {shortDate(listing.closes_at)}</span>
-                )}
-              </Deadline>
-            </div>
+            <h3 className="listing-label" id={`${id}-elig`}>{t('public.eligibility')}</h3>
 
             {/* Prose on the row, a checklist in the panel.
                 *
@@ -606,14 +601,8 @@ export function ListingCard({
                 * Joined into a sentence rather than stacked, because they
                 * already are sentences — see the note on public.eligibility —
                 * and two of them under a lead-in reads as a paragraph somebody
-                * wrote. As list items they read as a form.
-                *
-                * The summary is the fallback, not a companion: a scheme whose
-                * rule set is empty (the API omits the array) would otherwise
-                * show a lead-in leading nowhere. */}
-            <p className="listing-elig">
-              {shown.length > 0 ? shown.join(' ') : listing.summary}
-            </p>
+                * wrote. As list items they read as a form. */}
+            <p className="listing-elig">{shown.join(' ')}</p>
 
             {/* Offered only when the rules are actually cut off. "Read more"
                 under a rule set that is already complete promises the panel has
@@ -629,9 +618,27 @@ export function ListingCard({
               </Link>
             )}
           </section>
+          )}
 
+          {/* The closing date is a fact about the scheme, so it is labelled as
+              one beside the award rather than tucked against "To be eligible".
+              Sharing that line made it read as a condition of qualifying —
+              "To be eligible: closes in 12 days" — which is the grouping a
+              reader gets for free from the layout and cannot argue with.
+              Award and Closes are the pair the sheet already shows together. */}
           <section className="listing-fact" aria-labelledby={`${id}-benefit`}>
-            <h3 className="listing-label" id={`${id}-benefit`}>{t('public.benefits')}</h3>
+            <div className="listing-fact-head">
+              <h3 className="listing-label" id={`${id}-benefit`}>{t('public.benefits')}</h3>
+              {/* The exact date goes to a screen reader, when there is one.
+                  "Closing soon" is the scannable version and the date is the
+                  useful one; omitted rather than announced as an empty string
+                  when the scheme has no window. */}
+              <Deadline days={listing.days_remaining}>
+                {listing.closes_at && (
+                  <span className="sr-only"> — {shortDate(listing.closes_at)}</span>
+                )}
+              </Deadline>
+            </div>
             <p className="amount">
               {awardLabel(t, listing.award_amount, listing.benefit_summary,
                 listing.award_amount_min, listing.award_amount_max)}

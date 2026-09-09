@@ -1331,7 +1331,7 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 }
 
 /* The label and the closing date on one line. Wraps rather than shrinks: at
- * 200% text zoom "Eligibility" and "Closes in 34 days" do not share a line at
+ * 200% text zoom "Benefits" and "Closes in 34 days" do not share a line at
  * any width, and a squeezed date is worse than a second line. */
 .listing-fact-head {
   display: flex; flex-wrap: wrap;
@@ -1339,7 +1339,8 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   gap: 0 1rem;
 }
 .listing-fact-head .listing-label { margin-bottom: 0; }
-.listing-fact-head + .listing-elig { margin-top: 0.375rem; }
+/* The award sits under the pair, not against it. */
+.listing-fact-head + .amount { margin-top: 0.375rem; }
 
 /* The rules as a paragraph, under the lead-in that starts them.
  *
