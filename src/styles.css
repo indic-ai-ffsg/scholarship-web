@@ -1243,17 +1243,51 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
  * rather than squaring it off. Not `overflow: hidden` on the card — that clips
  * the focus ring off the title link, and the focus ring is not decoration. */
 .listing-head {
-  display: flex; flex-wrap: wrap;
-  align-items: baseline; justify-content: space-between;
-  gap: 0.25rem 1.25rem;
+  display: flex; align-items: center;
+  gap: 0.875rem;
   padding: 0.875rem 1.25rem;
   background: var(--accent-weak);
   border-bottom: 1px solid var(--border);
   border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
 }
+/* The name and the sponsor together, so the mark sits beside the pair rather
+ * than beside the first line of it. min-width:0 because a flex item will not
+ * shrink below its content otherwise, and a long unbroken scheme title would
+ * push the band wider than the row. */
+.listing-head-text {
+  min-width: 0;
+  display: flex; flex-wrap: wrap;
+  align-items: baseline; justify-content: space-between;
+  gap: 0.25rem 1.25rem;
+  flex: 1;
+}
 .listing-title { font-size: var(--step-1); margin: 0; }
 .listing-org { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
 .listing-org strong { font-weight: var(--w-medium); color: var(--text); }
+
+/* A sponsor's mark, at whatever shape they uploaded.
+ *
+ * Height is fixed and width follows, so a wide wordmark and a square crest
+ * occupy the same band without either being squashed — object-fit: contain
+ * rather than a fixed box, because a logo distorted to fit is worse than one
+ * that takes an unexpected amount of room. width:auto overrides the intrinsic
+ * width attribute, which is there for the aspect ratio rather than for the
+ * rendered size.
+ *
+ * A white ground under it: most marks are drawn for white, and on the band's
+ * pale green a transparent PNG with dark text is fine while a white-knockout
+ * one disappears. The pad and the radius stop that ground reading as a border
+ * around every logo. */
+.sponsor-mark {
+  flex: none;
+  height: 2.25rem;
+  width: auto;
+  max-width: 8rem;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.25rem;
+}
 
 /* Folded by default: one column, the rail under the facts. The container query
  * below is the only place the two-column row exists, so the narrow case needs
@@ -1289,26 +1323,31 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   gap: 0 1rem;
 }
 .listing-fact-head .listing-label { margin-bottom: 0; }
-.listing-fact-head + .criteria, .listing-fact-head + .listing-summary { margin-top: 0.375rem; }
+.listing-fact-head + .listing-elig { margin-top: 0.375rem; }
 
-/* Tighter than the scheme page's copy of the same list. There it is the page;
- * here it is two lines inside a row, and 0.625rem between them opened a gap
- * wide enough to read as two separate things. */
-.listing .criteria { gap: 0.375rem; }
-.listing .criteria li { grid-template-columns: 1.25rem 1fr; }
+/* The rules as a paragraph, under the lead-in that starts them.
+ *
+ * Full colour rather than muted: this is the sentence the row exists to show,
+ * and it was the one thing on the card set in the same grey as the labels
+ * around it. The measure is what keeps it readable at the width a row now has
+ * — a rule set running the full span of a wide monitor is a line the eye loses
+ * its place in on the way back. */
+.listing-elig { margin: 0; max-width: var(--measure); }
 
 .listing-summary { margin: 0; color: var(--text-muted); max-width: var(--measure); }
 
 /* The fold. A quiet button keeps the 48px target the rest of the site has —
  * this is a control, not a word inside a sentence — and loses the box, which
  * would otherwise compete with the two real buttons in the rail. */
+/* An anchor rather than a button, because it points at a real address — see
+ * ListingCard's `intercept`. Given the same 48px height the rest of the site's
+ * controls have: this is a control, not a word inside a sentence, and the
+ * inline-text exception to WCAG 2.2's target size does not cover it. */
 .listing-more {
-  margin-top: 0.25rem;
-  padding-inline: 0;
-  justify-content: flex-start;
-  text-decoration: underline;
+  display: inline-flex; align-items: center;
+  min-height: 48px;
+  font-weight: var(--w-medium);
 }
-.listing-more:hover:not(:disabled) { background: transparent; }
 
 .listing .amount { margin: 0; }
 .listing-renew { margin: 0.25rem 0 0; font-size: var(--step--1); }
@@ -1343,6 +1382,198 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
     border-top: 0;
     border-inline-start: 1px solid var(--border);
     border-radius: 0 0 calc(var(--radius) - 1px) 0;
+  }
+}
+
+/* --- the scheme sheet -------------------------------------------------------------
+ *
+ * A panel over the directory, from the trailing edge on a wide screen and from
+ * the bottom on a phone.
+ *
+ * Which edge is not decoration, and the reason is the footer rather than the
+ * close button. The one thing a reader came to do is Apply, it is pinned to the
+ * panel's bottom edge, and on a phone held one-handed the bottom edge is the
+ * only part of the screen a thumb reaches without regripping. A panel arriving
+ * from the right on the same screen is a full-height column whose action sits
+ * at the same place — but whose scrim is a sliver, and the scrim is the large
+ * dismissal target that makes the close button a fallback rather than the only
+ * way out. Coming up from the bottom leaves the top of the list showing, which
+ * is both the scrim and the reassurance that the directory is still there.
+ *
+ * It is a <dialog>, so the browser supplies the top layer, the focus trap, the
+ * inert background and Escape. Everything here is appearance.
+ */
+
+/* The element is the whole window; the panel inside it is the visible box. That
+ * is what makes a press on the scrim detectable — see Sheet.tsx — and it is why
+ * width and height are set here rather than on .sheet-inner. */
+.sheet {
+  /* Overriding the UA's centred, shrink-to-fit, bordered box. `inset: 0` with
+   * auto margins is what pins it to an edge. */
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  max-width: 100%;
+  max-height: 100%;
+  width: min(34rem, 100%);
+  height: 100%;
+  /* dvh, not vh: on iOS Safari the address bar counts against vh, so a 100vh
+   * sheet puts its footer — the Apply button — under the browser chrome. */
+  height: 100dvh;
+  color: var(--text);
+}
+.sheet::backdrop {
+  /* Dark enough to put the list behind out of play, light enough that the
+   * reader can still see it is there and has not been navigated away. */
+  background: rgb(20 23 28 / 0.55);
+}
+
+.sheet-inner {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: 100%;
+  background: var(--surface);
+  border-inline-start: 1px solid var(--border);
+  position: relative;
+}
+
+/* Over the content rather than in a bar of its own.
+ *
+ * A header bar holding one button costs 64px of a phone screen for the life of
+ * the panel. Sticky, so it is still there after a long rule set has scrolled,
+ * and on its own ground so it never sits on top of a word. */
+.sheet-close {
+  position: absolute;
+  /* Far enough in that the 3px focus ring and its offset clear the panel's
+     edge — at 0.5rem the ring was shaved by the corner. */
+  inset-block-start: 0.75rem;
+  inset-inline-end: 0.75rem;
+  z-index: 1;
+  min-width: 48px;
+  padding: 0.5rem;
+  background: var(--surface);
+  border-radius: 50%;
+  font-size: var(--step-1);
+}
+.sheet-close:hover:not(:disabled) { background: var(--surface-sunken); }
+
+.sheet-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;   /* a flick at the end does not scroll the list behind */
+  padding: 1.5rem 1.5rem 2rem;
+  /* Room for the close button, so a long title does not run under it. */
+  padding-inline-end: 4rem;
+  -webkit-overflow-scrolling: touch;
+}
+.sheet-body > :first-child { margin-top: 0; }
+.sheet-body h2 { margin: 0 0 1rem; font-size: var(--step-2); }
+.sheet-body h3 { font-size: var(--step-1); margin: 1.75rem 0 0.625rem; }
+.sheet-body p { max-width: var(--measure); }
+
+.sheet-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.375rem; }
+.sheet-head .sponsor-mark { background: var(--surface-sunken); }
+.sheet-eyebrow { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
+.sheet-eyebrow strong { font-weight: var(--w-medium); color: var(--text); }
+
+/* The two facts, side by side while there is room for both. */
+.sheet-facts {
+  display: grid; gap: 1rem 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: var(--surface-sunken);
+  border-radius: var(--radius);
+}
+.sheet-facts dt { font-size: var(--step--1); color: var(--text-muted); margin-bottom: 0.125rem; }
+.sheet-facts dd { margin: 0; }
+.sheet-facts .block { display: block; font-size: var(--step--1); }
+
+/* Discs, and deliberately not the criteria checklist a few sections above.
+ * A tick there means "you already meet this"; these are things the reader has
+ * to go and find, and wearing the same mark would say the opposite. */
+.sheet-docs { margin: 0 0 0.5rem; padding-left: 1.25rem; display: grid; gap: 0.375rem; }
+.sheet-docs li { max-width: var(--measure); }
+
+/* The caveats, last and visibly a different kind of thing. .notice supplies the
+ * ground and the rule; this only stops its heading behaving like a section
+ * heading, since it sits inside the band rather than over it. */
+.sheet-notes { margin-top: 1.75rem; }
+.sheet-notes h3 { margin-top: 0; font-size: var(--step-0); }
+
+/* Pinned, and outside the scrolling region: the one action must not be
+ * something you have to reach the end of the rules to find. */
+.sheet-foot {
+  display: grid; gap: 0.5rem; justify-items: center;
+  padding: 1rem 1.5rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+.sheet-foot .btn { width: 100%; }
+.sheet-permalink { font-size: var(--step--1); }
+
+/* A bottom sheet on a phone.
+ *
+ * Not full height: the strip of list left showing above it is what says the
+ * directory is still there and this is a panel over it, which is the whole
+ * difference between a sheet and a page. */
+@media (max-width: 40rem) {
+  .sheet {
+    margin: auto 0 0;
+    width: 100%;
+    height: auto;
+    max-height: 88dvh;
+  }
+  .sheet-inner {
+    border-inline-start: 0;
+    border-top: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  /* The grab handle every bottom sheet has, and the affordance it stands for:
+     this came up from the bottom edge and goes back down there. Decoration, so
+     it is hidden from the accessible tree — the close button is the control. */
+  .sheet-inner::before {
+    content: "";
+    position: absolute; inset-block-start: 0.5rem;
+    inset-inline-start: 50%; translate: -50% 0;
+    width: 2.25rem; height: 0.25rem; border-radius: 999px;
+    background: var(--border-strong);
+  }
+  .sheet-body { padding-top: 2rem; }
+}
+
+/* Arriving.
+ *
+ * The panel slides from its own edge and the scrim fades. @starting-style is
+ * what lets a dialog animate in at all — it is display:none until it opens, and
+ * a transition needs a value to come from. `display` and `overlay` are in the
+ * transition list with allow-discrete so the closing animation is not cut off
+ * by the element leaving the top layer on frame one.
+ *
+ * The global prefers-reduced-motion rule cuts every duration here to nothing,
+ * which is the correct end state and not a broken one: the panel appears.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .sheet {
+    transition:
+      translate 220ms ease-out,
+      opacity 220ms ease-out,
+      display 220ms allow-discrete,
+      overlay 220ms allow-discrete;
+    translate: 100% 0;
+    opacity: 0;
+  }
+  .sheet[open] { translate: 0 0; opacity: 1; }
+  @starting-style { .sheet[open] { translate: 100% 0; opacity: 0; } }
+
+  .sheet::backdrop { transition: opacity 220ms ease-out, display 220ms allow-discrete; opacity: 0; }
+  .sheet[open]::backdrop { opacity: 1; }
+  @starting-style { .sheet[open]::backdrop { opacity: 0; } }
+
+  @media (max-width: 40rem) {
+    .sheet { translate: 0 100%; }
+    .sheet[open] { translate: 0 0; }
+    @starting-style { .sheet[open] { translate: 0 100%; opacity: 0; } }
   }
 }
 

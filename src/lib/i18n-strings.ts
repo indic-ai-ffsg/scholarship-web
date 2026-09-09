@@ -129,13 +129,31 @@ export const en: Dict = {
    * four-word phrase repeated forty times reads as prose rather than as a
    * heading. The long form stays on the detail page, where there is one of it
    * and it is addressing the reader. */
-  'public.eligibility': 'Eligibility',
+  /* A lead-in, not a label. "Eligibility" is a filing category — it names the
+     kind of information below it and tells the reader nothing they did not
+     already know from looking at it. "To be eligible" starts the sentence the
+     criteria finish, so the eye goes into the rules rather than past a heading.
+
+     It stops there rather than at "To be eligible, an applicant must:", and the
+     schema is the reason. eligibility_rule.description_en carries its own
+     instruction (backend 0005):
+
+         "Shown verbatim to the student when the rule is the reason they failed,
+          so it must read as a sentence, not as a predicate."
+
+     So a criterion is "This scheme needs a certified disability of 40% or
+     more." — a whole sentence, deliberately, because the matcher also prints it
+     as the reason somebody was blocked. Hang "an applicant must:" in front of
+     that and it reads "an applicant must this scheme needs", and it would do so
+     for every scheme on the site, forever, because the sentence form is a
+     requirement of the column rather than a habit of one operator. The lead-in
+     has to be one that any sentence can follow. */
+  'public.eligibility': 'To be eligible',
   'public.benefits': 'Benefits',
   /* Offered only when the criteria are actually cut off — see ListingCard.
      A "Read more" under a rule set that is already complete is a promise of
      something more that the next page does not have. */
   'public.readMore': 'Read more',
-  'public.readLess': 'Show less',
   'public.viewDetails': 'View details',
   /* Distinct from 'match.apply' ("Apply"), which sits alone in a panel where
      the scheme is the only subject. Here it is one of two buttons in a rail
@@ -145,6 +163,46 @@ export const en: Dict = {
   /* Named separately from the closed deadline badge. The badge says when, this
      says what it means for the button that is no longer there. */
   'public.closedNote': 'This scheme is closed',
+
+  /* The panel over the directory.
+   *
+   * "Close" rather than "Back": it is not a place the reader travelled to, and
+   * calling it back would suggest the list is somewhere else. */
+  'sheet.close': 'Close',
+  'sheet.loading': 'Scholarship details',
+  /* The way out of the panel to a real address, for somebody who wants to
+     forward, bookmark or print the scheme. A panel has no URL of its own to
+     copy, so the offer has to be explicit. */
+  'sheet.fullPage': 'Open the full page',
+
+  /* The panel's sections, from backend 0027's columns.
+   *
+   * Headed as the questions a student asks rather than as the column names an
+   * operator filled in: "What you get" over benefit_description, "How to apply"
+   * over application_process. The admin panel may call them what it likes; this
+   * side of the wall is written for somebody deciding whether to spend an
+   * afternoon on a form. */
+  'public.whatYouGet': 'What you get',
+  /* Distinct from 'public.whoFor', which heads the criteria list on the same
+     panel. That is the rule set the matcher evaluates; this is the sponsor's
+     own prose about it, and where both exist the reader needs to know they are
+     not being shown the same thing twice. */
+  'public.eligibilityDetail': 'Eligibility in detail',
+  'public.documentsRequired': 'Documents required',
+  'public.documentsHelp': 'The provider asks for these. You do not upload them here.',
+  'public.howToApply': 'How to apply',
+  'public.importantNotes': 'Worth knowing',
+  'public.academicYear': 'For the year',
+  'public.awardBasis': 'Awarded on',
+  /* The five values of the award_basis enum (backend 0027), in the words a
+     student would use. "Merit cum means" is the phrase every Indian scheme
+     prints, so it is kept rather than translated into something clearer that
+     nobody would recognise from the notice they are holding. */
+  'public.basis.MERIT': 'Merit',
+  'public.basis.NEED': 'Financial need',
+  'public.basis.MERIT_CUM_MEANS': 'Merit cum means',
+  'public.basis.CATEGORY': 'Category',
+  'public.basis.OTHER': 'Other',
   'public.cta': 'Find scholarships for you',
   /* Under the Apply button on a scheme page, for somebody who has an account.
      It says the press is safe: the next screen checks the profile and the

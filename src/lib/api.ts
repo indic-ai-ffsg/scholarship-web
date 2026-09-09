@@ -17,6 +17,22 @@ import { setting } from './runtime-config'
 const VERSION = setting('API_VERSION') || 'v1'
 const BASE = `/api/${VERSION}`
 
+/* The address of something the API serves as bytes rather than as JSON — a
+ * sponsor's logo, today.
+ *
+ * The API sends these as paths ("/public/organisations/<id>/logo") rather than
+ * as URLs on purpose: the directory response is cached, and an absolute URL
+ * would bake one deployment's hostname into it. Joining the base is therefore
+ * the client's job, and this is the one place that knows the base.
+ *
+ * Not routed through get() below: the consumer is an <img src>, which fetches
+ * on its own, unauthenticated, and with the browser's cache in front of it —
+ * which is exactly right for a public mark the server marks cacheable for a
+ * week. */
+export function assetUrl(path: string): string {
+  return `${BASE}${path}`
+}
+
 /** A failure the API described, as against a network or parsing failure. */
 export class ApiError extends Error {
   readonly code: string

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import * as api from '../../lib/api'
@@ -7,7 +6,8 @@ import { useDebounced, useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
 import { disabilityChoices, qualificationChoices, stateChoices, type Choice } from '../../lib/fields'
 import { awardLabel, shortDate } from '../../lib/format'
-import { Deadline, Empty, ErrorState, Field, Loading, Notice } from '../../components/ui'
+import { Deadline, Empty, ErrorState, Field, Loading, Notice, SponsorLogo } from '../../components/ui'
+import { SchemeSheet } from './SchemeSheet'
 import type { Facet, Listing } from '../../lib/types'
 
 /* The public directory (FR-17).
@@ -41,6 +41,46 @@ export default function Directory() {
   const orgType = params.get('org_type') ?? ''
 
   const search = useDebounced(term, 350)
+
+  /* Which scheme is open in the panel, if any.
+   *
+   * In the address, like the filters, and for the same reason plus one more.
+   * The filters are in the URL because a filtered directory is the thing people
+   * forward; a scheme panel is in it because the back button has to close the
+   * panel. A reader who opens four schemes and presses Back expects the last
+   * one to shut, not to be thrown out of the directory entirely — and on
+   * Android that is the hardware button, so getting it wrong empties the screen
+   * they were working in.
+   *
+   * `?scheme=` rather than reusing the /scholarships/<slug> path: the row and
+   * the panel are the same page with something open on top of it, and swapping
+   * the path would make it a different page that happens to look like this one.
+   * The full page still exists at that address for anyone who arrives there. */
+  const openSlug = params.get('scheme')
+
+  /** Opens the panel on one scheme, as a new history entry. */
+  function openScheme(slug: string) {
+    setParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.set('scheme', slug)
+      return next
+    })
+    // pushed, not replaced: this is the entry Back has to come back to.
+  }
+
+  /** Shuts the panel, leaving every filter as it was. */
+  function closeScheme() {
+    setParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.delete('scheme')
+      return next
+    }, { replace: true })
+    /* Replaced rather than pushed, so closing does not leave a "directory with
+     * nothing open" entry between the panel and where the reader came from.
+     * Back from a closed panel goes back to the list they arrived at, and Back
+     * from an OPEN one closes it — which is the browser undoing the push above,
+     * not this. */
+  }
 
   /** Empties every filter at once, back to the whole list. */
   function clearAll() {
@@ -278,7 +318,7 @@ export default function Directory() {
             <ul role="list" className="listing-list">
               {listings.map(l => (
                 <li key={l.scholarship_id}>
-                  <ListingCard listing={l} />
+                  <ListingCard listing={l} onOpen={() => openScheme(l.slug)} />
                 </li>
               ))}
             </ul>
@@ -298,6 +338,20 @@ export default function Directory() {
       )}
         </div>
       </div>
+
+      {/* Outside .directory, because a modal dialog is in the browser's top
+          layer and belongs to the page rather than to the results column.
+          Keyed on the slug so pressing a second row while the first is open
+          rebuilds the panel — without it, React keeps the mounted component
+          and the detail request for the new scheme lands in the old one. */}
+      {openSlug && (
+        <SchemeSheet
+          key={openSlug}
+          slug={openSlug}
+          seed={listings.find(l => l.slug === openSlug)}
+          onClose={closeScheme}
+        />
+      )}
     </div>
   )
 }
@@ -376,8 +430,8 @@ function FacetSelect({
  * the eligibility is on the page at all; the point of the fold is that forty
  * schemes still fit on a screen somebody can scan. Most schemes state three or
  * four rules and the first two are almost always the two that decide it — the
- * disability and the level of study — so two lines answer "is this me?" for
- * the majority and the rest is one press away without leaving the list. */
+ * disability and the level of study — so two sentences answer "is this me?"
+ * for the majority and the rest is one press away without leaving the list. */
 const CRITERIA_SHOWN = 2
 
 /* One scheme, as a full-width row.
@@ -406,22 +460,43 @@ const CRITERIA_SHOWN = 2
  * the card is not, and a media query would give that column a two-column row
  * eleven characters across.
  */
-export function ListingCard({ listing }: { listing: Listing }) {
+export function ListingCard({
+  listing, onOpen,
+}: {
+  listing: Listing
+  /* Opens the scheme in a panel over the list. Optional, and the fallback is
+   * the point: without it every control here is an ordinary link to
+   * /scholarships/<slug>, which is what the partner page — one card, no list to
+   * stay in — should get. */
+  onOpen?: () => void
+}) {
   const { t } = useI18n()
 
-  /* Folded by default, and expanded in place rather than by leaving.
+  /* Turns a link into a press on the panel, but only when it really is one.
    *
-   * "Read more" that navigates is the same link as "View details" wearing a
-   * different word, and a reader comparing four schemes should not have to
-   * lose the list to finish reading one of them. */
-  const [expanded, setExpanded] = useState(false)
+   * Every control below stays a real <a href> pointing at the full page, and
+   * this intercepts the plain left click. That is not politeness about
+   * progressive enhancement, it is the four behaviours a reader already has and
+   * would otherwise lose: cmd- or ctrl-click to open the scheme in a background
+   * tab while keeping their place, middle-click for the same, "copy link
+   * address" from the context menu, and the status bar showing where a control
+   * goes before it is pressed. A <button> has none of them.
+   *
+   * defaultPrevented, because a handler further in may already have decided. */
+  function intercept(e: React.MouseEvent) {
+    if (!onOpen) return
+    if (e.defaultPrevented || e.button !== 0) return
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    e.preventDefault()
+    onOpen()
+  }
 
   /* Deduplicated, for the reason the scheme page gives at more length: two
    * rules that render to the same sentence are one thing to read, and printed
    * twice they read as a broken page rather than as two rules that agree. */
   const criteria = [...new Set(listing.criteria ?? [])]
   const foldable = criteria.length > CRITERIA_SHOWN
-  const shown = expanded ? criteria : criteria.slice(0, CRITERIA_SHOWN)
+  const shown = criteria.slice(0, CRITERIA_SHOWN)
 
   /* The sponsor's own page, when this is a scheme the platform only lists.
    *
@@ -456,12 +531,19 @@ export function ListingCard({ listing }: { listing: Listing }) {
   return (
     <article className="listing" aria-labelledby={`${id}-title`}>
       <div className="listing-head">
-        <h2 className="listing-title" id={`${id}-title`}>
-          <Link to={detail}>{listing.title}</Link>
-        </h2>
-        <p className="listing-org">
-          {t('public.offeredBy')} <strong>{listing.organisation_name}</strong>
-        </p>
+        {/* The mark leads the band, before the name, and only when there is
+            one — see SponsorLogo, which draws nothing rather than a grey box.
+            Its absence closes the gap instead of leaving a hole, so a row
+            without a logo is a row rather than a row missing something. */}
+        <SponsorLogo listing={listing} />
+        <div className="listing-head-text">
+          <h2 className="listing-title" id={`${id}-title`}>
+            <Link to={detail} onClick={intercept}>{listing.title}</Link>
+          </h2>
+          <p className="listing-org">
+            {t('public.offeredBy')} <strong>{listing.organisation_name}</strong>
+          </p>
+        </div>
       </div>
 
       <div className="listing-body">
@@ -483,37 +565,36 @@ export function ListingCard({ listing }: { listing: Listing }) {
               </Deadline>
             </div>
 
-            {/* The summary is the fallback, not a companion.
+            {/* Prose on the row, a checklist in the panel.
                 *
-                * A scheme with criteria has something better than prose in this
-                * slot: the rules themselves, which is what the reader is
-                * measuring themselves against. A scheme with none — the API
-                * omits the array when the rule set is empty — would otherwise
-                * show a bare heading, so its own sentence stands in. */}
-            {shown.length > 0 ? (
-              <ul role="list" className="criteria" id={`${id}-elig-list`}>
-                {shown.map((c, i) => (
-                  <li key={i}>
-                    <span className="mark" aria-hidden="true">✓</span>
-                    <span>{c}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="listing-summary">{listing.summary}</p>
-            )}
+                * These were ticked list items here too, and a tick is a claim:
+                * everywhere else on this site it means "you meet this" — the
+                * scheme page's criteria, the match states, the chip selector.
+                * On a directory row it was in front of rules about a reader the
+                * page knows nothing about, ticking conditions nobody had
+                * checked. The panel keeps the checklist, where the whole rule
+                * set is present and the reader is going through it.
+                *
+                * Joined into a sentence rather than stacked, because they
+                * already are sentences — see the note on public.eligibility —
+                * and two of them under a lead-in reads as a paragraph somebody
+                * wrote. As list items they read as a form.
+                *
+                * The summary is the fallback, not a companion: a scheme whose
+                * rule set is empty (the API omits the array) would otherwise
+                * show a lead-in leading nowhere. */}
+            <p className="listing-elig">
+              {shown.length > 0 ? shown.join(' ') : listing.summary}
+            </p>
 
+            {/* Offered only when the rules are actually cut off. "Read more"
+                under a rule set that is already complete promises the panel has
+                something the row does not. */}
             {foldable && (
-              <button
-                type="button"
-                className="quiet listing-more"
-                aria-expanded={expanded}
-                aria-controls={`${id}-elig-list`}
-                onClick={() => setExpanded(v => !v)}
-              >
-                {expanded ? t('public.readLess') : t('public.readMore')}
-                {forThis}
-              </button>
+              <Link className="listing-more" to={detail} onClick={intercept}>
+                {t('public.readMore')}
+                <span className="sr-only"> — {listing.title}</span>
+              </Link>
             )}
           </section>
 
@@ -529,7 +610,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
         </div>
 
         <div className="listing-actions">
-          <Link className="btn" to={detail}>
+          <Link className="btn" to={detail} onClick={intercept}>
             {t('public.viewDetails')}{forThis}
           </Link>
 

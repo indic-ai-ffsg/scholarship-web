@@ -122,6 +122,48 @@ export interface Listing {
   slots_available?: number
   tags: string[]
   criteria?: string[]
+
+  /* The sponsor's mark, when they have uploaded one (backend 0028, carried by
+   * 0048). A path on the API, not a full URL — see api.assetUrl.
+   *
+   * The dimensions are the reason the whole set travels together: they let a
+   * card reserve the box before the bytes land, which is what stops fifty rows
+   * reflowing as fifty logos arrive. Rendering an <img> without them undoes the
+   * point of the server sending them. */
+  logo_url?: string
+  logo_alt?: string
+  logo_width?: number
+  logo_height?: number
+
+  /* --- the detail response only ---------------------------------------------
+   *
+   * Every field below arrives from GET /public/scholarships/{slug} and is
+   * absent from the directory's list response, deliberately: they are
+   * paragraphs, and fifty of them would be sent to render fifty cards that have
+   * no room for any of it.
+   *
+   * So a component holding a Listing that came out of the directory must treat
+   * these as missing rather than as empty — which is what SchemeSheet's
+   * `detail ?? seed` is for. The row opens the panel instantly with what the
+   * list gave it, and these fill in a moment later.
+   *
+   * All written by an operator in the admin panel against backend 0027's
+   * columns; the platform does not compose any of them. */
+  academic_year?: string
+  award_basis?: 'MERIT' | 'NEED' | 'MERIT_CUM_MEANS' | 'CATEGORY' | 'OTHER'
+  /** The full terms of the award, where benefit_summary is the one-line form. */
+  benefit_description?: string
+  /** The rules restated as prose. Does not replace `criteria`, which decides. */
+  eligibility_summary?: string
+  /* What the sponsor will ask for. Free text rather than the platform's own
+     document vocabulary, and backend 0027 says why: for a curated listing there
+     is no upload and no workflow here, and real schemes ask for things outside
+     our list ("caste validity certificate"). Showing these as though they were
+     uploads the platform collects would be a promise nothing keeps. */
+  documents_required?: string[]
+  application_process?: string
+  /** Deadlines that are not the deadline, quotas, the year it was suspended. */
+  important_notes?: string
 }
 
 export interface Facet { value: string; label: string; count: number }

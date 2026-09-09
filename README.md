@@ -40,11 +40,19 @@ merely available, and the invitation to register last — after the answer.
 No hero illustration. Every kilobyte is paid for by somebody on a metered
 connection.
 
-Scheme cards lay out in a `.card-grid` — `auto-fit` with a 20rem floor, so it
-is one column on a phone, two on a tablet, three on a desktop, and back to one
-at 200% text zoom without a media query. Still a `<ul>` with `role="list"`:
-WebKit drops list semantics when `list-style` is `none`, and iOS Safari with
-VoiceOver is a first-class platform here.
+Schemes list one per row (`.listing-list` / `.listing`), not in a grid of
+tiles. A tile a third of a page wide fits a title, a figure and a date — enough
+to recognise a scheme you were already looking for, not enough to decide
+anything — so the eligibility rules lived on the scheme page and choosing
+between forty meant opening forty. The row spends the same width on one scheme
+and puts the first two rules, the award and the closing date on the list.
+
+Each row is a `container-type: inline-size` and folds its action rail
+underneath at 38rem of **its own** width, not the window's: the partner page
+renders the same component in a narrow aside beside a column of prose, where a
+media query would give it a rail eleven characters across. Still a `<ul>` with
+`role="list"`: WebKit drops list semantics when `list-style` is `none`, and iOS
+Safari with VoiceOver is a first-class platform here.
 
 Directory filters live in the URL. A filtered directory is the thing people
 forward to each other — "the three post-matric schemes open in Bihar" only

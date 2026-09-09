@@ -10,10 +10,11 @@
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
+import * as api from '../lib/api'
 import { useI18n } from '../lib/i18n-context'
 import { awardLabel, deadlineLabel } from '../lib/format'
 import { stateClass, stateHelpKey, stateLabelKey, stateMark } from '../lib/eligibility'
-import type { EligibilityState } from '../lib/types'
+import type { EligibilityState, Listing } from '../lib/types'
 
 /* --- field -------------------------------------------------------------------
  * Wires label, hint and error to the control by id. Doing this by hand at each
@@ -321,6 +322,45 @@ export function Progress({ step, total }: { step: number; total: number }) {
  * days" needs no tick read out in front of it. Nothing animates — a deadline
  * that flashes is a deadline nobody can read.
  */
+/* A sponsor's mark, when the sponsor has uploaded one.
+ *
+ * Nothing is drawn when they have not, and no placeholder stands in. A grey box
+ * where a logo would go says "this one is missing something" about a provider
+ * whose only failing is not having sent us a PNG — and 0028 was written against
+ * exactly that reading, where a government scheme with a mark beside an NGO
+ * scheme without one makes the NGO look less real.
+ *
+ * `alt=""`, always, and the attribute is required rather than optional so this
+ * is a decision rather than an omission: the organisation's name is already
+ * beside the mark in text, so describing the picture would make a screen reader
+ * announce the same sponsor twice. The server holds a real alt string
+ * (0028 refuses an upload without one) and it is the right one for a context
+ * where the logo stands alone — this is not that context.
+ *
+ * width and height are set from the stored dimensions, so the row reserves the
+ * box before the bytes land. Without them a directory of fifty rows reflows
+ * fifty times as the images arrive, which is the layout shift 0028 stores the
+ * dimensions to prevent.
+ */
+export function SponsorLogo({ listing }: { listing: Pick<Listing, 'logo_url' | 'logo_width' | 'logo_height'> }) {
+  if (!listing.logo_url) return null
+
+  return (
+    <img
+      className="sponsor-mark"
+      src={api.assetUrl(listing.logo_url)}
+      alt=""
+      width={listing.logo_width}
+      height={listing.logo_height}
+      /* Off the critical path: the mark is not what the reader came for, and on
+         a metered connection fifty of them should not compete with the text
+         that answers their question. */
+      loading="lazy"
+      decoding="async"
+    />
+  )
+}
+
 export function Deadline({ days, children }: { days?: number; children?: ReactNode }) {
   const { t } = useI18n()
   const { text, state, mark } = deadlineLabel(t, days)
