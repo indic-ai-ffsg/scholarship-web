@@ -621,6 +621,10 @@ export function ListingCard({
             {foldable && (
               <Link className="listing-more" to={detail} onClick={intercept}>
                 {t('public.readMore')}
+                {/* aria-hidden: "right arrow" read after every one of forty
+                    "Read more" links is noise. It is the visual half of the
+                    pair — see the note on .listing-more. */}
+                <span className="go" aria-hidden="true">→</span>
                 <span className="sr-only"> — {listing.title}</span>
               </Link>
             )}

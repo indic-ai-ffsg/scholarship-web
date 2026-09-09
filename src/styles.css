@@ -1262,6 +1262,22 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   flex: 1;
 }
 .listing-title { font-size: var(--step-1); margin: 0; }
+/* No underline on the row's name, for the reason the deadline list gives at
+ * more length: 1.4.1 asks for a second signal on a link inside a block of text,
+ * because there the underline is all that separates it from the words around
+ * it. This is the card's heading — its own line, --step-1, at heading weight,
+ * with the sponsor underneath — and nothing about it can be read as prose.
+ *
+ * Down a list of forty rows the underlines were forty green rules, each two or
+ * three lines long under a wrapped title, which is the loudest thing on the
+ * page and none of it information. The rule returns on hover and on focus,
+ * where it is doing work again: it says which row is about to be followed. */
+.listing-title a {
+  text-decoration: none;
+  color: var(--text);
+}
+.listing-title a:hover,
+.listing-title a:focus-visible { text-decoration: underline; color: var(--accent); }
 .listing-org { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
 .listing-org strong { font-weight: var(--w-medium); color: var(--text); }
 
@@ -1347,7 +1363,24 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   display: inline-flex; align-items: center;
   min-height: 48px;
   font-weight: var(--w-medium);
+  /* Underline dropped with the title's, and the arrow is what replaces it.
+   *
+   * This one needs the replacement and the title does not: "Read more" sits
+   * directly under the paragraph it continues, at body size, so with no rule
+   * and no mark it would be a green phrase against grey text — a link
+   * distinguished by colour alone, which is the thing 1.4.1 forbids and this
+   * file does not do anywhere else. The arrow is the same marker .figure-link
+   * uses for the same reason. */
+  text-decoration: none;
 }
+.listing-more:hover, .listing-more:focus-visible { text-decoration: underline; }
+.listing-more .go {
+  display: inline-block;
+  margin-inline-start: 0.375rem;
+  font-weight: 700;
+  transition: transform 120ms ease-out;
+}
+.listing-more:hover .go { transform: translateX(2px); }
 
 .listing .amount { margin: 0; }
 .listing-renew { margin: 0.25rem 0 0; font-size: var(--step--1); }
