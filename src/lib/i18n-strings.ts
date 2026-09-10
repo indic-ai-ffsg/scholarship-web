@@ -201,6 +201,13 @@ export const en: Dict = {
    * over application_process. The admin panel may call them what it likes; this
    * side of the wall is written for somebody deciding whether to spend an
    * afternoon on a form. */
+  /* The two column headers on the benefits table. "Component" is the sponsor's
+     own word for a line of their award — tuition, maintenance, books — and
+     "What the student gets" is deliberately not "Amount": the column holds
+     "₹1,200 a month for hostelers, ₹650 for day scholars" as often as a figure,
+     and a header reading Amount makes that look like bad data. */
+  'public.benefitComponent': 'Component',
+  'public.benefitAmount': 'What the student gets',
   'public.whatYouGet': 'What you get',
   /* Distinct from 'public.whoFor', which heads the criteria list on the same
      panel. That is the rule set the matcher evaluates; this is the sponsor's
@@ -414,6 +421,10 @@ export const en: Dict = {
   'auth.resentVia.sms': 'Sent by SMS. It can take a moment to arrive.',
   'auth.resentVia.whatsapp': 'Sent on WhatsApp. Check WhatsApp for the message.',
   'auth.resentVia.voice': 'Calling you now with the code. Answer to hear it.',
+  /* A number to wait against, not a refusal: the three channels stay pressable
+     the whole time it runs. "in 30s" is the point at which trying again is
+     worth it, not the point at which it becomes allowed. */
+  'auth.resendIn': 'Send it again in {n}s',
   'auth.changeNumber': 'Use a different number',
 
   'profile.complete': '{n}% complete',

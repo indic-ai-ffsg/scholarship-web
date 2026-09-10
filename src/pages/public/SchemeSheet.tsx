@@ -9,6 +9,8 @@ import { asLines, awardLabel, date, stripNumbering } from '../../lib/format'
 import { Deadline, ErrorState, Loading, SponsorLogo } from '../../components/ui'
 import { Sheet } from '../../components/Sheet'
 import { usePageTitle } from '../../lib/page-title'
+import { renderRichText } from '../../lib/richtext'
+import { isBenefitTable, parseBenefits } from '../../lib/benefits'
 import type { Listing } from '../../lib/types'
 
 /* One scheme, read without leaving the list.
@@ -240,14 +242,16 @@ export function SchemeSheet({
       {s.benefit_description && (
         <section aria-labelledby="sheet-get">
           <h3 id="sheet-get">{t('public.whatYouGet')}</h3>
-          <Prose text={s.benefit_description} />
+          <Benefits text={s.benefit_description} />
         </section>
       )}
 
       {s.eligibility_summary && (
         <section aria-labelledby="sheet-elig">
           <h3 id="sheet-elig">{t('public.eligibilityDetail')}</h3>
-          <Prose text={s.eligibility_summary} />
+          {/* The panel's own marks, rendered. It was <Prose>, which split on
+              newlines and printed "**40% or more**" with its asterisks. */}
+          <div className="richtext">{renderRichText(s.eligibility_summary)}</div>
         </section>
       )}
 
@@ -271,6 +275,9 @@ export function SchemeSheet({
       {s.application_process && (
         <section aria-labelledby="sheet-how">
           <h3 id="sheet-how">{t('public.howToApply')}</h3>
+          {/* Still forced to an ordered list: these are steps in sequence
+              whether or not the operator typed the digits, which is the one
+              thing the shared renderer cannot know from the text alone. */}
           <Prose text={s.application_process} ordered />
         </section>
       )}
@@ -282,7 +289,7 @@ export function SchemeSheet({
       {s.important_notes && (
         <div className="notice warn sheet-notes">
           <h3>{t('public.importantNotes')}</h3>
-          <p style={{ whiteSpace: 'pre-line' }}>{s.important_notes}</p>
+          <div className="richtext">{renderRichText(s.important_notes)}</div>
         </div>
       )}
 
@@ -316,6 +323,52 @@ export function SchemeSheet({
  * steps whether or not somebody typed the digits, and wrong for a list of what a
  * scholarship covers even when they did.
  */
+/* What the student gets, as the table the panel's editor writes.
+ *
+ * A real <table>: the two columns are a component and what it pays, and that is
+ * a header-and-cells relationship rather than a visual arrangement. To a screen
+ * reader it is the difference between "Academic expenses, tuition fees, hostel
+ * fees" and hearing the column name before each value, which on a scheme with
+ * six components is the difference between a table and a paragraph of amounts.
+ *
+ * The prose fallback is not a nicety. The column predates the table format, so
+ * a scheme entered before it — or one whose operator typed a sentence — holds
+ * text with no separators at all. isBenefitTable asks whether any row carries
+ * an amount; without one, a table would assert an empty second column for every
+ * row, which says "this pays nothing" where the truth is "this was not entered
+ * as a table". Same column, two honest shapes.
+ */
+function Benefits({ text }: { text: string }) {
+  const { t } = useI18n()
+  const { intro, rows } = parseBenefits(text)
+
+  if (!isBenefitTable(rows)) return <Prose text={text} />
+
+  return (
+    <>
+      {intro && <p className="sheet-benefit-intro">{intro}</p>}
+      <table className="sheet-benefits">
+        <thead>
+          <tr>
+            <th scope="col">{t('public.benefitComponent')}</th>
+            <th scope="col">{t('public.benefitAmount')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i}>
+              {/* scope="row": the component names the row, so a cell read on
+                  its own is announced with what it is for. */}
+              <th scope="row">{r.component}</th>
+              <td>{r.amount || <span className="muted">—</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  )
+}
+
 function Prose({ text, ordered }: { text: string; ordered?: boolean }) {
   const items = asLines(text)
   if (items.length === 0) return <p>{text}</p>

@@ -71,6 +71,7 @@ import type { Profile } from '../lib/types'
  * land on the field being typed into rather than in a banner at the top. */
 const MOBILE = /^[6-9]\d{9}$/
 const CODE_LENGTH = 6
+const RESEND_SECONDS = 30
 
 /* 5 MB, and the three types a certificate actually arrives as. Checked on the
  * device rather than only at the API: a student on a slow connection should not
@@ -184,12 +185,30 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const [fileWarning, setFileWarning] = useState<string | null>(null)
   const [sentVia, setSentVia] = useState<Channel>('sms')
   const [resent, setResent] = useState(false)
+  /* Seconds since the last code went out, counted down from 30.
+   *
+   * A number to wait against, not a gate. It used to disable all three channels
+   * while it ran, which is what took WhatsApp away from a student whose SMS had
+   * been dropped — see the note beside the buttons. Every one stays pressable;
+   * this only answers "has it been long enough to be worth trying again". */
+  const [resentAt, setResentAt] = useState<number | null>(null)
+  const [secondsLeft, setSecondsLeft] = useState(0)
 
   const phoneInput = useRef<HTMLInputElement>(null)
   const codeInput = useRef<HTMLInputElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const form = useRef<HTMLFormElement>(null)
 
+
+  useEffect(() => {
+    if (!awaitingCode || resentAt === null) return
+    const tick = () => setSecondsLeft(
+      Math.max(0, RESEND_SECONDS - Math.floor((Date.now() - resentAt) / 1000)),
+    )
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [awaitingCode, resentAt])
 
   /* Move to the code box the moment it appears, so the code can be typed
      straight from the notification without hunting for the field. */
@@ -237,6 +256,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     setWorking('send')
     try {
       await requestCode(phone)
+      setResentAt(Date.now())
     } catch {
       /* the provider holds the message, and useAuth exposes it */
     } finally {
@@ -265,6 +285,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     setResent(false)
     try {
       await resendCode(channel)
+      setResentAt(Date.now())
       setSentVia(channel)
       setResent(true)
     } catch {
@@ -582,6 +603,15 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                           <button type="button" className="quiet" onClick={() => resend('whatsapp')} disabled={busy} aria-busy={working === 'whatsapp' || undefined} data-held={held(working === 'whatsapp')}>{t('auth.viaWhatsapp')}</button>
                           <button type="button" className="quiet" onClick={() => resend('voice')} disabled={busy} aria-busy={working === 'voice' || undefined} data-held={held(working === 'voice')}>{t('auth.viaVoice')}</button>
                         </div>
+                        {/* aria-hidden: a value that changes every second would
+                            be announced every second, over the field being
+                            typed in. The buttons say what they do; this is for
+                            the eye. */}
+                        {secondsLeft > 0 && (
+                          <p className="muted auth-wait" aria-hidden="true">
+                            {t('auth.resendIn', { n: secondsLeft })}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}

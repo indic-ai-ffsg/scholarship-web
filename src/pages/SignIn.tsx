@@ -34,6 +34,7 @@ import { Field, Notice } from '../components/ui'
 
 
 const CODE_LENGTH = 6
+const RESEND_SECONDS = 30
 
 /* The same rule toE164 applies, checked here as well so the complaint can land
  * on the field being typed into. A red banner at the top of the page that says
@@ -94,10 +95,31 @@ export default function SignIn() {
   /* Which way the last code was sent, so the confirmation can name it —
      "sent on WhatsApp" is the only way to know the choice took effect. */
   const [sentVia, setSentVia] = useState<Channel>('sms')
+  /* Seconds since the last code went out, counted down from 30.
+   *
+   * A number to wait against, not a gate. It used to disable all three channels
+   * while it ran, which is what took WhatsApp away from a student whose SMS had
+   * been dropped — see the note further down. Every button stays pressable; this
+   * only answers "has it been long enough to be worth trying again", which is
+   * the question somebody staring at a phone that has not buzzed is actually
+   * asking, and it stops the reflex press two seconds after the last one. */
+  const [resentAt, setResentAt] = useState<number | null>(null)
+  const [secondsLeft, setSecondsLeft] = useState(0)
 
   const phoneInput = useRef<HTMLInputElement | null>(null)
   const codeInput = useRef<HTMLInputElement | null>(null)
   const awaitingCode = status === 'awaiting_code' && pendingCode
+
+  useEffect(() => {
+    if (!awaitingCode || resentAt === null) return
+    const tick = () => setSecondsLeft(
+      Math.max(0, RESEND_SECONDS - Math.floor((Date.now() - resentAt) / 1000)),
+    )
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [awaitingCode, resentAt])
+
 
   /* No shared countdown on the three channels.
    *
@@ -163,6 +185,7 @@ export default function SignIn() {
     setWorking('send')
     try {
       await requestCode(phone)
+      setResentAt(Date.now())
     } catch {
       /* the provider holds the message */
     } finally {
@@ -195,6 +218,7 @@ export default function SignIn() {
     setResent(false)
     try {
       await resendCode(channel)
+      setResentAt(Date.now())
       setSentVia(channel ?? 'sms')
       setResent(true)
     } catch {
@@ -429,6 +453,21 @@ export default function SignIn() {
                   {t('auth.viaVoice')}
                 </button>
               </div>
+
+              {/* The number, once, for the group — not repeated inside three
+                  buttons that would then all say the same thing and read as
+                  three separate waits to a screen reader.
+                  *
+                  * aria-live is deliberately absent: a value that changes every
+                  * second would be announced every second, which is the whole
+                  * screen read over and over to somebody trying to hear the
+                  * field they are typing in. The buttons say what they do; this
+                  * is for the eye. */}
+              {secondsLeft > 0 && (
+                <p className="muted auth-wait" aria-hidden="true">
+                  {t('auth.resendIn', { n: secondsLeft })}
+                </p>
+              )}
 
             </div>
           </form>
