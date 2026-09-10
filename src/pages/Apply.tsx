@@ -31,7 +31,15 @@ interface Eligibility {
     unverified?: Reason[]
   }
   next_action?: string
-  documents: RequiredDocument[]
+  /* Optional on the wire, whatever the server means to send.
+   *
+   * A Go nil slice marshals to `null`, and this field reached here as null the
+   * first time a scheme with no required documents was applied for — which
+   * white-screened the page, because the line below maps over it. The server no
+   * longer sends null (vault.CheckRequirements), and the type says `?` anyway:
+   * a client that trusts a server not to send null is one deploy-ordering
+   * mistake away from the same blank page. */
+  documents?: RequiredDocument[]
   documents_complete: boolean
   can_apply: boolean
   /* Where this scheme is applied for.
@@ -254,7 +262,10 @@ export default function Apply() {
     )
   }
 
-  const { eligibility, documents, can_apply: canApply } = query.data
+  const { eligibility, can_apply: canApply } = query.data
+  // Defaulted here rather than at each use: this is read in four places below,
+  // and three of them would be a second chance to forget.
+  const documents = query.data.documents ?? []
   const shared = [...new Set(documents.map(d => d.label))].join(', ')
 
   async function submit() {

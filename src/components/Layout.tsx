@@ -1,6 +1,8 @@
 import { Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
+import { ErrorBoundary } from './ErrorBoundary'
+
 import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
@@ -484,7 +486,14 @@ export default function Layout() {
           * holds the height so neither moves while the chunk arrives. */}
       <main id="main" tabIndex={-1} ref={mainRef}>
         <Suspense fallback={<div className="route-loading"><Loading /></div>}>
-          <Outlet />
+          {/* Keyed on the path, so navigating away from a page that failed
+              clears the fallback instead of carrying it to every screen after
+              it. The masthead and the navigation sit outside, which is the
+              whole point: a broken page should cost the page, not the way
+              out of it. */}
+          <ErrorBoundary resetKey={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </Suspense>
       </main>
 
