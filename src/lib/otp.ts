@@ -81,6 +81,29 @@ const SCRIPT_SRC = 'https://verify.msg91.com/otp-provider.js'
 
 /** Raised when the deployment has no widget configured. Distinct from every
  *  other failure, because it is ours and not the student's or the network's. */
+/* A refusal from the verification service, in words already fit to show.
+ *
+ * The reason existed and was being thrown away. Every message this file builds
+ * is written for a student to read — "The verification service refused to send
+ * the code: <what it said>" — and then auth.fail() replaced all of it with its
+ * own fallback, because a plain Error was indistinguishable from a dropped
+ * connection. So the screen said "We could not send another code just now" for
+ * every cause there is, including the one that will never fix itself: a channel
+ * the MSG91 widget has no retry process configured for.
+ *
+ * That case is the reason this matters. WhatsApp and voice have to be enabled
+ * as retry processes on the widget before either will send — the note on
+ * CHANNELS below has said so all along — and until they are, those two buttons
+ * fail every time while SMS works. Told "just now", a student presses again.
+ * Told what the service said, they stop, and whoever reads the report has the
+ * one sentence that identifies it. */
+export class ProviderError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ProviderError'
+  }
+}
+
 export class NotConfiguredError extends Error {
   constructor() {
     super(
@@ -235,7 +258,7 @@ function settle(
 ) {
   if (data?.hasError || data?.status === 'fail') {
     const detail = typeof data.errors === 'string' ? data.errors : data.message
-    reject(new Error(
+    reject(new ProviderError(
       detail
         ? `The verification service refused to send the code: ${detail}`
         : 'The verification service refused to send the code.',
@@ -258,7 +281,7 @@ function call(
       return
     }
     fn(arg, data => settle(data, resolve, reject), err =>
-      reject(new Error(err?.message || 'That could not be completed.')))
+      reject(new ProviderError(err?.message || 'That could not be completed.')))
   })
 }
 
@@ -321,7 +344,7 @@ export async function resendCode(channel?: Channel): Promise<void> {
       channel ? CHANNELS[channel] : null,
       // Same envelope, same trap: a refused resend arrives here, not below.
       data => settle(data, resolve, reject),
-      err => reject(new Error(err?.message || 'We could not send another code.')),
+      err => reject(new ProviderError(err?.message || 'We could not send another code.')),
     )
   })
 }

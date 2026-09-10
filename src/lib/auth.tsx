@@ -123,9 +123,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      *
      * This once had to dig a Firebase failure out of `customData.serverResponse`,
      * because the SDK reported almost everything as one of two generic codes.
-     * Nothing here talks to a provider any more — the only errors that reach
-     * this function are our API's, which already carry a sentence written for a
-     * student, or a network failure, which carries none.
+     * The errors that reach this function are our API's and the verification
+     * service's — both already carrying a sentence written for a student — or a
+     * network failure, which carries none.
      */
     console.error('[auth] sign-in failed', {
       message: err instanceof Error ? err.message : String(err),
@@ -149,6 +149,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       err instanceof api.ApiError ? err.message
       : err instanceof otp.NotConfiguredError
         ? 'Sign-in by mobile is not set up on this site yet. Please tell us if you see this.'
+        /* The verification service's own words. otp.ts writes these for the
+         * reader; replacing them with the fallback below was what turned "this
+         * channel is not enabled" — which no amount of pressing will fix —
+         * into "just now", which invites exactly that. */
+        : err instanceof otp.ProviderError ? err.message
         : fallback
     setState(s => ({ ...s, error: message }))
     throw err
