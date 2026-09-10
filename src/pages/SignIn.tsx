@@ -32,10 +32,6 @@ import { formatE164, type Channel } from '../lib/otp'
 import { safeNext } from '../lib/next'
 import { Field, Notice } from '../components/ui'
 
-/* Long enough that an SMS has a fair chance of arriving before the button
- * tempts anyone, short enough not to strand somebody whose message never came.
- * The provider applies its own per-number limits underneath regardless. */
-const RESEND_SECONDS = 30
 
 const CODE_LENGTH = 6
 
@@ -94,29 +90,35 @@ export default function SignIn() {
    * to be off, the one the student can act on, and it always wins. */
   const held = (own: boolean, unavailable = false) =>
     (busy && !own && !unavailable) || undefined
-  const [resentAt, setResentAt] = useState<number | null>(null)
   const [resent, setResent] = useState(false)
   /* Which way the last code was sent, so the confirmation can name it —
      "sent on WhatsApp" is the only way to know the choice took effect. */
   const [sentVia, setSentVia] = useState<Channel>('sms')
-  const [secondsLeft, setSecondsLeft] = useState(0)
 
   const phoneInput = useRef<HTMLInputElement | null>(null)
   const codeInput = useRef<HTMLInputElement | null>(null)
   const awaitingCode = status === 'awaiting_code' && pendingCode
 
-  /* The countdown that gates the resend button. */
-  useEffect(() => {
-    if (!awaitingCode) return
-    const started = resentAt ?? Date.now()
-    const tick = () => {
-      const elapsed = Math.floor((Date.now() - started) / 1000)
-      setSecondsLeft(Math.max(0, RESEND_SECONDS - elapsed))
-    }
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [awaitingCode, resentAt])
+  /* No shared countdown on the three channels.
+   *
+   * They were gated together for thirty seconds after any one of them: press
+   * "Send by SMS" and all three greyed out under a line reading "Send it again
+   * in 27s". The intent was to stop four messages going out while the first was
+   * still in flight, and on one road that is right — but it was applied across
+   * all three, so it also blocked the thing this group exists for.
+   *
+   * The note beside these buttons already says why: SMS is silently dropped by
+   * some Indian operators under DLT, and "a student whose SMS is being dropped
+   * needs WhatsApp first rather than after two more failures". A student who
+   * pressed SMS, waited, and got nothing was then told to wait again before
+   * they could try the road that would have worked — and for a deaf student
+   * mis-tapping "Call me with the code", the wait is thirty seconds of a
+   * message they cannot use before they may ask for the one they can.
+   *
+   * What actually stops a double send is `busy`: a press is refused while its
+   * own request is in the air, which is the second or two that matters. Beyond
+   * that, pressing again is a deliberate act by somebody holding a phone that
+   * has not buzzed, and it is not this screen's place to argue with them. */
 
   /* Move to the code box the moment it appears, so the student can type
      straight from the notification without hunting for the field. */
@@ -161,7 +163,6 @@ export default function SignIn() {
     setWorking('send')
     try {
       await requestCode(phone)
-      setResentAt(Date.now())
     } catch {
       /* the provider holds the message */
     } finally {
@@ -194,7 +195,6 @@ export default function SignIn() {
     setResent(false)
     try {
       await resendCode(channel)
-      setResentAt(Date.now())
       setSentVia(channel ?? 'sms')
       setResent(true)
     } catch {
@@ -402,9 +402,9 @@ export default function SignIn() {
                   type="button"
                   className="quiet"
                   onClick={() => resend('sms')}
-                  disabled={busy || secondsLeft > 0}
+                  disabled={busy}
                   aria-busy={working === 'sms' || undefined}
-                  data-held={held(working === 'sms', secondsLeft > 0)}
+                  data-held={held(working === 'sms')}
                 >
                   {t('auth.viaSms')}
                 </button>
@@ -412,9 +412,9 @@ export default function SignIn() {
                   type="button"
                   className="quiet"
                   onClick={() => resend('whatsapp')}
-                  disabled={busy || secondsLeft > 0}
+                  disabled={busy}
                   aria-busy={working === 'whatsapp' || undefined}
-                  data-held={held(working === 'whatsapp', secondsLeft > 0)}
+                  data-held={held(working === 'whatsapp')}
                 >
                   {t('auth.viaWhatsapp')}
                 </button>
@@ -422,20 +422,14 @@ export default function SignIn() {
                   type="button"
                   className="quiet"
                   onClick={() => resend('voice')}
-                  disabled={busy || secondsLeft > 0}
+                  disabled={busy}
                   aria-busy={working === 'voice' || undefined}
-                  data-held={held(working === 'voice', secondsLeft > 0)}
+                  data-held={held(working === 'voice')}
                 >
                   {t('auth.viaVoice')}
                 </button>
               </div>
 
-              {/* The countdown, once, for the group — rather than repeated
-                  inside three buttons that would then all say the same thing
-                  and read as three separate waits to a screen reader. */}
-              {secondsLeft > 0 && (
-                <p className="muted auth-wait">{t('auth.resendIn', { n: secondsLeft })}</p>
-              )}
             </div>
           </form>
         )}

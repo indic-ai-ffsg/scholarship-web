@@ -71,7 +71,6 @@ import type { Profile } from '../lib/types'
  * land on the field being typed into rather than in a banner at the top. */
 const MOBILE = /^[6-9]\d{9}$/
 const CODE_LENGTH = 6
-const RESEND_SECONDS = 30
 
 /* 5 MB, and the three types a certificate actually arrives as. Checked on the
  * device rather than only at the API: a student on a slow connection should not
@@ -183,8 +182,6 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     (busy && !own && !unavailable) || undefined
   const [formError, setFormError] = useState<string | null>(null)
   const [fileWarning, setFileWarning] = useState<string | null>(null)
-  const [resentAt, setResentAt] = useState<number | null>(null)
-  const [secondsLeft, setSecondsLeft] = useState(0)
   const [sentVia, setSentVia] = useState<Channel>('sms')
   const [resent, setResent] = useState(false)
 
@@ -193,15 +190,6 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const fileInput = useRef<HTMLInputElement>(null)
   const form = useRef<HTMLFormElement>(null)
 
-  /* The countdown that gates the resend buttons. */
-  useEffect(() => {
-    if (!awaitingCode) return
-    const started = resentAt ?? Date.now()
-    const tick = () => setSecondsLeft(Math.max(0, RESEND_SECONDS - Math.floor((Date.now() - started) / 1000)))
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [awaitingCode, resentAt])
 
   /* Move to the code box the moment it appears, so the code can be typed
      straight from the notification without hunting for the field. */
@@ -249,7 +237,6 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     setWorking('send')
     try {
       await requestCode(phone)
-      setResentAt(Date.now())
     } catch {
       /* the provider holds the message, and useAuth exposes it */
     } finally {
@@ -278,7 +265,6 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     setResent(false)
     try {
       await resendCode(channel)
-      setResentAt(Date.now())
       setSentVia(channel)
       setResent(true)
     } catch {
@@ -592,13 +578,10 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                       <div className="otp-retry">
                         <span className="muted" id="reg-retry">{t('auth.noCode')}</span>
                         <div className="otp-channels" role="group" aria-labelledby="reg-retry">
-                          <button type="button" className="quiet" onClick={() => resend('sms')} disabled={busy || secondsLeft > 0} aria-busy={working === 'sms' || undefined} data-held={held(working === 'sms', secondsLeft > 0)}>{t('auth.viaSms')}</button>
-                          <button type="button" className="quiet" onClick={() => resend('whatsapp')} disabled={busy || secondsLeft > 0} aria-busy={working === 'whatsapp' || undefined} data-held={held(working === 'whatsapp', secondsLeft > 0)}>{t('auth.viaWhatsapp')}</button>
-                          <button type="button" className="quiet" onClick={() => resend('voice')} disabled={busy || secondsLeft > 0} aria-busy={working === 'voice' || undefined} data-held={held(working === 'voice', secondsLeft > 0)}>{t('auth.viaVoice')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('sms')} disabled={busy} aria-busy={working === 'sms' || undefined} data-held={held(working === 'sms')}>{t('auth.viaSms')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('whatsapp')} disabled={busy} aria-busy={working === 'whatsapp' || undefined} data-held={held(working === 'whatsapp')}>{t('auth.viaWhatsapp')}</button>
+                          <button type="button" className="quiet" onClick={() => resend('voice')} disabled={busy} aria-busy={working === 'voice' || undefined} data-held={held(working === 'voice')}>{t('auth.viaVoice')}</button>
                         </div>
-                        {secondsLeft > 0 && (
-                          <p className="muted">{t('auth.resendIn', { n: secondsLeft })}</p>
-                        )}
                       </div>
                     </div>
                   )}

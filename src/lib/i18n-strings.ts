@@ -414,10 +414,6 @@ export const en: Dict = {
   'auth.resentVia.sms': 'Sent by SMS. It can take a moment to arrive.',
   'auth.resentVia.whatsapp': 'Sent on WhatsApp. Check WhatsApp for the message.',
   'auth.resentVia.voice': 'Calling you now with the code. Answer to hear it.',
-  /* On the button itself, so the wait is read where the press would be —
-     and short, because a sentence on a button wraps to three lines on a
-     phone. */
-  'auth.resendIn': 'Send it again in {n}s',
   'auth.changeNumber': 'Use a different number',
 
   'profile.complete': '{n}% complete',
@@ -588,15 +584,24 @@ export const en: Dict = {
    * says "open the link and tap Sign in"; by the time this is being read the
    * link is open, and a step describing something already done reads as a step
    * that was somehow missed. So it names the button and where it is instead,
-   * in the masthead's own word — see nav.signin.
+   * in the masthead's own word — which is nav.registerCta, "Register".
+   *
+   * It said "Tap Sign in" until the masthead became two buttons. There is no
+   * "Sign in" up there to tap any more, and a walkthrough naming a control that
+   * is not on the screen is worse than no walkthrough: the reader assumes they
+   * are on the wrong page. Both buttons are named now, because the pair is the
+   * one thing a visitor has to choose between before anything else happens.
    *
    * The heading is still "How it works", because the masthead links to it by
    * that name and a destination that repeats the link is how a visitor knows
    * they arrived. What changed under it is the answer, not the question. */
   'home.how': 'How it works',
   'home.howLede': 'Registering takes a mobile number and the code we send to it. There is no password, and no sign-up form to fill in first.',
-  'home.step1': 'Tap Sign in',
-  'home.step1Body': 'At the top of this page. The same button signs you in and creates your account, so there is nothing else to find first.',
+  'home.step1': 'Tap Register',
+  /* No longer "the same button signs you in and creates your account" — that
+     was true of the single Register / Login control and false of the two that
+     replaced it. */
+  'home.step1Body': 'At the top of this page. If you have been here before, use Login beside it — the same number works either way.',
   'home.step2': 'Enter your mobile number',
   'home.step2Body': 'Ten digits, with +91 already filled in. A 6-digit code goes to that number.',
   'home.step3': 'Enter the code',

@@ -3174,7 +3174,6 @@ button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--st
   .auth-channels { flex-direction: column; }
   .auth-channels > button { min-width: 0; }
 }
-.auth-wait { margin: 0; font-size: var(--step--1); }
 
 .auth-foot {
   display: flex; align-items: center; justify-content: center;
