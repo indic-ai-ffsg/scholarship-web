@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/auth-context'
 import { useQuery } from '../../lib/hooks'
 import { withNext } from '../../lib/next'
 import { useI18n } from '../../lib/i18n-context'
+import { applyRoute, externalHelpKey } from '../../lib/apply'
 import { asLines, awardLabel, date, stripNumbering } from '../../lib/format'
 import { Deadline, ErrorState, Loading, SponsorLogo } from '../../components/ui'
 import { Sheet } from '../../components/Sheet'
@@ -92,11 +93,9 @@ export function SchemeSheet({
    * twice renders the same sentence twice, which reads as a broken panel rather
    * than as two rules that agree. */
 
-  /* The sponsor's own page, when this is a scheme the platform only lists.
-   * The kind decides and the URL only supplies the address — see the note at
-   * the same branch in Directory's ListingCard. */
-  const external =
-    (s.listing_kind ?? 'TENANT') === 'CURATED' && s.external_url ? s.external_url : null
+  /* Where Apply goes. One decision, shared with the row that opened this panel
+   * and with the scheme page and the matched list — see lib/apply.ts. */
+  const route = applyRoute(s)
 
   const closed = s.days_remaining !== undefined && s.days_remaining < 0
   /* Deduplicated: two rules that render to the same sentence are one thing to
@@ -117,19 +116,27 @@ export function SchemeSheet({
           <Link className="btn primary wide" to={withNext('/register', '/matches')}>
             {t('public.registerToApply')}
           </Link>
-        ) : external ? (
-          <a
-            className="btn primary wide"
-            href={external}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t('public.applyNow')}
-            <span aria-hidden="true"> ↗</span>
-            <span className="sr-only"> ({t('common.newTab')})</span>
-          </a>
+        ) : route.kind === 'external' ? (
+          /* The label carries the destination, as it does on the row. The
+             footer has the room the card rail does not, so the sentence sits
+             under the button rather than being left to the scheme page. */
+          <>
+            <a
+              className="btn primary wide"
+              href={route.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('public.applyExternal')}
+              <span aria-hidden="true"> ↗</span>
+              <span className="sr-only"> ({t('common.newTab')})</span>
+            </a>
+            <p className="listing-apply-note">
+              {t(externalHelpKey(route), { org: s.organisation_name })}
+            </p>
+          </>
         ) : (
-          <Link className="btn primary wide" to={`/apply/${s.scholarship_id}`}>
+          <Link className="btn primary wide" to={route.to}>
             {t('public.applyNow')}
           </Link>
         )}

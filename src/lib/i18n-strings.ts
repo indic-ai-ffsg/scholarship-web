@@ -237,13 +237,36 @@ export const en: Dict = {
   /* Under the Apply button for a scheme the platform lists but does not run.
      Says plainly that the application is not ours to receive, so a student who
      later cannot find it under "My applications" knows why. */
-  /* Just "Apply". The sentence under it names the sponsor and says the
-     application is theirs and will not appear here, so the button had the whole
-     explanation in it and the paragraph repeated it — and at .wide it wrapped to
-     two lines on a phone. The arrow and the announced "opens in a new tab" say
-     it leaves the site; applyExternalHelp says whose it is. */
-  'public.applyExternal': 'Apply',
-  'public.applyExternalHelp': '{org} runs this scholarship and takes the application on their own website. It will not appear under your applications here.',
+  /* The off-site button, and it says so in the label.
+   *
+   * This was "Apply", on the argument that the sentence beneath it carried the
+   * explanation and a longer label wrapped to two lines at .wide on a phone.
+   * The first half of that turned out not to be true: applyExternalHelp was
+   * defined and rendered nowhere, so on the directory card and in the scheme
+   * panel the external branch drew `public.applyNow` — the identical label to
+   * the internal one — with an arrow and nothing else. Two buttons reading
+   * "Apply now", one of which files an application here and one of which hands
+   * the student to a stranger's website, told apart by a glyph.
+   *
+   * So the destination goes in the label, where it cannot be left unrendered,
+   * and the sentence is now actually drawn beneath it. "their site" and not the
+   * sponsor's name: the name is already on the card twice, Indian scheme
+   * sponsors run to "Department of Empowerment of Persons with Disabilities",
+   * and a button that reflows to four lines on a 320px screen is its own
+   * accessibility problem. Checked at 320px rather than assumed — it holds one
+   * line at .wide and wraps to two in the card rail, which is what the arrow
+   * and the help line are there to make sense of. */
+  'public.applyExternal': 'Apply on their site',
+  /* Two sentences for two relationships, and the difference is not pedantic.
+   *
+   * A CURATED listing is a scheme we found and wrote down for a body that has
+   * never heard of us. A TENANT one applied for off-site is a partner with an
+   * account, a logo and a contact here who takes applications on the portal
+   * they have run for years. Telling a student "we only list this one" about an
+   * organisation that is right here is wrong, and it is the kind of wrong a
+   * publisher notices about their own scheme. */
+  'public.applyExternalHelp': 'We list this scholarship so you can find it. {org} runs it and takes applications on their own website, so it will not appear under your applications here.',
+  'public.applyExternalHelpPartner': '{org} takes this application on their own website, so it will not appear under your applications here.',
   /* Spoken, never drawn. Appended to the accessible name of any link that opens
      a new tab, which is otherwise one of the most disorienting things a screen
      reader user can meet. */
@@ -487,8 +510,37 @@ export const en: Dict = {
   'apply.blocked': 'You cannot apply yet',
   'apply.needProfile': 'Your profile comes first',
   'apply.needProfileHint': 'An application is sent from your profile, so we need that before you can apply. It takes a few minutes, and anything you have already told us is filled in.',
-  'apply.elsewhereTitle': 'This one is applied for on the sponsor\u2019s own site',
-  'apply.elsewhereBody': 'We list this scholarship so you can find it, but we do not run it, so an application cannot be sent from here. Everything you have already told us stays saved for the ones we do run.',
+  /* The handoff page, and it is a page rather than a warning.
+   *
+   * These two used to sit inside a Notice \u2014 a bordered interruption panel, in
+   * the place a form should have been, using the same component the portal uses
+   * to say a submission was blocked. A student who pressed Apply and met that
+   * had been told, in the portal's own vocabulary for problems, that their
+   * application had gone wrong. It had not; this is simply how most of the
+   * money in this catalogue is given away.
+   *
+   * So the title states what happens next instead of leading with what cannot
+   * happen here, and the body's last sentence is the reassurance rather than
+   * the caveat. */
+  'apply.elsewhereTitle': 'This one is applied for on the sponsor\u2019s website',
+  'apply.elsewhereBody': 'We list this scholarship so you can find it, and the sponsor takes the applications themselves. Everything you have told us stays saved, and it is already filled in for the scholarships we do run.',
+  /* The partner version. Saying "we only list this one" about an organisation
+     that has an account, a logo and a contact here is wrong, and it is the kind
+     of wrong the publisher notices about their own scheme. */
+  'apply.elsewhereBodyPartner': 'This scholarship is run here, but the sponsor takes the applications on their own website. Everything you have told us stays saved, and it is already filled in for the scholarships we receive directly.',
+
+  /* Taking the documents along.
+   *
+   * The one part of an external application the platform can actually make
+   * easier. The sponsor's form will ask for four certificates that are already
+   * here and verified, and without this the student photographs them all again
+   * on a phone \u2014 which is both slower and how an unreadable scan reaches a
+   * scholarship office. */
+  'apply.bundleTitle': 'Take your documents with you',
+  'apply.bundleBody': 'We can put the documents this scholarship asks for into one file, ready to upload on their website. It also lists anything they want that we do not have yet.',
+  'apply.bundleAction': 'Download my documents',
+  'apply.bundleWorking': 'Getting them ready\u2026',
+  'apply.bundleDone': 'Your documents have been downloaded.',
   'apply.docs': 'Documents this scholarship needs',
 
   'appl.title': 'Your applications',

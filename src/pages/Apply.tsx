@@ -34,11 +34,20 @@ interface Eligibility {
   documents: RequiredDocument[]
   documents_complete: boolean
   can_apply: boolean
-  /* Where this scheme is applied for. CURATED means the platform lists it and
-     does not run it, so no application can be made here at all — the server
-     refuses it and a database trigger refuses it under that. external_url is
-     the sponsor's own page, guaranteed present for a curated scheme. */
+  /* Where this scheme is applied for.
+   *
+   * apply_mode is the field that decides, and it is not the same question as
+   * listing_kind (backend 0054). EXTERNAL means no application can be made here
+   * at all — the server refuses it and a database trigger refuses it under
+   * that — whether or not the sponsor has an account with us. It used to read
+   * the kind, which was right until an organisation on the platform could take
+   * its applications on its own portal.
+   *
+   * listing_kind still travels, and it decides only which sentence is true
+   * about the sponsor. external_url is guaranteed present when the mode is
+   * EXTERNAL. */
   listing_kind?: 'TENANT' | 'CURATED'
+  apply_mode?: 'INTERNAL' | 'EXTERNAL'
   external_url?: string
 }
 
@@ -53,6 +62,16 @@ export default function Apply() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [blocked, setBlocked] = useState<string | null>(null)
+
+  /* The document bundle's own state, kept apart from `busy` and `error`.
+   *
+   * They belong to submitting an application, which is the other half of this
+   * component and unreachable on the branch the bundle lives on — but sharing
+   * them would still be wrong, because the two would then be one spinner and
+   * one error box for two different actions. The next person to add a third
+   * action to this page should add a third pair rather than reuse either. */
+  const [bundling, setBundling] = useState(false)
+  const [bundleError, setBundleError] = useState<string | null>(null)
 
   const query = useQuery<Eligibility>(
     signal => api.get(`/me/scholarships/${scholarshipId}/eligibility`, undefined, signal),
@@ -129,32 +148,108 @@ export default function Apply() {
   if (query.error) return <div className="page narrow"><ErrorState error={query.error} onRetry={query.reload} /></div>
   if (!query.data) return null
 
-  /* A scheme the platform does not run, reached anyway.
+  /* Fetch the zip and hand it to the browser.
    *
-   * The scheme page no longer offers /apply for these, but the address is a
-   * plain URL: it is in browser histories, in anything already shared, and in
-   * the link somebody sent before this was fixed. Landing here used to mean a
-   * full application form whose submit button could not work — the server now
-   * refuses it with a sentence, but refusing at submit is after the student has
-   * read the checklist and given consent. So it is answered first, and the
-   * answer is the address they actually need. */
-  if (query.data.listing_kind === 'CURATED') {
+   * Announced on both outcomes. The download itself is silent — the file lands
+   * in a folder and the page does not change — so a student who cannot see the
+   * browser's download shelf has no way to know the press worked, and the
+   * obvious conclusion is that it did not. The refusals are worth hearing too:
+   * the server says "those come to 63 MB together, save them one at a time"
+   * rather than a status code, and that sentence is the whole reason
+   * api.download parses the error envelope. */
+  async function collectDocuments() {
+    setBundling(true)
+    setBundleError(null)
+    try {
+      await api.download(`/me/scholarships/${scholarshipId}/document-bundle`)
+      announce(t('apply.bundleDone'), 'ok')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('common.error')
+      setBundleError(message)
+      announce(message, 'warn')
+    } finally {
+      setBundling(false)
+    }
+  }
+
+  /* A scheme applied for somewhere else, reached here anyway.
+   *
+   * Every Apply button now goes straight to the sponsor for these, so nothing
+   * on the site routes here — but the address is a plain URL: it is in browser
+   * histories, in anything already shared, and in links sent before any of this
+   * was fixed. So the page has to answer, and what it answers is the whole
+   * point of the change.
+   *
+   * It used to answer with a Notice: a bordered panel, headed "This one is
+   * applied for on the sponsor's own site", in the place where a form should
+   * have been. Everything in that sentence was true and the shape of it was
+   * wrong. A student who pressed Apply and landed on an interruption panel has
+   * been told, in the vocabulary the rest of the portal uses for problems, that
+   * something went wrong with their application — and the portal uses exactly
+   * that panel to say a submission was blocked. This was the "external looks
+   * like a failure" complaint in one component.
+   *
+   * So it is an ordinary page now, with a heading and a paragraph and the two
+   * things a student actually wants at this moment: the way to the sponsor, and
+   * their documents in a form they can hand over. No border, no tone, nothing
+   * that reads as an interruption — because it is not one. Applying somewhere
+   * else is a normal way to apply, and most of the money in this catalogue is
+   * given away that way.
+   *
+   * The mode, not the kind. A partner organisation's own portal reaches this
+   * page too, and calling that "a scheme we merely list" in front of the
+   * student would be wrong about the partner. */
+  if (query.data.apply_mode === 'EXTERNAL') {
     const away = query.data.external_url
+    const partner = query.data.listing_kind === 'TENANT'
     return (
       <div className="page narrow">
-        <h1>{t('apply.title')}</h1>
-        <Notice tone="info" title={t('apply.elsewhereTitle')}>
-          <p>{t('apply.elsewhereBody')}</p>
-          {away && (
-            <p>
-              <a className="btn primary" href={away} target="_blank" rel="noopener noreferrer">
-                {t('public.applyExternal')}
-                <span aria-hidden="true"> ↗</span>
-                <span className="sr-only"> ({t('common.newTab')})</span>
-              </a>
-            </p>
-          )}
-        </Notice>
+        <h1>{t('apply.elsewhereTitle')}</h1>
+        <p>{t(partner ? 'apply.elsewhereBodyPartner' : 'apply.elsewhereBody')}</p>
+
+        {away && (
+          <p>
+            <a className="btn primary" href={away} target="_blank" rel="noopener noreferrer">
+              {t('public.applyExternal')}
+              <span aria-hidden="true"> ↗</span>
+              <span className="sr-only"> ({t('common.newTab')})</span>
+            </a>
+          </p>
+        )}
+
+        {/* The documents, as one file to take with them.
+         *
+         * This is the concrete cost of an external application and the only
+         * part of it the platform can actually remove. The sponsor's form will
+         * ask for a disability certificate, an income certificate and a
+         * marksheet — every one of them already here, already verified, and
+         * unreachable from the page the student is looking at. Without this the
+         * realistic outcome is that they photograph the lot again on a phone,
+         * badly, because that is quicker than working out which of eleven files
+         * in their downloads folder is the right one.
+         *
+         * A button rather than a link, because it cannot be a link: the session
+         * is a bearer token held in memory, so a navigation to a protected
+         * endpoint arrives unauthenticated. api.download carries the header and
+         * hands the blob to the browser — see the note on it. */}
+        <h2>{t('apply.bundleTitle')}</h2>
+        <p>{t('apply.bundleBody')}</p>
+        {bundleError && <Notice tone="warn">{bundleError}</Notice>}
+        <p>
+          <button
+            type="button"
+            className="btn"
+            onClick={collectDocuments}
+            disabled={bundling}
+            /* Announced, not only greyed. A zip of four scans takes a few
+               seconds on a phone connection and the press gives no other
+               feedback, so without this a student presses it again — and the
+               second press is another read of every one of those objects. */
+            aria-busy={bundling || undefined}
+          >
+            {bundling ? t('apply.bundleWorking') : t('apply.bundleAction')}
+          </button>
+        </p>
       </div>
     )
   }

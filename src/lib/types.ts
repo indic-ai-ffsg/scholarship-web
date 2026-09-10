@@ -66,6 +66,21 @@ export interface Match {
      means open-ended â NOT closing today, which is what a 0 would read as. */
   closes_at?: string
   days_remaining?: number
+  /* Where pressing Apply on this card goes (backend 0054).
+   *
+   * This payload had neither, and the matched list is where their absence cost
+   * the most: MatchCard drew one button, `/apply/:id`, for every scheme the
+   * student was eligible for. For one applied for off-site that button led to
+   * the internal form, which answers with a panel explaining that no
+   * application can be made here — so a student's own matched list handed them
+   * a door onto a refusal, and read as a student reads it, that is an
+   * application that failed.
+   *
+   * listing_kind is deliberately absent. A card has one line for the sponsor
+   * and it already carries the name; whether we hold an account for them is
+   * about our contracts, not this student's next step. */
+  apply_mode?: 'INTERNAL' | 'EXTERNAL'
+  external_url?: string
   state: EligibilityState
   score: number
   missing?: Reason[]
@@ -107,21 +122,29 @@ export interface Listing {
   is_renewable: boolean
   /* Where the student actually applies, and whether it is here.
    *
-   * 'CURATED' is a scheme the platform lists but does not run: no organisation,
-   * no workflow, and a database trigger (backend 0026) that refuses any
-   * application row against it. For those, external_url is the sponsor's own
-   * page and is guaranteed present by the same CHECK constraint. 'TENANT' is a
-   * scheme run here, and the application is made at /apply.
+   * Three fields for two questions, and keeping them apart is the whole of
+   * backend 0054:
    *
-   * Both are new to this payload. The column has existed since backend 0005 and
-   * the admin panel has always had a field for it, but publicdir.Listing never
-   * carried it — so the site had no way to know a scheme was administered
-   * elsewhere and sent every student to its own /apply page, which for a
-   * curated scheme cannot succeed. Optional here because a cached or older API
-   * response will not have them; treat a missing listing_kind as TENANT, which
-   * is what the column's own default is. */
+   *   apply_mode    INTERNAL or EXTERNAL. Where a press ends up. This is the
+   *                 one to branch a button on, and lib/apply.ts is the only
+   *                 place that should read it.
+   *   listing_kind  TENANT or CURATED. Whether we hold an account for the
+   *                 sponsor. It decides which explanatory sentence is true, and
+   *                 nothing else on this payload.
+   *   external_url  The sponsor's own page, guaranteed present whenever
+   *                 apply_mode is EXTERNAL (scholarship_apply_destination).
+   *
+   * listing_kind used to carry both meanings, and the site read it for the
+   * destination because for the two shapes that existed the answers happened to
+   * agree. A TENANT scheme may now be EXTERNAL — an organisation here that
+   * takes applications on its own portal — and for that one the kind says
+   * TENANT and the door is still off-site.
+   *
+   * All optional because a cached or older API response will not have them.
+   * lib/apply.ts states the fallbacks and why they lean towards internal. */
   external_url?: string
   listing_kind?: 'TENANT' | 'CURATED'
+  apply_mode?: 'INTERNAL' | 'EXTERNAL'
   opens_at: string
   /* Both optional since backend 0043: a curated listing is allowed to have no
      window, and the directory now shows those rather than hiding them. Absent

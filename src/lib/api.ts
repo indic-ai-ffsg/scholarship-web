@@ -264,3 +264,92 @@ export async function logout() {
     // looking at a session they believe they have ended.
   }
 }
+
+/* A file the API generates, fetched with the session and handed to the browser.
+ *
+ * A plain `<a href>` cannot do this and the reason is worth stating, because it
+ * is invisible until it fails: this API authenticates with a bearer token held
+ * in memory, not a cookie. A navigation carries no Authorization header, so a
+ * link to a protected endpoint answers 401 — and it does so in a way that looks
+ * like nothing happened, since the browser has already left the page by then.
+ * A signed object-store URL is what the vault uses to avoid this for a stored
+ * document, and it is not available for a file assembled per request.
+ *
+ * Ported from the admin panel's own download(), deliberately unchanged in shape
+ * so the two behave the same way, including the parts that are not obvious:
+ *
+ *   - The filename comes from Content-Disposition. The server names the file;
+ *     one invented here would drift from it the first time either side changed.
+ *   - A failure is parsed as the API's own error envelope rather than reduced to
+ *     a status code. The refusals that actually happen are worth reading — "those
+ *     documents come to 63 MB together" tells a student what to do next, and
+ *     "the server returned 413" does not.
+ *   - One retry after a refresh. A student who has had the scheme page open for
+ *     an hour has an expired access token, and the download is the press that
+ *     discovers it; failing that press would look like the file being broken.
+ *
+ * The anchor is created, clicked and removed rather than assigning
+ * location.href, because a navigation would tear down the page while the
+ * download starts. The object URL is revoked on the next tick: revoking it
+ * synchronously races the browser's own read of it, and Safari loses the
+ * download about half the time.
+ */
+export async function download(path: string, query?: RequestOptions['query']) {
+  const url = buildUrl(path, query)
+
+  const fetchIt = () => fetch(url, {
+    headers: { ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+    credentials: 'same-origin',
+  })
+
+  let res = await fetchIt()
+
+  if (res.status === 401) {
+    const token = await refresh()
+    if (!token) {
+      onAuthLost?.()
+      throw new ApiError(401, { code: 'UNAUTHENTICATED', message: 'Sign in again.' })
+    }
+    res = await fetchIt()
+  }
+
+  if (!res.ok) {
+    const body = (await parse(res)) as ApiErrorBody | null
+    if (body?.error) throw new ApiError(res.status, body.error)
+    throw new ApiError(res.status, {
+      code: 'DOWNLOAD_FAILED',
+      message: `The file could not be prepared (${res.status}).`,
+    })
+  }
+
+  const objectURL = URL.createObjectURL(await res.blob())
+
+  const a = document.createElement('a')
+  a.href = objectURL
+  a.download = filenameFrom(res.headers.get('Content-Disposition')) ?? 'download'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+
+  setTimeout(() => URL.revokeObjectURL(objectURL), 0)
+}
+
+/* The filename out of a Content-Disposition header.
+ *
+ * Only the quoted `filename="…"` form, which is what this API sends and all it
+ * needs to parse. RFC 5987's `filename*=UTF-8''…` is deliberately not handled:
+ * nothing here generates one — the bundle handler keeps the scheme's title out
+ * of the header for exactly that reason — and half-implementing it would mean
+ * guessing at an encoding rather than falling back to a name that works.
+ *
+ * The result is stripped of anything path-like. It comes from a response header
+ * rather than from a user, so it is not attacker-controlled in any ordinary
+ * sense, but a download attribute holding "../" is a category of bug worth
+ * simply not having.
+ */
+function filenameFrom(header: string | null): string | null {
+  const match = header?.match(/filename="([^"]+)"/)
+  if (!match) return null
+  const name = match[1].replace(/[/\\]/g, '_').trim()
+  return name === '' || name === '.' || name === '..' ? null : name
+}

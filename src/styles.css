@@ -1428,6 +1428,26 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   font-size: var(--step--1); color: var(--text-muted);
 }
 
+/* Under the off-site Apply button: whose site it is, and that the application
+ * will not appear here.
+ *
+ * Muted and one step down, because it is the condition on a press rather than
+ * a warning about one — this is an ordinary way to apply, not a fault, and
+ * styling it as a caution would make every government scheme in the catalogue
+ * look like a problem with the catalogue.
+ *
+ * It does not carry the meaning on its own: the button's own label says the
+ * application happens on their site, so a reader who skips this line has still
+ * been told. That is the 1.4.1 rule applied to prose as well as to colour —
+ * nothing here is the only copy of something a student needs. */
+.listing-apply-note {
+  margin: 0.5rem 0 0;
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
 /* Two columns, once the row itself is wide enough — not the window. 38rem is
  * where the rail stops squeezing the rules into three-word lines. */
 @container (min-width: 38rem) {

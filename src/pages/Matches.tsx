@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { useI18n } from '../lib/i18n-context'
 import { Empty, ErrorState, Loading, Notice, ResultCard } from '../components/ui'
+import { applyRoute, externalHelpKey } from '../lib/apply'
 import { canApply } from '../lib/eligibility'
 import type { Match } from '../lib/types'
 
@@ -119,6 +120,22 @@ export default function Matches() {
 function MatchCard({ match }: { match: Match }) {
   const { t } = useI18n()
 
+  /* Where this card's Apply goes.
+   *
+   * This card had no such test. It drew `/apply/:id` for every scheme the
+   * student was eligible for, including the ones applied for on a sponsor's own
+   * site — and for those the press landed on the internal Apply screen, which
+   * answers with a panel saying no application can be made here. The student
+   * had done nothing wrong, had pressed the button their own matched list
+   * offered, and was shown a refusal. That is the "external flow looks like a
+   * failed application" failure at its worst, because this is the screen that
+   * is supposed to be about them.
+   *
+   * The directory had the test and this did not, so the same scheme behaved
+   * differently depending on which screen the student found it on. lib/apply.ts
+   * is now the only copy. */
+  const route = applyRoute(match)
+
   return (
     <ResultCard
       state={match.state}
@@ -129,21 +146,52 @@ function MatchCard({ match }: { match: Match }) {
       organisation={match.organisation_name}
       daysRemaining={match.days_remaining}
       nextAction={match.next_action}
+      /* Replaces the state's own sentence for an off-site scheme, which is what
+         the `help` slot is for: "you can apply for this" is true and the
+         sentence a student needs is where, and that it will not turn up under
+         their applications afterwards. Without it the card promises tracking
+         the platform cannot deliver. */
+      help={
+        route.kind === 'external' && !match.already_applied
+          ? t(externalHelpKey(route), { org: match.organisation_name })
+          : undefined
+      }
     >
       {match.already_applied ? (
         <Link className="btn" to={`/applications/${match.application_id}`}>
           {t('match.applied')}
         </Link>
-      ) : canApply(match.state) ? (
-        <Link className="btn primary" to={`/apply/${match.scholarship_id}`}>
+      ) : !canApply(match.state) ? (
+        /* Not eligible yet, so neither Apply branch applies. Hoisted above the
+           two of them rather than repeated in both conditions, which is also
+           what lets TypeScript narrow `route` to one variant below — a
+           `canApply(...) && route.kind === 'external'` conjunction leaves the
+           later branch holding a union with no `to` on it. */
+        match.state === 'BLOCKED' ? (
+          // The block is a document or a value, so the vault is where it is
+          // cleared. A visitor running the public check has neither, which is
+          // why that page offers this one nothing.
+          <Link className="btn" to="/documents">{t('nav.documents')}</Link>
+        ) : null
+      ) : route.kind === 'external' ? (
+        /* An anchor, and labelled as leaving. Same rules as the directory row:
+           noopener/noreferrer, and the new tab announced rather than left to
+           the arrow. */
+        <a
+          className="btn primary"
+          href={route.href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {t('public.applyExternal')}
+          <span aria-hidden="true"> ↗</span>
+          <span className="sr-only"> — {match.title} ({t('common.newTab')})</span>
+        </a>
+      ) : (
+        <Link className="btn primary" to={route.to}>
           {t('match.apply')}
         </Link>
-      ) : match.state === 'BLOCKED' ? (
-        // The block is a document or a value, so the vault is where it is
-        // cleared. A visitor running the public check has neither, which is why
-        // that page offers this one nothing.
-        <Link className="btn" to="/documents">{t('nav.documents')}</Link>
-      ) : null}
+      )}
       {/* No "See details" beside it. The card's own title is a link to that
           same page, so the pair was one destination offered twice — and the
           second copy was a control sitting next to the single thing the card

@@ -8,6 +8,7 @@ import { useI18n } from '../../lib/i18n-context'
 import {
   disabilityChoices, genderFilterChoices, qualificationChoices, stateChoices, subjectChoices, type Choice,
 } from '../../lib/fields'
+import { applyRoute } from '../../lib/apply'
 import { awardLabel, shortDate } from '../../lib/format'
 import { Deadline, Empty, ErrorState, Field, Loading, Notice, SponsorLogo } from '../../components/ui'
 import { SchemeSheet } from './SchemeSheet'
@@ -573,18 +574,14 @@ export function ListingCard({
   const foldable = criteria.length > CRITERIA_SHOWN
   const shown = criteria.slice(0, CRITERIA_SHOWN)
 
-  /* The sponsor's own page, when this is a scheme the platform only lists.
+  /* Where Apply goes, decided in one place for all four buttons.
    *
-   * Both halves matter, and the scheme page carries the long version of why: a
-   * TENANT scheme may also have an external_url, and for one of those the
-   * application still belongs here. The kind decides; the URL only supplies the
-   * address. `?? 'TENANT'` because a cached response predating the field has
-   * none, and TENANT is the column's own default — falling back the other way
-   * would send every reader off-site on one stale response. */
-  const external =
-    (listing.listing_kind ?? 'TENANT') === 'CURATED' && listing.external_url
-      ? listing.external_url
-      : null
+   * This used to read `listing_kind === 'CURATED' && external_url` here, and
+   * again in the scheme panel, and again on the scheme page, and not at all in
+   * the matched list. lib/apply.ts holds the test now, along with the reason
+   * the field is apply_mode rather than the kind and the reason the fallbacks
+   * lean towards internal. */
+  const route = applyRoute(listing)
 
   /* Closed, by the same test the deadline badge uses (format.deadlineLabel).
    * An Apply button on a scheme that shut last week is an invitation to spend
@@ -755,24 +752,51 @@ export function ListingCard({
             <Link className="btn primary" to={withNext('/register', '/matches')}>
               {t('public.registerToApply')}{forThis}
             </Link>
-          ) : external ? (
+          ) : route.kind === 'external' ? (
             /* A real anchor, not a Link: this leaves the site. noopener denies
                the opened page a handle on this one, noreferrer keeps our URL
                out of their logs, and the new tab is announced rather than
                implied by the arrow — an unannounced new tab is one of the most
-               disorienting things a screen reader user meets. */
+               disorienting things a screen reader user meets.
+
+               The label names the destination now. It read public.applyNow,
+               which is the same four characters the internal button uses, so a
+               sighted reader had the arrow to go on and a screen reader user
+               had nothing at all — two buttons with one accessible name doing
+               materially different things. Colour and a glyph carrying that
+               difference alone is the WCAG 1.4.1 failure the house rules put
+               first, and here the thing being distinguished is whether an
+               application reaches anybody. */
+            /* The label and nothing else. applyExternalHelp is drawn in the
+               panel and on the matched card, both of which have the width for
+               a sentence; this rail is 11rem and does not.
+               *
+               * Measured rather than assumed, because the note was here first.
+               * At 900px the two-column layout gives the rail 176px, and the
+               * curated sentence — which has to name a sponsor like
+               * "Department of Empowerment of Persons with Disabilities" — set
+               * to nine lines, stretching the card to twice its height with an
+               * empty column beside it. Down a list of forty that is not a
+               * caption, it is the layout.
+               *
+               * Nothing is lost by leaving it out here. The button says the
+               * application happens on their site, the band above says whose
+               * site, and the panel one press away says what it means for
+               * tracking. The rule the house style actually cares about is that
+               * no single control carries the difference by colour or glyph
+               * alone, and the label is what satisfies it. */
             <a
               className="btn primary"
-              href={external}
+              href={route.href}
               target="_blank"
               rel="noopener noreferrer"
             >
-              {t('public.applyNow')}
+              {t('public.applyExternal')}
               <span aria-hidden="true"> ↗</span>
               <span className="sr-only"> — {listing.title} ({t('common.newTab')})</span>
             </a>
           ) : (
-            <Link className="btn primary" to={`/apply/${listing.scholarship_id}`}>
+            <Link className="btn primary" to={route.to}>
               {t('public.applyNow')}{forThis}
             </Link>
           )}
