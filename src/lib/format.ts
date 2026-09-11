@@ -47,6 +47,23 @@ export function dateTime(iso: string, lang = 'en') {
   }).format(new Date(iso))
 }
 
+/* A server label, capitalised for use as a heading.
+ *
+ * workflow.Human returns "document check" in lower case and is right to: it is
+ * built to sit inside a sentence — "moved to document check" — and most of its
+ * call sites do exactly that. Standing alone at the head of a timeline entry it
+ * reads as unfinished, which is what a column of lower-case stage names looked
+ * like.
+ *
+ * Only the first character is touched. An organisation that renamed a stage to
+ * "send to finance" keeps its own words, and a label that already begins with a
+ * capital is returned unchanged — so this cannot fight a custom label, only
+ * tidy one that was written for a different position in a sentence.
+ */
+export function sentenceCase(s: string) {
+  return s ? s[0].toUpperCase() + s.slice(1) : s
+}
+
 /** File sizes, for the document list. */
 export function fileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`

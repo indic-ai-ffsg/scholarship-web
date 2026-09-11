@@ -579,6 +579,17 @@ export const en: Dict = {
   'appl.outcomeWithdrawn': 'You withdrew this',
   'appl.inProgress': 'With the provider',
 
+  /* The detail page. "What happens next" is the right heading while something
+     is still going to happen; once an application is settled it is a question
+     with no answer, so the panel switches to naming the outcome. */
+  'appl.outcome': 'Outcome',
+  'appl.award': 'Award',
+  'appl.applied': 'Applied',
+  'appl.decided': 'Decided',
+  'appl.automatic': 'Automatic',
+  'appl.byYou': 'You',
+  'appl.noHistory': 'Nothing has happened yet.',
+
   'privacy.title': 'Your data',
   'privacy.lede': 'What we hold, who has seen it, and how to take it back.',
   'privacy.access': 'Who has looked at your documents',

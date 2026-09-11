@@ -4104,3 +4104,146 @@ label .req, .field-label .req { color: var(--danger); font-weight: var(--w-stron
      step's predecessor is above it, not to its left. */
   .track-step:nth-child(odd) .track-rule { display: none; }
 }
+
+/* --- one application ---------------------------------------------------------
+ *
+ * The page answers three questions in order: what is this, where has it got to,
+ * and what has happened. It used to answer them as a heading, a notice and a
+ * flat list — and the list was the weak part, nine lower-case stage names all
+ * stamped with the same date.
+ */
+
+.appd-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.875rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.appd-head h1 { margin: 0 0 0.1rem; }
+.appd-org { margin: 0; color: var(--text-muted); }
+
+/* The status panel. Track and sentence in one block, because they are two
+   halves of one answer — the reader who has just counted the dots is already
+   asking what they mean. */
+.appd-status {
+  border: 1px solid var(--border);
+  border-left-width: 6px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 1.25rem;
+  margin-bottom: var(--gap);
+}
+.appd-status .track { margin-bottom: 1.25rem; }
+.appd-status-body h2 {
+  font-size: var(--step-0);
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.appd-status-body p { margin: 0 0 0.5rem; }
+.appd-status-body > :last-child { margin-bottom: 0; }
+
+/* The left edge carries the tone, and the heading carries it in words. Nothing
+   is said by colour alone: "Awarded", "Not awarded this time" and "What happens
+   next" are different sentences before they are different colours. */
+.appd-status.tone-wait { border-left-color: var(--likely); }
+.appd-status.tone-wait .appd-status-body h2 { color: var(--likely); }
+.appd-status.tone-yes  { border-left-color: var(--eligible); }
+.appd-status.tone-yes  .appd-status-body h2 { color: var(--eligible); }
+.appd-status.tone-ask  { border-left-color: var(--blocked); }
+.appd-status.tone-ask  .appd-status-body h2 { color: var(--blocked); }
+.appd-status.tone-no   { border-left-color: var(--ineligible); }
+.appd-status.tone-no   .appd-status-body h2 { color: var(--ineligible); }
+
+.appd-ask { padding: 0.75rem; border-radius: var(--radius); background: var(--blocked-weak); }
+.appd-reason { padding-left: 0.875rem; border-left: 3px solid var(--border); color: var(--text-muted); }
+
+/* The facts. Pairs on a wrapping row rather than a run-on line: the reference
+   is what somebody reads out on a helpline, and it has to be findable without
+   parsing a sentence. */
+.appd-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 2.5rem;
+  margin: 0 0 2rem;
+  padding: 0 0 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.appd-facts > div { display: grid; gap: 0.15rem; }
+.appd-facts dt {
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.appd-facts dd { margin: 0; font-weight: var(--w-medium); }
+/* Tabular, because a reference is read aloud a character at a time. */
+.appd-ref { font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+
+.appd-history-head { font-size: var(--step-1); margin: 0 0 1rem; }
+
+/* The history. A rail down the left with a dot per entry — the rail is drawn
+   per item and reaches from the dot to the next one, so no separate element
+   has to be kept the right height. */
+.appd-timeline { list-style: none; margin: 0; padding: 0; }
+.appd-timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 0.875rem;
+  padding-bottom: 1.5rem;
+}
+.appd-timeline li::before {
+  content: "";
+  position: absolute;
+  left: 0.3125rem;
+  top: 1.1rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.appd-timeline li:last-child { padding-bottom: 0; }
+.appd-timeline li:last-child::before { display: none; }
+
+.appd-dot {
+  position: relative;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: 0.35rem;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+/* The most recent entry is where the application actually is, so it is the one
+   the eye should land on — filled in the accent and ringed to lift it off the
+   rail the others sit on. */
+.appd-timeline li.is-latest .appd-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-weak);
+}
+
+.appd-entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+}
+.appd-when {
+  color: var(--text-muted);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+.appd-actor { margin: 0.1rem 0 0; color: var(--text-muted); font-size: var(--step--1); }
+
+/* A remark somebody typed while moving the application. Often two words, which
+   inline read as part of the stage's name — "document check Ok". Quoted and
+   indented, it reads as what it is: an aside from the person who acted. */
+.appd-note {
+  margin: 0.4rem 0 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--border);
+  color: var(--text-muted);
+}
+.appd-note::before { content: "\201C"; }
+.appd-note::after  { content: "\201D"; }
