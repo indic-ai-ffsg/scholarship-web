@@ -346,6 +346,10 @@ export interface Application {
   application_id: string
   reference_code: string
   scholarship_title?: string
+  /* Whose scheme it is. Already on the wire and simply not declared here —
+     the list uses it to fetch the sponsor's mark from
+     /public/organisations/<id>/logo, which needs no other field. */
+  organisation_id?: string
   organisation_name?: string
   award_amount?: number
   current_state: string

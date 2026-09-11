@@ -30,6 +30,23 @@ export function shortDate(iso: string, lang = 'en') {
   }).format(new Date(iso))
 }
 
+/* A date with the time on it, for a record of something that happened.
+ *
+ * shortDate above answers "when is this due"; this answers "when did I send
+ * it", and those want different precision. A student checking whether their
+ * application went through wants to recognise the moment they pressed the
+ * button — the date alone leaves them wondering whether the second attempt
+ * counted, which is exactly the doubt an application list exists to settle.
+ *
+ * en-IN, so the clock is the 12-hour one people here read, with the date first.
+ */
+export function dateTime(iso: string, lang = 'en') {
+  return new Intl.DateTimeFormat(lang === 'hi' ? 'hi-IN' : 'en-IN', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  }).format(new Date(iso))
+}
+
 /** File sizes, for the document list. */
 export function fileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`

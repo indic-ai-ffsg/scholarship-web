@@ -55,6 +55,27 @@ export class ApiError extends Error {
   }
 }
 
+/* The useful half of a failure, for somewhere with room for one line.
+ *
+ * domain.ErrValidation pairs a generic sentence — "Some of the details you
+ * entered need attention." — with a map saying which detail and why. Where a
+ * caller can show only one string, the map is the one worth showing: the
+ * generic sentence names nothing the reader can act on, and on a screen with
+ * one button it reads as a dead end.
+ *
+ * This existed in the admin panel and not here, which is backwards. An operator
+ * meeting "some of the details need attention" has a colleague to ask; a
+ * student pressing Send my application has the sentence and nothing else, and
+ * the fields the server named were being thrown away by the catch block.
+ */
+export function errorDetail(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    const detail = Object.values(err.fields ?? {})
+    return detail.length > 0 ? detail.join(' ') : err.message
+  }
+  return err instanceof Error ? err.message : fallback
+}
+
 /** Set by the auth provider. Kept in memory only — see the note in auth.tsx. */
 let accessToken: string | null = null
 let onAuthLost: (() => void) | null = null

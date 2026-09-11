@@ -3902,3 +3902,205 @@ label .req, .field-label .req { color: var(--danger); font-weight: var(--w-stron
 @media (prefers-reduced-motion: reduce) {
   .skeleton-line { animation: none; background: var(--surface-sunken); }
 }
+
+/* --- the application list ----------------------------------------------------
+ *
+ * A row answers three questions and is laid out in that order, top to bottom:
+ * what did I apply for, how far has it got, and when. The old row answered only
+ * the first, and a student checking on a scheme in review saw the same words
+ * every week.
+ */
+
+.appl-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+  display: grid;
+  gap: var(--gap);
+}
+
+/* The identity row: mark, name, stage. Grid rather than flex so the mark and
+   the badge hold their columns while the title takes whatever is left — with
+   flex the badge's width would change as the stage's wording did, and the
+   titles below it would no longer line up. */
+.appl-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.875rem;
+  margin-bottom: 1.125rem;
+}
+
+.appl-title h2 {
+  font-size: var(--step-1);
+  margin: 0 0 0.15rem;
+  /* The long ones wrap rather than pushing the badge off the row. */
+  overflow-wrap: anywhere;
+}
+.appl-meta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--step--1);
+}
+/* Tabular figures so a column of references reads as a column, and the digits
+   do not shuffle between rows. */
+.appl-ref { font-variant-numeric: tabular-nums; }
+
+/* The sponsor's mark, over its own monogram. A fixed square so the row reserves
+   the space before the bytes land — without it a list of applications reflows
+   once per image, which is the layout shift 0028 stores dimensions to prevent. */
+.org-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+.org-mark-initials {
+  font-weight: var(--w-strong);
+  font-size: var(--step--1);
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+/* Over the monogram, covering it once it loads. `contain` rather than `cover`:
+   a sponsor's mark is usually wider than it is tall, and cropping one to fill a
+   square is how a logo ends up showing half a word. */
+.org-mark img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--surface);
+  padding: 0.2rem;
+}
+
+/* --- the track --------------------------------------------------------------
+ *
+ * Four steps across the card. Equal columns so the dots sit at predictable
+ * places rather than bunching under the longest word, and the connecting rule
+ * is drawn per step as a line reaching back to the previous one — which means
+ * no separate track element to keep in step with the dots. */
+.track {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.track-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+/* Back to the previous dot. Left of centre by half a column, and nothing on the
+   first step, which has nothing behind it. */
+.track-rule {
+  position: absolute;
+  top: 0.6875rem;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--border);
+}
+.track-step:first-child .track-rule { display: none; }
+
+.track-dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--accent-text);
+}
+
+.track-name { text-align: center; line-height: 1.25; }
+
+/* Done: filled and ticked. The tick is the signal that survives greyscale. */
+.track-step.is-done .track-dot { background: var(--accent); border-color: var(--accent); }
+.track-step.is-done .track-rule { background: var(--accent); }
+.track-step.is-done .track-name { color: var(--text); }
+
+/* Current: a ring rather than a fill, so it is plainly not finished, and the
+   name carries the weight — the one step a reader should land on. */
+.track-step.is-current .track-dot {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+/* The segment INTO the current step is travelled, so it is filled. Left grey it
+   read as a gap between a finished step and the one in progress — as though
+   something in between had been skipped. */
+.track-step.is-current .track-rule { background: var(--accent); }
+.track-step.is-current .track-name {
+  color: var(--text);
+  font-weight: var(--w-strong);
+}
+
+/* An ended track is drawn quietly whatever the outcome: the card says what
+   happened in words beside it, and four bright ticks on a refusal is a glance
+   that says the opposite. */
+.track-ended .track-step.is-done .track-dot,
+.track-ended .track-step.is-done .track-rule {
+  background: var(--ineligible);
+  border-color: var(--ineligible);
+}
+.track-ended .track-name { color: var(--text-muted); }
+
+.appl-when {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--step--1);
+}
+.appl-when strong { color: var(--text); }
+
+/* The provider's words on a refusal. Set apart, because it is the sentence the
+   application comes down to and it should not read as another line of metadata. */
+.appl-reason {
+  margin: 0.75rem 0 0;
+  padding-left: 0.875rem;
+  border-left: 3px solid var(--border);
+  color: var(--text-muted);
+}
+
+/* The one card asking for something. A left edge rather than a fill: the row
+   already carries a badge and a callout in this colour, and a third would make
+   the card louder than the sentence inside it. */
+.appl-card.needs-you { border-left: 6px solid var(--blocked); }
+
+/* Under about 26rem the four steps stop fitting across, and squeezing them
+   breaks the words rather than the layout. Two rows of two keeps every label
+   whole and the order still reads left to right, top to bottom. */
+/* A media query and not @container: this stylesheet declares no containment
+   anywhere, so a container query would match nothing and the four steps would
+   go on being squeezed. 34rem is the viewport at which the labels start
+   breaking, measured rather than guessed. */
+@media (max-width: 34rem) {
+  /* The badge drops to its own row rather than competing with the title.
+     Holding its column costs the title about eight characters a line, which
+     turned "National Scholarship for Students with Disabilities" into five
+     lines and buried the sponsor underneath it. */
+  .appl-head { grid-template-columns: auto minmax(0, 1fr); }
+  .appl-head .state-badge {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .track { grid-template-columns: repeat(2, 1fr); row-gap: 0.875rem; }
+  /* The rule back to the previous dot is wrong across a wrapped row: the third
+     step's predecessor is above it, not to its left. */
+  .track-step:nth-child(odd) .track-rule { display: none; }
+}

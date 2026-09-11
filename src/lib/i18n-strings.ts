@@ -555,6 +555,30 @@ export const en: Dict = {
   'appl.history': 'History',
   'appl.needsYou': 'They need something from you',
 
+  /* The four steps of the track. Named for what is happening rather than for
+     the workflow state — "Checks" covers DOCUMENT_CHECK and VERIFIED, which are
+     one wait to the person waiting. */
+  'track.label': 'Progress of this application',
+  'track.sent': 'Sent',
+  'track.checks': 'Checks',
+  'track.review': 'Review',
+  'track.decision': 'Decision',
+  /* Read out after each step's name, so the state is a word and not only a
+     shape and a colour. */
+  'track.doneSr': 'done',
+  'track.currentSr': 'in progress now',
+  'track.todoSr': 'not started',
+
+  'appl.sentOn': 'Sent {when}',
+  'appl.decidedOn': 'Decided {when}',
+  /* Said plainly, and not dressed up. A refusal that arrives as "Update on your
+     application" makes somebody read three lines to find out, and they will
+     read those three lines every time they open this page. */
+  'appl.outcomeApproved': 'Awarded',
+  'appl.outcomeRejected': 'Not awarded this time',
+  'appl.outcomeWithdrawn': 'You withdrew this',
+  'appl.inProgress': 'With the provider',
+
   'privacy.title': 'Your data',
   'privacy.lede': 'What we hold, who has seen it, and how to take it back.',
   'privacy.access': 'Who has looked at your documents',

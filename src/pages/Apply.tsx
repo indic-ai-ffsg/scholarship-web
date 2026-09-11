@@ -172,7 +172,7 @@ export default function Apply() {
       await api.download(`/me/scholarships/${scholarshipId}/document-bundle`)
       announce(t('apply.bundleDone'), 'ok')
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('common.error')
+      const message = api.errorDetail(err, t('common.error'))
       setBundleError(message)
       announce(message, 'warn')
     } finally {
@@ -280,7 +280,16 @@ export default function Apply() {
         blocked_reason?: string
       }>('/me/applications', {
         scholarship_id: scholarshipId,
-        consent_given: true,
+        /* The box, not a literal.
+         *
+         * This sent `true` unconditionally while the button beside it is
+         * disabled until the box is ticked — so the two agreed, by luck rather
+         * than by construction. Consent is the one field on this platform where
+         * that is not good enough: it is recorded per application under the
+         * DPDP Act and shown back to the student as something they did. Sending
+         * the control's own value means a change to the gate cannot quietly
+         * start recording a consent nobody gave. */
+        consent_given: consent,
         // A retry over a flaky connection must not produce a second
         // application; the server recognises the key and returns the first.
         idempotency_key: `apply-${scholarshipId}`,
@@ -296,7 +305,14 @@ export default function Apply() {
       announce(t('apply.submit'), 'ok')
       navigate(`/applications/${res.data.application!.application_id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'))
+      /* The field the server named, not the sentence that names none.
+       *
+       * A validation failure arrives as "Some of the details you entered need
+       * attention" with a map saying which — and this discarded the map. On a
+       * screen whose only control is Send my application, that sentence is a
+       * dead end: nothing on the page is marked, and there is nothing to go and
+       * change. */
+      setError(api.errorDetail(err, t('common.error')))
     } finally {
       setBusy(false)
     }
