@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+import * as api from '../lib/api'
+
 /* The sponsor's mark beside an application, with a monogram behind it.
  *
  * # Why not the SponsorLogo component
@@ -39,7 +41,13 @@ export default function OrgMark({ organisationID, name }: {
 
       {organisationID && !failed && (
         <img
-          src={`/api/v1/public/organisations/${organisationID}/logo`}
+          /* api.assetUrl, not a hand-built path. The base carries the API
+             version from VITE_API_VERSION, and hardcoding /api/v1 here meant a
+             mark that resolved on a v1 deployment and 404'd on any other —
+             failing silently into the monogram, which is exactly the kind of
+             bug the fallback is good at hiding. api.ts is the one place that
+             knows the base, and SponsorLogo already went through it. */
+          src={api.assetUrl(`/public/organisations/${organisationID}/logo`)}
           alt=""
           onError={() => setFailed(true)}
           /* Off the critical path: a list of applications is read for its

@@ -587,7 +587,6 @@ export const en: Dict = {
   'appl.applied': 'Applied',
   'appl.decided': 'Decided',
   'appl.automatic': 'Automatic',
-  'appl.byYou': 'You',
   'appl.noHistory': 'Nothing has happened yet.',
 
   'privacy.title': 'Your data',

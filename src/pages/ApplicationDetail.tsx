@@ -163,11 +163,18 @@ export default function ApplicationDetail() {
                     <span className="appd-when">{dateTime(e.created_at)}</span>
                   </p>
 
-                  <p className="appd-actor">
-                    {e.is_system
-                      ? t('appl.automatic')
-                      : e.actor_organisation ?? t('appl.byYou')}
-                  </p>
+                  {/* Who acted, when that is somebody other than the reader.
+                      *
+                      * A student's own submission used to render "You" under
+                      * it, which tells them what they already know and puts a
+                      * line of chrome under the one entry that needs none. No
+                      * organisation and not automatic means it was them, and
+                      * the absence says so. */}
+                  {(e.is_system || e.actor_organisation) && (
+                    <p className="appd-actor">
+                      {e.is_system ? t('appl.automatic') : e.actor_organisation}
+                    </p>
+                  )}
 
                   {/* Set apart rather than run on. These are remarks somebody
                       typed while moving the application — often two words —
