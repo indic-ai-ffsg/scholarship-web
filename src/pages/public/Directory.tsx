@@ -9,6 +9,7 @@ import {
   disabilityChoices, genderFilterChoices, qualificationChoices, stateChoices, subjectChoices, type Choice,
 } from '../../lib/fields'
 import { applyRoute } from '../../lib/apply'
+import { useApplied } from '../../lib/applied'
 import { awardLabel, shortDate } from '../../lib/format'
 import { Deadline, Empty, ErrorState, Field, Loading, Notice, SponsorLogo } from '../../components/ui'
 import { SchemeSheet } from './SchemeSheet'
@@ -548,6 +549,11 @@ export function ListingCard({
   const { t } = useI18n()
   const { status } = useAuth()
 
+  /* Whether this student has already applied for this one. Shared across every
+     card on the page — one request for a list of forty, not forty. */
+  const { applicationFor } = useApplied(status === 'authenticated')
+  const appliedID = applicationFor(listing.scholarship_id)
+
   /* Turns a link into a press on the panel, but only when it really is one.
    *
    * Every control below stays a real <a href> pointing at the full page, and
@@ -738,7 +744,25 @@ export function ListingCard({
             * unintended. */}
           {closed ? (
             <p className="listing-closed">{t('public.closedNote')}</p>
-          ) : status === 'loading' ? null : status !== 'authenticated' ? (
+          ) : status === 'loading' ? null : appliedID ? (
+            /* Already applied, so the row offers the application rather than a
+             * second one.
+             *
+             * A link, not a disabled button. A greyed-out "Applied" is a dead
+             * end that says what the reader cannot do; this says what they can
+             * — go and see where it has got to — which is the page the track
+             * lives on. It also matches the matched list, which has worked this
+             * way since it was built.
+             *
+             * The test is the application record itself (lib/applied.ts), not a
+             * second notion of "applied" kept somewhere: the same table the
+             * matcher joins, asked through the student's own endpoint because
+             * the public directory is a shared cache and cannot hold a
+             * per-reader fact. */
+            <Link className="btn" to={`/applications/${appliedID}`}>
+              {t('match.applied')}{forThis}
+            </Link>
+          ) : status !== 'authenticated' ? (
             /* To the matches list, not back to this row.
              *
              * `next` could carry them to /apply for this scheme and lib/next.ts

@@ -6,6 +6,7 @@ import { useQuery } from '../../lib/hooks'
 import { withNext } from '../../lib/next'
 import { useI18n } from '../../lib/i18n-context'
 import { applyRoute, externalHelpKey } from '../../lib/apply'
+import { useApplied } from '../../lib/applied'
 import { asLines, awardLabel, date, stripNumbering } from '../../lib/format'
 import { Deadline, ErrorState, Loading, SponsorLogo } from '../../components/ui'
 import { Sheet } from '../../components/Sheet'
@@ -59,12 +60,22 @@ export function SchemeSheet({
   const { t } = useI18n()
   const { status } = useAuth()
 
+  /* The same lookup the row uses, from the same shared cache — opening a panel
+     over a list that already asked must not ask again. The hook is called here
+     with the rest of them; the id it is asked about comes from `s` below, so
+     the lookup itself happens after the scheme is in hand. */
+  const { applicationFor } = useApplied(status === 'authenticated')
+
   const query = useQuery<Listing>(
     signal => api.get(`/public/scholarships/${slug}`, undefined, signal),
     [slug],
   )
 
   const s = query.data ?? seed
+  /* `s?.` because the seed is optional: a panel opened by a direct URL has no
+     row behind it and renders from the query alone, so there is nothing to ask
+     about until it lands. */
+  const appliedID = s ? applicationFor(s.scholarship_id) : undefined
 
   /* The tab takes the scheme's name while the panel is open.
    *
@@ -112,7 +123,15 @@ export function SchemeSheet({
             row that opened it must not offer different doors. */}
         {closed ? (
           <p className="muted" style={{ margin: 0 }}>{t('public.closedNote')}</p>
-        ) : status === 'loading' ? null : status !== 'authenticated' ? (
+        ) : status === 'loading' ? null : appliedID ? (
+          /* Already applied. The panel and the row it opened from must not
+             offer different doors, so this mirrors ListingCard exactly — a link
+             to the application rather than a disabled button, read from the
+             application record rather than from any second notion of applied. */
+          <Link className="btn wide" to={`/applications/${appliedID}`}>
+            {t('match.applied')}
+          </Link>
+        ) : status !== 'authenticated' ? (
           <Link className="btn primary wide" to={withNext('/register', '/matches')}>
             {t('public.registerToApply')}
           </Link>

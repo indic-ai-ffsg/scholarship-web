@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import * as api from '../lib/api'
+import { forgetApplied } from '../lib/applied'
 import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { useAnnounce } from '../lib/announce'
@@ -301,6 +302,12 @@ export default function Apply() {
         query.reload()
         return
       }
+
+      /* The directory's "have I applied" cache is now a lie by exactly one
+         entry. Dropped rather than patched: re-asking costs one small request
+         the next time a list is opened, and a cache updated by hand at each
+         call site is one that goes stale at the site somebody forgets. */
+      forgetApplied()
 
       announce(t('apply.submit'), 'ok')
       navigate(`/applications/${res.data.application!.application_id}`)

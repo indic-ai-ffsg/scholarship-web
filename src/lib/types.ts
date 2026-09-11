@@ -345,6 +345,10 @@ export interface RequiredDocument {
 export interface Application {
   application_id: string
   reference_code: string
+  /* Which scheme it is for. On the wire since the endpoint existed; declared
+     now because the directory reads it to decide whether a row offers Apply or
+     the application itself. */
+  scholarship_id?: string
   scholarship_title?: string
   /* Whose scheme it is. Already on the wire and simply not declared here —
      the list uses it to fetch the sponsor's mark from
