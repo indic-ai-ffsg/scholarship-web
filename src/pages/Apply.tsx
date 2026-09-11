@@ -320,7 +320,15 @@ export default function Apply() {
       )}
 
       {/* Every document, with its state. A student who cannot submit should be
-          able to see at a glance which line is the problem. */}
+          able to see at a glance which line is the problem.
+          *
+          * Hidden entirely when the scheme asks for none, which is ordinary
+          * rather than a gap: a curated listing carries no required documents
+          * by design, and one converted onto the platform inherits that. The
+          * heading was rendering over an empty list, which reads as a section
+          * that failed to load rather than as a scheme with nothing to
+          * upload. */}
+      {documents.length > 0 && (
       <section className="card" aria-labelledby="docs">
         <h2 id="docs" style={{ fontSize: 'var(--step-1)' }}>{t('apply.docs')}</h2>
 
@@ -357,6 +365,7 @@ export default function Apply() {
           </p>
         )}
       </section>
+      )}
 
       {/* Consent, recorded per application with a stated purpose and an
           enumerated field list. The DPDP Act requires the record; naming the
@@ -370,7 +379,11 @@ export default function Apply() {
           />
           <span>
             <span className="label">{t('apply.consent')}</span>
-            <span className="sub">{t('apply.consentBody', { fields: shared })}</span>
+            <span className="sub">
+              {shared
+                ? t('apply.consentBody', { fields: shared })
+                : t('apply.consentBodyNoDocs')}
+            </span>
           </span>
         </label>
 

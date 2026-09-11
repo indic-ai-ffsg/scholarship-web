@@ -505,6 +505,10 @@ export const en: Dict = {
   'apply.title': 'Apply',
   'apply.consent': 'Share my details with this provider',
   'apply.consentBody': 'They will see only what this scholarship needs to make a decision: {fields}. You can see who looked at your documents at any time.',
+  /* The same promise for a scheme that asks for no documents, which is
+     ordinary — the sentence above interpolated an empty list and read
+     "needs to make a decision: ." */
+  'apply.consentBodyNoDocs': 'They will see only what this scholarship needs to make a decision, and nothing else. You can see who looked at your details at any time.',
   'apply.submit': 'Send my application',
   'apply.submitting': 'Sending…',
   'apply.blocked': 'You cannot apply yet',
