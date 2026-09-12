@@ -4247,3 +4247,71 @@ label .req, .field-label .req { color: var(--danger); font-weight: var(--w-stron
 }
 .appd-note::before { content: "\201C"; }
 .appd-note::after  { content: "\201D"; }
+
+/* --- schemes we sent a student to --------------------------------------------
+ *
+ * Below the applications and visibly a different kind of thing. They share the
+ * card shape because the student thinks of both as "what I applied for", and
+ * they must not share the track: an application's progress is observed at every
+ * stage, and about these the platform knows one fact and whatever the student
+ * chose to tell it.
+ */
+.ref-section { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.ref-section h2 { font-size: var(--step-1); margin: 0 0 0.25rem; }
+.ref-blurb { margin: 0 0 1rem; max-width: var(--measure); }
+
+/* Not a link and so not an h2 — the card names a scheme this platform does not
+   hold, and there is no page of ours to open. Same size as an application's
+   title, because it is the same kind of thing to the person reading it. */
+.ref-section h3 {
+  font-size: var(--step-1);
+  margin: 0 0 0.15rem;
+  overflow-wrap: anywhere;
+}
+
+/* The link out, on its own row once the head goes two-column.
+ *
+ * Without this it lands in the first column, which is `auto` — so a 190px
+ * button sizes the column the 40px monogram is in, and the title is squeezed
+ * into what is left and breaks mid-word. The state badge on an application card
+ * is moved for the same reason, a few rules down; this is that rule's twin for
+ * the one element referral cards have instead. */
+@media (max-width: 34rem) {
+  .appl-head .ref-open {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+  }
+}
+
+/* The question, and the four answers. Buttons rather than a select: there are
+   four, they are short, and a select would hide three of them behind a press on
+   a question the student is being asked once. */
+.ref-ask { margin-top: 0.75rem; }
+.ref-ask > p { margin: 0 0 0.5rem; font-weight: var(--w-medium); }
+.ref-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* What they told us, attributed. The attribution is the point and is never
+   dropped: this is the one thing on the page the platform did not observe. */
+.ref-said {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+/* A button that reads as a link, for the one action that is a change of mind
+   rather than a step. */
+.btn-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}

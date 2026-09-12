@@ -589,6 +589,31 @@ export const en: Dict = {
   'appl.automatic': 'Automatic',
   'appl.noHistory': 'Nothing has happened yet.',
 
+  /* Schemes applied for on the sponsor's own site. Worded so the student is
+     never told the platform knows something it does not: we sent them, and the
+     rest is whatever they tell us. */
+  'ref.heading': 'Sent to their website',
+  'ref.blurb': 'These are applied for on the provider’s own site, so we cannot see what happened. Tell us and we will keep it with the rest.',
+  'ref.sentOn': 'You opened this on {when}',
+  /* Appended after the date, so it says how many times rather than repeating
+     the verb: "You opened this on 11 September, 4:40 pm · 3 times in all". */
+  'ref.again': '{times} times in all',
+  'ref.open': 'Open their site again',
+  'ref.what': 'What happened?',
+  'ref.APPLIED': 'I applied',
+  'ref.AWARDED': 'I was awarded it',
+  'ref.NOT_AWARDED': 'I was not awarded it',
+  'ref.DID_NOT_APPLY': 'I did not apply',
+  /* The same four answers read back, in the person the sentence is in.
+     "You told us: I applied" puts two speakers in one line; a button label and
+     a recap of what that button meant are not the same sentence. */
+  'ref.saidAPPLIED': 'you applied',
+  'ref.saidAWARDED': 'you were awarded it',
+  'ref.saidNOT_AWARDED': 'you were not awarded it',
+  'ref.saidDID_NOT_APPLY': 'you did not apply',
+  'ref.youSaid': 'You told us: {what}',
+  'ref.change': 'Change',
+
   'privacy.title': 'Your data',
   'privacy.lede': 'What we hold, who has seen it, and how to take it back.',
   'privacy.access': 'Who has looked at your documents',

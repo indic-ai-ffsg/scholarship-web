@@ -237,6 +237,18 @@ export async function post<T>(path: string, body?: unknown) {
   return request<Envelope<T>>(path, { method: 'POST', body })
 }
 
+/* A change to part of a record, as against creating one.
+ *
+ * Added for the referral outcome — the student revising what they told us about
+ * a scheme applied for elsewhere — which is a field on an existing row and not
+ * a new one. POST would have worked and would have been a lie about what the
+ * request does; the panel and the publisher console both already distinguish
+ * the two, and this client was simply missing the verb.
+ */
+export async function patch<T>(path: string, body?: unknown) {
+  return request<Envelope<T>>(path, { method: 'PATCH', body })
+}
+
 export async function del<T>(path: string, body?: unknown) {
   return request<Envelope<T> | null>(path, { method: 'DELETE', body })
 }

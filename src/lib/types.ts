@@ -408,3 +408,26 @@ export interface Consent {
   withdrawn_at?: string
   active: boolean
 }
+
+/* A scheme the platform sent a student to, applied for on the sponsor's site.
+ *
+ * Not an application and deliberately a different type. An application is
+ * observed at every stage; this records one fact the platform saw — that it
+ * made the connection — and one the student told us afterwards, if they did.
+ * A single type covering both would invite a list that treats them alike, and
+ * the difference is the whole honesty of the figure. */
+export interface Referral {
+  referral_id: string
+  scholarship_id: string
+  scholarship_title?: string
+  organisation_name?: string
+  external_url?: string
+  referred_at: string
+  last_referred_at: string
+  /** Repeat visits. One connection, however many times they went back. */
+  times: number
+  /* The student's own account. Named so a reader cannot mistake it for
+     something the platform established. */
+  self_reported_outcome?: 'APPLIED' | 'AWARDED' | 'NOT_AWARDED' | 'DID_NOT_APPLY'
+  outcome_at?: string
+}

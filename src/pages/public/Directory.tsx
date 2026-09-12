@@ -10,6 +10,7 @@ import {
 } from '../../lib/fields'
 import { applyRoute } from '../../lib/apply'
 import { useApplied } from '../../lib/applied'
+import { recordReferral } from '../../lib/referral'
 import { awardLabel, shortDate } from '../../lib/format'
 import { Deadline, Empty, ErrorState, Field, Loading, Notice, SponsorLogo } from '../../components/ui'
 import { SchemeSheet } from './SchemeSheet'
@@ -814,6 +815,16 @@ export function ListingCard({
               href={route.href}
               target="_blank"
               rel="noopener noreferrer"
+              /* Recorded as the press happens, because nothing on the
+                 sponsor's site reports back and this is the only moment
+                 the platform can honestly say it made the connection.
+                 Not awaited — see lib/referral.ts on why a round trip
+                 must never sit between this finger and that tab. */
+              onClick={() => {
+                if (status === 'authenticated') {
+                  recordReferral(listing.scholarship_id)
+                }
+              }}
             >
               {t('public.applyExternal')}
               <span aria-hidden="true"> ↗</span>

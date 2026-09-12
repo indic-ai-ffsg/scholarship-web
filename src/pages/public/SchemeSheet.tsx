@@ -7,6 +7,7 @@ import { withNext } from '../../lib/next'
 import { useI18n } from '../../lib/i18n-context'
 import { applyRoute, externalHelpKey } from '../../lib/apply'
 import { useApplied } from '../../lib/applied'
+import { recordReferral } from '../../lib/referral'
 import { asLines, awardLabel, date, stripNumbering } from '../../lib/format'
 import { Deadline, ErrorState, Loading, SponsorLogo } from '../../components/ui'
 import { Sheet } from '../../components/Sheet'
@@ -145,6 +146,16 @@ export function SchemeSheet({
               href={route.href}
               target="_blank"
               rel="noopener noreferrer"
+              /* Recorded as the press happens, because nothing on the
+                 sponsor's site reports back and this is the only moment
+                 the platform can honestly say it made the connection.
+                 Not awaited — see lib/referral.ts on why a round trip
+                 must never sit between this finger and that tab. */
+              onClick={() => {
+                if (status === 'authenticated') {
+                  recordReferral(s.scholarship_id)
+                }
+              }}
             >
               {t('public.applyExternal')}
               <span aria-hidden="true"> ↗</span>

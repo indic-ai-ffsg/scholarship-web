@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import * as api from '../lib/api'
@@ -8,7 +9,7 @@ import { trackOf } from '../lib/track'
 import { Empty, ErrorState, Loading } from '../components/ui'
 import ApplicationTrack from '../components/ApplicationTrack'
 import OrgMark from '../components/OrgMark'
-import type { Application } from '../lib/types'
+import type { Application, Referral } from '../lib/types'
 
 /* Everything the student has applied for, and where each one has got to.
  *
@@ -37,7 +38,20 @@ export default function Applications() {
     [],
   )
 
+  /* Schemes we sent them to, which the applications list knows nothing about.
+   *
+   * Its own request rather than a field on the applications response: these are
+   * different records with different certainty, and folding them into one
+   * payload is the first step towards a list that renders them alike. The
+   * student thinks of both as "what I have applied for", so they share a page —
+   * and are kept plainly apart on it. */
+  const referrals = useQuery<Referral[]>(
+    signal => api.get('/me/referrals', undefined, signal),
+    [],
+  )
+
   const apps = query.data ?? []
+  const sent = referrals.data ?? []
 
   return (
     <div className="page">
@@ -46,7 +60,7 @@ export default function Applications() {
       {query.loading && !query.data && <Loading />}
       {query.error ? <ErrorState error={query.error} onRetry={query.reload} /> : null}
 
-      {query.data && apps.length === 0 && (
+      {query.data && apps.length === 0 && sent.length === 0 && (
         <Empty
           title={t('appl.none')}
           hint={t('appl.noneHint')}
@@ -133,7 +147,108 @@ export default function Applications() {
           })}
         </ul>
       )}
+      {sent.length > 0 && (
+        <section className="ref-section" aria-labelledby="sent">
+          <h2 id="sent">{t('ref.heading')}</h2>
+          <p className="muted ref-blurb">{t('ref.blurb')}</p>
+
+          <ul role="list" className="appl-list">
+            {sent.map(r => (
+              <li key={r.referral_id}>
+                <ReferralCard referral={r} onChanged={referrals.reload} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
+  )
+}
+
+/* One scheme we sent a student to.
+ *
+ * The card says what the platform actually knows — that it opened the sponsor's
+ * site for them, and when — and then asks. It never asserts an outcome, because
+ * there is nothing here that could have observed one.
+ */
+function ReferralCard({ referral: r, onChanged }: {
+  referral: Referral
+  onChanged: () => void
+}) {
+  const { t } = useI18n()
+  const [busy, setBusy] = useState(false)
+  const [asking, setAsking] = useState(false)
+
+  const said = r.self_reported_outcome
+
+  async function say(outcome: string) {
+    setBusy(true)
+    try {
+      await api.patch('/me/referrals', {
+        scholarship_id: r.scholarship_id,
+        outcome,
+      })
+      setAsking(false)
+      onChanged()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <article className="card appl-card">
+      <div className="appl-head">
+        <OrgMark name={r.organisation_name} />
+        <div className="appl-title">
+          <h3>{r.scholarship_title}</h3>
+          <p className="appl-meta">{r.organisation_name}</p>
+        </div>
+        {r.external_url && (
+          <a
+            className="btn sm ref-open"
+            href={r.external_url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t('ref.open')}
+            <span aria-hidden="true"> ↗</span>
+            <span className="sr-only"> ({t('common.newTab')})</span>
+          </a>
+        )}
+      </div>
+
+      <p className="appl-when">
+        {t('ref.sentOn', { when: dateTime(r.referred_at) })}
+        {r.times > 1 && ` · ${t('ref.again', { times: String(r.times) })}`}
+      </p>
+
+      {/* Attributed, always. "You told us" is the whole difference between this
+          and the applications above it, and it is never dropped for brevity. */}
+      {said && !asking ? (
+        <p className="ref-said">
+          {t('ref.youSaid', { what: t(`ref.said${said}`) })}
+          <button className="btn-link" onClick={() => setAsking(true)}>
+            {t('ref.change')}
+          </button>
+        </p>
+      ) : (
+        <div className="ref-ask">
+          <p>{t('ref.what')}</p>
+          <div className="ref-options">
+            {(['APPLIED', 'AWARDED', 'NOT_AWARDED', 'DID_NOT_APPLY'] as const).map(o => (
+              <button
+                key={o}
+                className="btn sm"
+                disabled={busy}
+                onClick={() => say(o)}
+              >
+                {t(`ref.${o}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </article>
   )
 }
 
