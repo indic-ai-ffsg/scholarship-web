@@ -481,7 +481,15 @@ export const en: Dict = {
   'match.applied': 'You have applied',
   'match.none': 'No matches yet',
   'match.noneHint': 'Finish your profile and we will check every scholarship for you.',
-  'match.working': 'We are still checking. This page will update.',
+  /* Said only when the matcher has run and produced nothing.
+   *
+   * It read "We are still checking. This page will update." — which described a
+   * queue, not an answer, and stopped being true the moment nothing was draining
+   * that queue. It was found in production saying it to every student on the
+   * platform, indefinitely, while match_result held zero rows. Matching now runs
+   * on the read if it has never run for a student, so an empty list here means
+   * an empty answer, and this says so rather than promising a later one. */
+  'match.working': 'No scheme that is open right now matches the details you have given us. Adding more to your profile is what changes this.',
 
   'doc.title': 'Your documents',
   'doc.lede': 'Upload a document once. Every scholarship you apply to can use it — you will not be asked for it again.',

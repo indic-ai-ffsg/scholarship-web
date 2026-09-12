@@ -80,14 +80,24 @@ export default function Matches() {
 
       {query.data && matches.length === 0 && (
         /* Not a retry. Nothing failed here — query.error has that case and
-           prints its own — the matcher has simply not produced a row yet, so
-           pressing "Try again" returns the same empty list and teaches a
-           student that the button is decoration. The directory is the one
-           thing that does have something to show them meanwhile. */
+           prints its own — so pressing "Try again" returns the same empty list
+           and teaches a student that the button is decoration.
+           *
+           * The action offered depends on which of the two empty lists this is.
+           * An incomplete profile is a thing the student can act on and the
+           * likeliest reason a rule could not be evaluated; a complete one
+           * leaves the directory, which is the only place with something to
+           * show them. Offering "browse everything" to somebody whose profile
+           * is half-written sends them to read four hundred schemes instead of
+           * answering the one question that would have filtered them. */
         <Empty
           title={t('match.none')}
           hint={t('match.working')}
-          action={<Link className="btn" to="/scholarships">{t('home.browseAll')}</Link>}
+          action={profile.completeness_score < 100 ? (
+            <Link className="btn primary" to="/register?edit">{t('profile.continue')}</Link>
+          ) : (
+            <Link className="btn" to="/scholarships">{t('home.browseAll')}</Link>
+          )}
         />
       )}
 
