@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
@@ -11,6 +11,7 @@ import {
   IconAward, IconCalendar, IconForm, IconIdea, IconNo, IconProvider, IconYes,
 } from '../components/icons'
 import OrgMark from '../components/OrgMark'
+import { SchemeSheet } from './public/SchemeSheet'
 import { applyRoute, externalHelpKey } from '../lib/apply'
 import { canApply, stateClass, stateLabelKey, stateMark } from '../lib/eligibility'
 import type { Match, Reason } from '../lib/types'
@@ -122,6 +123,40 @@ export default function Matches() {
   const { profile } = useAuth()
   const [filter, setFilter] = useState<FilterKey>('all')
   const [sort, setSort] = useState<SortKey>('recommended')
+
+  /* Which scheme is open over the list, as `?scheme=<slug>`.
+   *
+   * The same mechanism the directory uses, and for the same reason. This page's
+   * job is comparison — a student is deciding between five schemes, not reading
+   * one — and sending them to /scholarships/<slug> throws away the list, the
+   * filter they set and their place in it, with the way back a browser control
+   * rather than something on the page. Five schemes is five departures and five
+   * returns.
+   *
+   * In the address rather than in state alone, so the panel survives a reload,
+   * can be forwarded, and Back closes it instead of leaving the page. */
+  const [params, setParams] = useSearchParams()
+  const openSlug = params.get('scheme')
+
+  /** Opens the panel on one scheme, as a new history entry for Back to undo. */
+  function openScheme(slug: string) {
+    setParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.set('scheme', slug)
+      return next
+    })
+  }
+
+  /* Shuts it, leaving the filter and the sort as they were. Replaces rather
+     than pushes, so closing does not leave a "matches with nothing open" entry
+     between the panel and wherever the student came from. */
+  function closeScheme() {
+    setParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.delete('scheme')
+      return next
+    }, { replace: true })
+  }
 
   const query = useQuery<Match[]>(
     signal => api.get('/me/matches', { page_size: 100 }, signal),
@@ -271,11 +306,27 @@ export default function Matches() {
           ) : (
             <ul role="list" className="match-list">
               {shown.map(m => (
-                <li key={m.scholarship_id}><ScholarshipRow match={m} /></li>
+                <li key={m.scholarship_id}>
+                  <ScholarshipRow match={m} onOpen={() => openScheme(m.slug)} />
+                </li>
               ))}
             </ul>
           )}
         </>
+      )}
+
+      {/* Outside the list, because a modal dialog lives in the browser's top
+          layer and belongs to the page rather than to the column of rows.
+          Keyed on the slug so pressing a second row while the first is open
+          rebuilds the panel — without it React keeps the mounted component and
+          the detail request for the new scheme lands in the old one. */}
+      {openSlug && (
+        <SchemeSheet
+          key={openSlug}
+          slug={openSlug}
+          seed={matches.find(m => m.slug === openSlug)}
+          onClose={closeScheme}
+        />
       )}
     </div>
   )
@@ -297,8 +348,27 @@ function Figure({ n, label, tone }: { n: number; label: string; tone: string }) 
  * columns line up between rows — which is the whole reason this is a row and
  * not a card.
  */
-function ScholarshipRow({ match }: { match: Match }) {
+function ScholarshipRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
   const { t } = useI18n()
+
+  /* A real link that a plain left-click turns into a panel.
+   *
+   * Copied from the directory's ListingCard, and the shape is the point: the
+   * anchor keeps its href, so middle-click still opens a tab, Cmd-click still
+   * opens a background tab, "copy link address" still yields something worth
+   * pasting, and the status bar still says where it goes before it is pressed.
+   * A <button> has none of those, and /scholarships/<slug> is a real page that
+   * has to keep working — it is what a forwarded link and a search engine get.
+   *
+   * Only an unmodified primary click is intercepted, and only if nothing
+   * earlier has already decided. */
+  function intercept(e: React.MouseEvent) {
+    if (e.defaultPrevented || e.button !== 0) return
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    e.preventDefault()
+    onOpen()
+  }
+
 
   /* Where this row's Apply goes.
    *
@@ -357,7 +427,9 @@ function ScholarshipRow({ match }: { match: Match }) {
             {/* The title is the link. The row has one target and not four: a
                 keyboard user tabbing a list of fourteen should reach one stop
                 per scheme, not one per column. */}
-            <Link to={`/scholarships/${match.slug}`}>{match.title}</Link>
+            <Link to={`/scholarships/${match.slug}`} onClick={intercept}>
+              {match.title}
+            </Link>
           </h2>
         </div>
 
@@ -377,7 +449,11 @@ function ScholarshipRow({ match }: { match: Match }) {
             run to nine lines stops being a row. */}
         {match.summary && <p className="match-summary">{match.summary}</p>}
 
-        <Link className="match-more" to={`/scholarships/${match.slug}`}>
+        <Link
+          className="match-more"
+          to={`/scholarships/${match.slug}`}
+          onClick={intercept}
+        >
           {t('match.learnMore')}<span aria-hidden="true"> →</span>
         </Link>
       </div>
@@ -448,7 +524,11 @@ function ScholarshipRow({ match }: { match: Match }) {
               {/* No Apply. A button the server would refuse sends somebody
                   through a consent screen to a rejection. The scheme's own page
                   is where next year's rules are, which is the useful door. */}
-              <Link className="btn" to={`/scholarships/${match.slug}`}>
+              <Link
+                className="btn"
+                to={`/scholarships/${match.slug}`}
+                onClick={intercept}
+              >
                 {t('match.seeDetails')}
               </Link>
             </>

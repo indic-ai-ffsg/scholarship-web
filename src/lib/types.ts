@@ -46,6 +46,26 @@ export interface Reason {
   recoverable: boolean
 }
 
+/* Enough of a Listing to draw a panel before the full one arrives.
+ *
+ * The sheet opens from a row that is already on screen, and the whole reason it
+ * opens in place is that there is no wait between the press and the content. So
+ * it renders from whatever the list already had and lets the detail request
+ * fill in the rest.
+ *
+ * Which fields "the rest" covers depends on which list you came from: the
+ * directory's rows are Listings and carry everything, a matched row carries
+ * what the matcher needed and not `tags`, `opens_at` or `is_renewable`. Naming
+ * the identifying half as required and the rest as optional is what lets one
+ * panel take a seed from either without either list inventing a value it does
+ * not have.
+ */
+export type SchemeSeed =
+  & Pick<Listing,
+    'scholarship_id' | 'slug' | 'title' | 'summary'
+    | 'organisation_name' | 'org_type' | 'currency'>
+  & Partial<Listing>
+
 export interface Match {
   scholarship_id: string
   slug: string

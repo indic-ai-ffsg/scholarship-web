@@ -14,7 +14,7 @@ import { Sheet } from '../../components/Sheet'
 import { usePageTitle } from '../../lib/page-title'
 import { renderRichText } from '../../lib/richtext'
 import { isBenefitTable, parseBenefits } from '../../lib/benefits'
-import type { Listing } from '../../lib/types'
+import type { Listing, SchemeSeed } from '../../lib/types'
 
 /* One scheme, read without leaving the list.
  *
@@ -55,7 +55,7 @@ export function SchemeSheet({
    * and a forwarded link, and the scheme it names need not be on the current
    * page of results. That case gets a spinner, which is the honest thing: there
    * is genuinely nothing to show yet. */
-  seed?: Listing
+  seed?: SchemeSeed
   onClose: () => void
 }) {
   const { t } = useI18n()
