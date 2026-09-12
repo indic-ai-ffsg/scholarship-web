@@ -29,17 +29,31 @@ import * as api from '../lib/api'
  * card; a screen reader announcing "Indic AI logo, Indic AI" is the duplication
  * that makes people turn images off.
  */
-export default function OrgMark({ organisationID, name }: {
+export default function OrgMark({ organisationID, scholarshipID, name }: {
   organisationID?: string
+  /* The other place a mark can live.
+   *
+   * A curated listing has no organisation row — the platform lists a scheme run
+   * by a body it holds no account for — so its logo hangs off the scholarship
+   * instead. Passing both and preferring the organisation is what lets one
+   * component serve a tenant scheme and a curated one without being told which
+   * it is: the id that exists is the address that answers. */
+  scholarshipID?: string
   name?: string
 }) {
   const [failed, setFailed] = useState(false)
+
+  const src = organisationID
+    ? `/public/organisations/${organisationID}/logo`
+    : scholarshipID
+      ? `/public/scholarships/${scholarshipID}/logo`
+      : undefined
 
   return (
     <span className="org-mark" aria-hidden="true">
       <span className="org-mark-initials">{initials(name)}</span>
 
-      {organisationID && !failed && (
+      {src && !failed && (
         <img
           /* api.assetUrl, not a hand-built path. The base carries the API
              version from VITE_API_VERSION, and hardcoding /api/v1 here meant a
@@ -47,7 +61,7 @@ export default function OrgMark({ organisationID, name }: {
              failing silently into the monogram, which is exactly the kind of
              bug the fallback is good at hiding. api.ts is the one place that
              knows the base, and SponsorLogo already went through it. */
-          src={api.assetUrl(`/public/organisations/${organisationID}/logo`)}
+          src={api.assetUrl(src)}
           alt=""
           onError={() => setFailed(true)}
           /* Off the critical path: a list of applications is read for its

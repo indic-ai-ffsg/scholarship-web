@@ -10,6 +10,7 @@ import { Empty, ErrorState, Loading } from '../components/ui'
 import {
   IconAward, IconCalendar, IconForm, IconIdea, IconNo, IconProvider, IconYes,
 } from '../components/icons'
+import OrgMark from '../components/OrgMark'
 import { applyRoute, externalHelpKey } from '../lib/apply'
 import { canApply, stateClass, stateLabelKey, stateMark } from '../lib/eligibility'
 import type { Match, Reason } from '../lib/types'
@@ -340,12 +341,25 @@ function ScholarshipRow({ match }: { match: Match }) {
           {t(stateLabelKey(match.state))}
         </span>
 
-        <h2>
-          {/* The title is the link. The row has one target and not four: a
-              keyboard user tabbing a list of fourteen should reach one stop per
-              scheme, not one per column. */}
-          <Link to={`/scholarships/${match.slug}`}>{match.title}</Link>
-        </h2>
+        {/* The sponsor's mark, beside the name rather than above it.
+            *
+            * A monogram underneath and the bytes over it, so a sponsor with no
+            * logo gets a deliberate mark rather than a gap and a 404 — the
+            * ordinary case — leaves what was already there. The square is fixed
+            * either way, so nothing in the row moves when the image lands. */}
+        <div className="match-head">
+          <OrgMark
+            organisationID={match.organisation_id}
+            scholarshipID={match.scholarship_id}
+            name={match.organisation_name}
+          />
+          <h2>
+            {/* The title is the link. The row has one target and not four: a
+                keyboard user tabbing a list of fourteen should reach one stop
+                per scheme, not one per column. */}
+            <Link to={`/scholarships/${match.slug}`}>{match.title}</Link>
+          </h2>
+        </div>
 
         <p className="match-meta">
           <span className="match-meta-bit">
@@ -384,14 +398,21 @@ function ScholarshipRow({ match }: { match: Match }) {
           <IconForm />
           {route.kind === 'external' ? t('match.applyAway') : t('match.applyHere')}
         </li>
-        {/* Who runs it, in the words the directory uses. Not a study level or an
-            eligibility scope: the matched payload carries neither, and inventing
-            a line that reads like a rule would be the card asserting a criterion
-            nobody evaluated. */}
-        <li className="match-fact">
-          <IconProvider />
-          {t('match.runBy', { kind: humanise(match.org_type).toLowerCase() })}
-        </li>
+        {/* What kind of body runs it, named and nothing more.
+            *
+            * It read "Run by a corporate foundation", which is a sentence built
+            * around a word the row does not need: the icon beside it already
+            * says this line is about the provider, and "Corporate" is the
+            * category the directory filters by. Not a study level or an
+            * eligibility scope — the matched payload carries neither, and
+            * inventing a line that reads like a rule would be the card
+            * asserting a criterion nobody evaluated. */}
+        {match.org_type && (
+          <li className="match-fact">
+            <IconProvider />
+            {orgKind(match.org_type)}
+          </li>
+        )}
 
         {/* Why a rule refused, as an alert rather than a fact. It is the one
             line on the row that is bad news, and burying it among three neutral
@@ -459,6 +480,23 @@ function ScholarshipRow({ match }: { match: Match }) {
     </article>
   )
 }
+
+/* The sponsor's kind, in the words the directory uses.
+ *
+ * humanise() would give "Ngo" for NGO — it title-cases anything longer than
+ * five characters — and an initialism rendered as a word is the kind of small
+ * wrongness that makes a page look machine-written. The map is four entries and
+ * exact; anything unrecognised falls through to humanise rather than to a
+ * blank, because a new org type should show up as itself rather than vanish. */
+const ORG_KIND: Record<string, string> = {
+  NGO: 'NGO',
+  CORPORATE: 'Corporate',
+  GOVERNMENT: 'Government',
+  GOVT: 'Government',
+  PRIVATE: 'Private',
+}
+
+const orgKind = (value: string) => ORG_KIND[value] ?? humanise(value)
 
 /* The first reason the engine gave, whichever kind applies to this state.
  *

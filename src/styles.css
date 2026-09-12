@@ -4495,11 +4495,38 @@ label .req, .field-label .req { color: var(--danger); font-weight: var(--w-stron
 .match-rule { background: var(--border); }
 
 .match-col-say .state-badge { margin-bottom: 0.5rem; }
+
+/* The sponsor's mark and the scheme's name, on one line.
+ *
+ * The mark is a fixed square that does not shrink, so a long title wraps beside
+ * it rather than squeezing it into a sliver — and the row's height does not
+ * change when the bytes land, because the box was always that size. */
+.match-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+  margin-bottom: 0.4rem;
+}
+.match-head .org-mark { margin-top: 0.1rem; }
+
 .match-col-say h2 {
   font-size: var(--step-1);
-  margin: 0 0 0.35rem;
+  margin: 0;
   overflow-wrap: anywhere;
 }
+
+/* No underline on the title.
+ *
+ * It is the largest text in the row and the only link in its column, so it is
+ * already unmistakably a target; underlining it as well put a rule under two
+ * lines of 19px type on every one of fourteen rows, which reads as a page of
+ * struck-through headings. The underline comes back on hover and on focus,
+ * which is where the rule about never removing it actually bites — it must be
+ * discoverable by pointer and reachable by keyboard, not permanently drawn. */
+.match-col-say h2 a { text-decoration: none; }
+.match-col-say h2 a:hover,
+.match-col-say h2 a:focus-visible { text-decoration: underline; }
 
 .match-meta {
   display: flex;

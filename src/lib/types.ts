@@ -53,6 +53,10 @@ export interface Match {
   summary: string
   organisation_name: string
   org_type: string
+  /* Whose mark to draw, when there is one. Absent for a curated listing, which
+     has no organisation row — its logo hangs off the scholarship instead, and
+     the absence is what tells OrgMark which address to ask. */
+  organisation_id?: string
   /* Absent when the award is not money â a laptop, a bicycle, fees paid
      directly. `benefit_summary` says what it is instead; see format.awardLabel.
      A NULL here crashed the whole directory once, so it is a pointer on the
