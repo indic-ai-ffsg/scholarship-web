@@ -4315,3 +4315,204 @@ label .req, .field-label .req { color: var(--danger); font-weight: var(--w-stron
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* --- the matched list -----------------------------------------------------------
+ *
+ * A row per scheme, not a card. It was a stack of full-width cards about four
+ * hundred pixels tall, so three schemes filled a laptop screen and a student
+ * with fourteen matches scrolled past six of them to find out whether any were
+ * closing. The six questions a student arrives with were answered down the card
+ * — which is the order you read a document in, and not the order you scan a
+ * list in.
+ *
+ * The row answers them across: state, the scheme, the facts you compare between
+ * rows, the one action. Everything comparable between two schemes sits in the
+ * same column on both, which is the only property that makes fourteen of them
+ * scannable.
+ */
+
+/* --- the hero ---------------------------------------------------------------- */
+
+.match-hero {
+  background: var(--accent-weak);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.match-hero-say h1 { margin: 0 0 0.2rem; }
+.match-hero-say p { margin: 0; color: var(--text-muted); max-width: var(--measure); }
+
+/* The four figures. Counts, not buttons: the filters under the list do the
+   selecting, and two controls for one job is how a student learns that pressing
+   either does something slightly different. */
+.match-figures {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.5rem;
+}
+.match-figure {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.7rem;
+  display: grid;
+  gap: 0.1rem;
+}
+.match-figure-n {
+  font-size: var(--step-2);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.match-figure-label { font-size: var(--step--1); color: var(--text-muted); }
+/* Colour on the figure only, and only on the two that mean something to act on.
+   The label says it too — this is a tint, not the signal. */
+.match-figure.tone-eligible .match-figure-n { color: var(--eligible); }
+.match-figure.tone-blocked  .match-figure-n { color: var(--blocked); }
+
+.match-hero-profile {
+  margin: 0.9rem 0 0;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border);
+  font-size: var(--step--1);
+  color: var(--text-muted);
+}
+.match-hero-profile strong { color: var(--text); }
+
+/* --- the filters --------------------------------------------------------------- */
+
+.match-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+.match-tabs { display: flex; flex-wrap: wrap; gap: 0.15rem; }
+
+.match-tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  /* The house 48px target, which a 13px tab does not reach on its own. */
+  min-height: 48px;
+  padding: 0 0.7rem;
+  font: var(--step--1)/1.4 var(--font);
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.match-tab:hover { color: var(--text); }
+.match-tab.is-on { color: var(--accent); border-bottom-color: var(--accent); }
+
+.match-tab-n {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--step--1);
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+.match-tab.is-on .match-tab-n { background: var(--accent-weak); color: var(--accent); }
+
+.match-browse { font-size: var(--step--1); white-space: nowrap; }
+.match-empty-filter { margin: 1.5rem 0; }
+
+/* --- one scheme ------------------------------------------------------------------ */
+
+.match-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+
+.match-row {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1.6fr) 11rem minmax(0, 13rem);
+  gap: 1rem;
+  align-items: start;
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  /* The state, as an edge. It is the row's only fill, so a list of fourteen
+     reads as one surface with marks down its left rather than as fourteen
+     coloured objects — and the badge in the first column says the word, so the
+     edge is never carrying the meaning on its own. */
+  border-left: 4px solid var(--ineligible);
+  border-radius: var(--radius);
+}
+.match-row.eligible  { border-left-color: var(--eligible); }
+.match-row.likely    { border-left-color: var(--likely); }
+.match-row.blocked   { border-left-color: var(--blocked); }
+.match-row.ineligible{ border-left-color: var(--ineligible); }
+
+/* Hover is a border change and nothing else. The row is not itself clickable —
+   the title and the action are — so a lift or a shadow would promise a target
+   that is not there. */
+.match-row:hover { border-color: var(--border-strong); }
+
+.match-col { min-width: 0; }
+
+.match-col-say h2 {
+  font-size: var(--step-1);
+  margin: 0 0 0.2rem;
+  overflow-wrap: anywhere;
+}
+.match-org { margin: 0; color: var(--text-muted); font-size: var(--step--1); }
+/* The figure is what a student scans for down the column, so it carries the
+   weight and the sponsor's name does not. */
+.match-award { color: var(--text); font-weight: 600; }
+
+/* Why this state. One sentence from the engine, never four: a scheme that fails
+   four rules is still one answer to "why not". */
+.match-reason {
+  margin: 0.45rem 0 0;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.5rem;
+}
+
+.match-col-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.match-fact {
+  display: grid;
+  grid-template-columns: 1.1rem 1fr;
+  gap: 0.3rem;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+}
+.match-fact-mark { text-align: center; }
+/* The deadline bands format.deadlineLabel already decides. Repeated here rather
+   than inlined so the row and the directory colour the same day count alike. */
+.match-fact.deadline-today,
+.match-fact.deadline-soon { color: var(--danger); font-weight: 600; }
+.match-fact.deadline-closing { color: var(--blocked); font-weight: 600; }
+
+.match-col-do { display: grid; gap: 0.45rem; justify-items: stretch; }
+.match-col-do .btn { width: 100%; text-align: center; justify-content: center; }
+.match-do-say { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
+
+/* Two columns, then one.
+ *
+ * The facts column folds in beside the action first, because those two are the
+ * narrowest and the least damaged by sharing a line. Below that everything
+ * stacks in the order the questions are asked, and the action goes full width —
+ * which on a phone is the only column that matters. */
+@media (max-width: 62rem) {
+  .match-row { grid-template-columns: 8.5rem minmax(0, 1fr); }
+  .match-col-facts { grid-column: 2; }
+  .match-col-do { grid-column: 2; }
+}
+@media (max-width: 34rem) {
+  .match-row { grid-template-columns: 1fr; gap: 0.7rem; }
+  .match-col-facts,
+  .match-col-do { grid-column: 1; }
+}

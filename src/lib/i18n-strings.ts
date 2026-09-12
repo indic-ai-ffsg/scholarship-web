@@ -489,6 +489,33 @@ export const en: Dict = {
    * platform, indefinitely, while match_result held zero rows. Matching now runs
    * on the read if it has never run for a student, so an empty list here means
    * an empty answer, and this says so rather than promising a later one. */
+  /* The figures over the list, and the filters under it. They name eligibility
+     rather than windows: every scheme in this list is already open, because the
+     matcher joins the public view, so an "Open now" filter would select all of
+     them and a "Not open yet" one would select none. A control for a set that
+     is always empty teaches a student the filters do not work. */
+  'match.figQualify': 'You qualify',
+  'match.figStep': 'One step away',
+  'match.figClosing': 'Closing soon',
+  'match.figNo': 'Not open to you',
+  'match.filterLabel': 'Which scholarships to show',
+  'match.filterAll': 'All',
+  'match.filterQualify': 'You qualify',
+  'match.filterStep': 'One step away',
+  'match.filterClosing': 'Closing soon',
+  'match.filterNo': 'Not open to you',
+  'match.filterEmpty': 'Nothing in this group. Try “All”.',
+  'match.moreWithProfile': 'More scholarships appear as you fill it in.',
+  /* Said on the row, in the column that answers “where do I apply”. The
+     distinction is the one thing the row can tell a student that the scheme's
+     own page cannot: whether this will show up under their applications here. */
+  /* The action column's one line. Short on purpose: the column is 13rem and
+     anything longer sets the height of the whole row. What applying off-site
+     means for this student is said beside the scheme instead. */
+  'match.youQualify': 'You meet the criteria.',
+  'match.applyAway': 'Apply on their site',
+  'match.applyHere': 'Apply here',
+  'match.notOpenToYou': 'Not open to you as things stand.',
   'match.working': 'No scheme that is open right now matches the details you have given us. Adding more to your profile is what changes this.',
 
   'doc.title': 'Your documents',
