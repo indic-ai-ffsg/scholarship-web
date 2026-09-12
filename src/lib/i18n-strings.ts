@@ -560,7 +560,6 @@ export const en: Dict = {
      one wait to the person waiting. */
   'track.label': 'Progress of this application',
   'track.sent': 'Sent',
-  'track.checks': 'Checks',
   'track.review': 'Review',
   'track.decision': 'Decision',
   /* Read out after each step's name, so the state is a word and not only a

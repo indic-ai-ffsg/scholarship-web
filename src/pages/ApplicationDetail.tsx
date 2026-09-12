@@ -37,12 +37,14 @@ import type { Application, TimelineEvent } from '../lib/types'
  */
 
 const WHAT_NEXT: Record<string, string> = {
-  SUBMITTED: 'The provider has your application. They will check your documents first.',
-  DOCUMENT_CHECK: 'They are checking your documents. Nothing is needed from you.',
-  VERIFIED: 'Your documents are confirmed. Your application goes to a reviewer next.',
+  SUBMITTED: 'The provider has your application. A reviewer will read it next.',
   UNDER_REVIEW: 'A reviewer is reading your application. This is usually the longest step.',
   INFO_REQUESTED: 'They have asked you for something. Your application waits until you reply.',
-  SHORTLISTED: 'You are on the shortlist. A final decision comes next.',
+  /* The three stages migration 0057 retired. No application reaches them any
+     more; the ones that were already in them are why these lines stay. */
+  DOCUMENT_CHECK: 'Your application is with a reviewer. Nothing is needed from you.',
+  VERIFIED: 'Your application is with a reviewer. Nothing is needed from you.',
+  SHORTLISTED: 'Your application is with a reviewer. A decision comes next.',
   APPROVED: 'Approved. The provider will record the sanction, then arrange payment.',
   SANCTIONED: 'The money has been sanctioned. Payment is arranged through their bank.',
   DISBURSED: 'Payment has been recorded. If it has not reached your account in a few working days, raise a grievance.',
