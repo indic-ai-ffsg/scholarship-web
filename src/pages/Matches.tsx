@@ -5,8 +5,11 @@ import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { useI18n } from '../lib/i18n-context'
-import { awardLabel, deadlineLabel } from '../lib/format'
+import { awardLabel, deadlineLabel, humanise } from '../lib/format'
 import { Empty, ErrorState, Loading } from '../components/ui'
+import {
+  IconAward, IconCalendar, IconForm, IconIdea, IconNo, IconProvider, IconYes,
+} from '../components/icons'
 import { applyRoute, externalHelpKey } from '../lib/apply'
 import { canApply, stateClass, stateLabelKey, stateMark } from '../lib/eligibility'
 import type { Match, Reason } from '../lib/types'
@@ -65,6 +68,39 @@ const FILTERS = [
 
 type FilterKey = typeof FILTERS[number]['key']
 
+/* How the list is ordered.
+ *
+ * "Recommended" is the server's own order — state first, then the engine's
+ * score — and it is the default because it is the only one that knows anything.
+ * The other two are the two facts a student re-sorts by when they have a reason
+ * to: a deadline they are working against, or a figure they are comparing.
+ *
+ * Nothing here re-queries. The whole matched set is already on the client (the
+ * page asks for 100), so sorting is a comparison and not a round trip. */
+const SORTS = [
+  { key: 'recommended', label: 'match.sortRecommended' },
+  { key: 'closing', label: 'match.sortClosing' },
+  { key: 'award', label: 'match.sortAward' },
+] as const
+
+type SortKey = typeof SORTS[number]['key']
+
+function sortMatches(rows: Match[], by: SortKey): Match[] {
+  if (by === 'recommended') return rows
+  const copy = [...rows]
+  if (by === 'closing') {
+    /* Soonest first, and everything dateless last rather than first. A scheme
+       with no closing date is not urgent, and Infinity is what says so without
+       a second branch in the comparator. */
+    return copy.sort((a, b) =>
+      (a.days_remaining ?? Infinity) - (b.days_remaining ?? Infinity))
+  }
+  // Largest first. A scheme whose award is not money sorts last: there is no
+  // figure to compare it on, and guessing one would rank a laptop against
+  // a sum.
+  return copy.sort((a, b) => (b.award_amount ?? -1) - (a.award_amount ?? -1))
+}
+
 /* Closing inside a month. The same band format.deadlineLabel colours at, so the
    count on the filter and the ink on the row agree about what "closing" means. */
 const isClosing = (m: Match) =>
@@ -84,6 +120,7 @@ export default function Matches() {
   const { t } = useI18n()
   const { profile } = useAuth()
   const [filter, setFilter] = useState<FilterKey>('all')
+  const [sort, setSort] = useState<SortKey>('recommended')
 
   const query = useQuery<Match[]>(
     signal => api.get('/me/matches', { page_size: 100 }, signal),
@@ -118,11 +155,12 @@ export default function Matches() {
   /* Ordered so the ones a student can act on come first, and within that by the
      engine's own score. The server already sorts by state and score; this keeps
      the order stable when a filter removes rows from the middle of it. */
-  const shown = matches.filter(m => inFilter(m, filter))
+  const shown = sortMatches(matches.filter(m => inFilter(m, filter)), sort)
 
   return (
     <div className="page">
       <section className="match-hero">
+        <div className="match-hero-main">
         <div className="match-hero-say">
           <h1>{t('match.title')}</h1>
           <p>{t('match.lede')}</p>
@@ -136,23 +174,34 @@ export default function Matches() {
             <Figure n={counts.no} label={t('match.figNo')} tone="ineligible" />
           </ul>
         )}
+        </div>
+
+        {/* The one thing that changes what this page contains.
+            *
+            * Beside the figures rather than above the list: it is the answer to
+            * "why so few", which is the question the figures raise. A student
+            * whose profile is finished sees nothing here, because for them it
+            * is not an answer to anything. */}
+        {profile.completeness_score < 100 && (
+          <aside className="match-nudge">
+            <span className="match-nudge-mark" aria-hidden="true"><IconIdea /></span>
+            <div>
+              <strong>{t('profile.complete', { n: profile.completeness_score })}</strong>
+              <p>
+                {profile.next_steps?.length
+                  ? profile.next_steps[0].message
+                  : t('match.moreWithProfile')}
+              </p>
+              <Link to="/register?edit">
+                {t('profile.continue')}<span aria-hidden="true"> →</span>
+              </Link>
+            </div>
+          </aside>
+        )}
 
         {/* The profile nudge, inside the hero rather than as a banner above the
             list. It is the one thing that changes what this page contains, and
             it is context for the figures beside it — not an interruption. */}
-        {profile.completeness_score < 100 && (
-          <p className="match-hero-profile">
-            <strong>{t('profile.complete', { n: profile.completeness_score })}</strong>
-            {' '}
-            {profile.next_steps?.length
-              ? profile.next_steps[0].message
-              : t('match.moreWithProfile')}
-            {' '}
-            <Link to="/register?edit">
-              {t('profile.continue')}<span aria-hidden="true"> →</span>
-            </Link>
-          </p>
-        )}
       </section>
 
       {query.loading && !query.data && <Loading />}
@@ -201,9 +250,19 @@ export default function Matches() {
                 For a signed-in student /scholarships is this page with the
                 answer taken out, so it is not a place they move between — it is
                 the escape hatch for "show me the ones you did not match". */}
-            <Link className="match-browse" to="/scholarships">
-              {t('home.browseAll')}<span aria-hidden="true"> →</span>
-            </Link>
+            <div className="match-filters-right">
+              <label className="match-sort">
+                <span>{t('match.sortBy')}</span>
+                <select value={sort} onChange={e => setSort(e.target.value as SortKey)}>
+                  {SORTS.map(o => (
+                    <option key={o.key} value={o.key}>{t(o.label)}</option>
+                  ))}
+                </select>
+              </label>
+              <Link className="match-browse" to="/scholarships">
+                {t('home.browseAll')}<span aria-hidden="true"> →</span>
+              </Link>
+            </div>
           </div>
 
           {shown.length === 0 ? (
@@ -274,84 +333,126 @@ function ScholarshipRow({ match }: { match: Match }) {
 
   return (
     <article className={`match-row ${stateClass(match.state)}`}>
-      {/* 1. Do I qualify? */}
-      <div className="match-col match-col-state">
+      {/* A. Who this is for, what it is, and what it gives. */}
+      <div className="match-col match-col-say">
         <span className={`state-badge ${stateClass(match.state)}`}>
           <span aria-hidden="true">{stateMark(match.state)}</span>
           {t(stateLabelKey(match.state))}
         </span>
-      </div>
 
-      {/* 2. What is it, and 3. how much? */}
-      <div className="match-col match-col-say">
         <h2>
-          {/* The title is the link, and the only one in this column: a row with
-              four interactive regions is four things a keyboard user tabs
-              through to reach the one that acts. */}
+          {/* The title is the link. The row has one target and not four: a
+              keyboard user tabbing a list of fourteen should reach one stop per
+              scheme, not one per column. */}
           <Link to={`/scholarships/${match.slug}`}>{match.title}</Link>
         </h2>
-        <p className="match-org">
-          <span className="match-award">
+
+        <p className="match-meta">
+          <span className="match-meta-bit">
+            <IconProvider />
+            {match.organisation_name}
+          </span>
+          <span className="match-meta-bit match-award">
+            <IconAward />
             {awardLabel(t, match.award_amount, match.benefit_summary)}
           </span>
-          {' · '}
-          {match.organisation_name}
         </p>
-        {(reason ?? note) && <p className="match-reason">{reason ?? note}</p>}
+
+        {/* The scheme in its own words. Clamped to three lines: a summary is
+            written to be read on the scheme's own page, and a row that lets one
+            run to nine lines stops being a row. */}
+        {match.summary && <p className="match-summary">{match.summary}</p>}
+
+        <Link className="match-more" to={`/scholarships/${match.slug}`}>
+          {t('match.learnMore')}<span aria-hidden="true"> →</span>
+        </Link>
       </div>
 
-      {/* 4. When does it close, and where do I apply? */}
+      <div className="match-rule" aria-hidden="true" />
+
+      {/* B. The facts a student compares between two schemes. */}
       <ul role="list" className="match-col match-col-facts">
         <li className={`match-fact deadline-${deadline.state}`}>
-          <span aria-hidden="true" className="match-fact-mark">{deadline.mark || '·'}</span>
-          {deadline.text}
+          <IconCalendar />
+          {/* A machine-readable date as well as the human count: "Closes in 9
+              days" is what a person reads and is meaningless to anything else. */}
+          {match.closes_at
+            ? <time dateTime={match.closes_at}>{deadline.text}</time>
+            : deadline.text}
         </li>
         <li className="match-fact">
-          <span aria-hidden="true" className="match-fact-mark">{route.kind === 'external' ? '↗' : '⤵'}</span>
+          <IconForm />
           {route.kind === 'external' ? t('match.applyAway') : t('match.applyHere')}
         </li>
+        {/* Who runs it, in the words the directory uses. Not a study level or an
+            eligibility scope: the matched payload carries neither, and inventing
+            a line that reads like a rule would be the card asserting a criterion
+            nobody evaluated. */}
+        <li className="match-fact">
+          <IconProvider />
+          {t('match.runBy', { kind: humanise(match.org_type).toLowerCase() })}
+        </li>
+
+        {/* Why a rule refused, as an alert rather than a fact. It is the one
+            line on the row that is bad news, and burying it among three neutral
+            ones is how a student concludes the platform simply missed them. */}
+        {reason && (
+          <li className={`match-alert ${match.state === 'NOT_ELIGIBLE' ? 'no' : 'todo'}`}>
+            {match.state === 'NOT_ELIGIBLE' ? <IconNo /> : <IconYes />}
+            <span>{reason}</span>
+          </li>
+        )}
       </ul>
 
-      {/* 6. Where do I apply — the one action. */}
-      <div className="match-col match-col-do">
+      {/* C. The one action, in a panel that says which kind of answer this is. */}
+      <div className={`match-do ${eligible ? 'yes' : 'no'}`}>
         {match.already_applied ? (
-          <Link className="btn" to={`/applications/${match.application_id}`}>
-            {t('match.applied')}
-          </Link>
+          <>
+            <strong>{t('match.appliedTitle')}</strong>
+            <Link className="btn" to={`/applications/${match.application_id}`}>
+              {t('match.applied')}
+            </Link>
+          </>
         ) : !eligible ? (
           match.state === 'BLOCKED' ? (
             <>
-              {/* The block is a document or a value, so the vault is where it
-                  is cleared. next_action names the specific one. */}
-              {match.next_action && <p className="match-do-say">{match.next_action}</p>}
+              <strong>{t('match.blockedTitle')}</strong>
+              {match.next_action && <p>{match.next_action}</p>}
               <Link className="btn primary" to="/documents">{t('nav.documents')}</Link>
             </>
           ) : (
-            /* No Apply button on a scheme that would refuse one. The row still
-               links to the scheme through its title, which is where somebody
-               checking next year's rules goes. */
-            <p className="match-do-say">{t('match.notOpenToYou')}</p>
+            <>
+              <strong>{t('match.noTitle')}</strong>
+              <p>{t('match.notOpenToYou')}</p>
+              {/* No Apply. A button the server would refuse sends somebody
+                  through a consent screen to a rejection. The scheme's own page
+                  is where next year's rules are, which is the useful door. */}
+              <Link className="btn" to={`/scholarships/${match.slug}`}>
+                {t('match.seeDetails')}
+              </Link>
+            </>
           )
-        ) : route.kind === 'external' ? (
-          <>
-            <p className="match-do-say">{t('match.youQualify')}</p>
-            {/* An anchor, and labelled as leaving. noopener/noreferrer, and the
-                new tab announced rather than left to the arrow. */}
-            <a
-              className="btn primary"
-              href={route.href}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {t('public.applyExternal')}
-              <span aria-hidden="true"> ↗</span>
-              <span className="sr-only"> — {match.title} ({t('common.newTab')})</span>
-            </a>
-          </>
         ) : (
           <>
-            <p className="match-do-say">{t('match.youQualify')}</p>
-            <Link className="btn primary" to={route.to}>{t('match.apply')}</Link>
+            <strong>{t('match.yesTitle')}</strong>
+            <p>{note ?? t('match.youQualify')}</p>
+            {route.kind === 'external' ? (
+              /* An anchor, and labelled as leaving. noopener denies the opened
+                 page a handle on this one; the new tab is announced rather than
+                 left to the arrow. */
+              <a
+                className="btn primary"
+                href={route.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t('public.applyExternal')}
+                <span aria-hidden="true"> ↗</span>
+                <span className="sr-only"> — {match.title} ({t('common.newTab')})</span>
+              </a>
+            ) : (
+              <Link className="btn primary" to={route.to}>{t('match.apply')}</Link>
+            )}
           </>
         )}
       </div>

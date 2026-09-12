@@ -512,7 +512,21 @@ export const en: Dict = {
   /* The action column's one line. Short on purpose: the column is 13rem and
      anything longer sets the height of the whole row. What applying off-site
      means for this student is said beside the scheme instead. */
-  'match.youQualify': 'You meet the criteria.',
+  'match.youQualify': 'You meet the criteria on your profile.',
+  /* The action panel's heading. It names which of the four answers this is, so
+     the panel is readable on its own — somebody who scrolled past the badge
+     still gets told, in words, before they reach the button. */
+  'match.yesTitle': 'You can apply',
+  'match.blockedTitle': 'One thing first',
+  'match.noTitle': 'Not eligible',
+  'match.appliedTitle': 'Already sent',
+  'match.seeDetails': 'See the rules',
+  'match.learnMore': 'Learn more',
+  'match.runBy': 'Run by {kind}',
+  'match.sortBy': 'Sort by',
+  'match.sortRecommended': 'Recommended',
+  'match.sortClosing': 'Closing soonest',
+  'match.sortAward': 'Largest award',
   'match.applyAway': 'Apply on their site',
   'match.applyHere': 'Apply here',
   'match.notOpenToYou': 'Not open to you as things stand.',
