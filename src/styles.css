@@ -4654,3 +4654,76 @@ label .req, .field-label .req { color: var(--danger); font-weight: var(--w-stron
 
   .match-filters-right { width: 100%; justify-content: space-between; }
 }
+
+/* --- the district picker -------------------------------------------------------
+ *
+ * The control that opens the sheet is a <button>, because nothing here is typed
+ * — every value is one of the rows. So it has to be made to look like the state
+ * control above it, or two fields asking the same kind of question would not
+ * read as a pair. It borrows the input rule's border, radius, padding and 48px
+ * floor rather than restating them in different numbers.
+ *
+ * Left-aligned, unlike every other button on the site: this one holds a value,
+ * and a value centred in a wide control reads as a label rather than an answer.
+ *
+ * justify-content, NOT text-align. The global `button` rule is display:
+ * inline-flex with justify-content: center, so text-align has nothing to act on
+ * and the label sits in the middle however many times you set it — which is
+ * exactly what the first version of this did.
+ */
+.select-like {
+  font: 400 var(--step-0)/1.5 var(--font);
+  padding: 0.75rem;
+  min-height: 48px;
+  width: 100%;
+  justify-content: flex-start;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+/* Disabled until a state is chosen. Dimmed AND the label says why — "Choose
+   your state first" — because a greyed control with no explanation is the
+   commonest way a form stalls somebody. */
+.select-like:disabled { color: var(--text-muted); cursor: not-allowed; opacity: 1; }
+
+.district-picker { display: grid; gap: 0.75rem; }
+.district-partial { display: grid; gap: 0.25rem; justify-items: start; }
+.district-partial p { font-size: var(--step--1); margin: 0; }
+
+/* The list fills the sheet and scrolls inside it, so the search box stays put
+   while the results move under it. */
+.district-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.25rem; }
+.district-list button {
+  width: 100%;
+  /* See .select-like: the global button rule centres through flex, so this is
+     justify-content rather than text-align. */
+  justify-content: flex-start;
+  min-height: 48px;
+  padding: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text);
+  font: 400 var(--step-0)/1.4 var(--font);
+  cursor: pointer;
+}
+.district-list button:hover { background: var(--surface-sunken); }
+/* The chosen row carries a border as well as a fill: colour alone would put the
+   whole "this is your answer" distinction into a background tint, which a
+   monochrome rendering loses. aria-pressed says it to a screen reader. */
+.district-list button.is-on {
+  background: var(--surface-sunken);
+  border-color: var(--accent);
+  font-weight: var(--w-medium);
+}
+
+/* The typed-district escape, on the states whose list is cut short. */
+.district-typed { display: grid; gap: 0.5rem; }
+.district-typed > label { font-weight: var(--w-medium); }
+.district-typed-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.district-typed-actions > button { flex: 1 1 auto; }
+/* aria-invalid on the sheet trigger, matching what the input rule does for
+   every other control on the form. */
+.select-like[aria-invalid="true"] { border-color: var(--danger); }

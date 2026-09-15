@@ -691,6 +691,9 @@ export const en: Dict = {
     + 'happened and what options are available.',
   'auth.closedSoon': 'Request support (soon)',
 
+  'reg.district': 'District',
+  'reg.districtHint': 'Helps match you to schemes run in your area.',
+
   'privacy.requested': 'Requested',
   /* The window, in the student's own words.
    *

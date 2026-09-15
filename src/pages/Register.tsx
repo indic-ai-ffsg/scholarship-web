@@ -64,6 +64,7 @@ import {
 } from '../lib/fields'
 import { ChipSelector } from '../components/ChipSelector'
 import { SearchableSelect } from '../components/SearchableSelect'
+import { DistrictPicker } from '../components/DistrictPicker'
 import { Field, Notice } from '../components/ui'
 import type { Profile } from '../lib/types'
 
@@ -150,6 +151,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     profile?.disability_percent != null ? String(profile.disability_percent) : '',
   )
   const [state, setState] = useState(profile?.state_code ?? '')
+  const [district, setDistrict] = useState(profile?.district ?? '')
   /* course_name holds the chip that was picked; the postgraduate ones are
      stored prefixed, and programCategory needs the prefix back to know which
      year chips apply. course_level is what says which group it came from. */
@@ -340,6 +342,10 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     }
 
     if (!state) found.state = required
+    /* Only once a state is chosen. Asking for a district while the control is
+       still disabled would name a field the student cannot reach — two errors
+       for one mistake, and the second one unactionable. */
+    if (state && !district) found.district = required
     if (!program) found.program = required
     // PhD is the one program with no year to give.
     if (category !== 'phd' && !year) found.year = required
@@ -400,6 +406,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
       disability_percent: Number(percent),
       udid_number: udid.trim(),
       state_code: state,
+      district: district.trim(),
       course_level: courseLevelFor(program),
       course_name: courseNameFor(program),
       institution_name: institution.trim(),
@@ -768,8 +775,39 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                 {...props}
                 options={stateChoices()}
                 value={state}
-                onChange={v => { setState(v); clearProblem('state') }}
+                /* Changing the state clears the district: the districts
+                   belonged to the old one, and a Kerala student who corrects
+                   their state to Karnataka must not keep Wayanad. */
+                onChange={v => {
+                  setState(v)
+                  setDistrict('')
+                  clearProblem('state')
+                  // The old district is gone, so its error is stale too.
+                  clearProblem('district')
+                }}
                 placeholder={t('reg.statePlaceholder')}
+              />
+            )}
+          </Field>
+
+          {/* Required. Fourteen states' lists are cut short in the data file,
+              so the picker lets those states type a district instead — see
+              DistrictPicker. Without that escape, requiring this would stop a
+              student from Lucknow registering at all. */}
+          <Field
+            label={t('reg.district')}
+            hint={t('reg.districtHint')}
+            error={problems.district || undefined}
+            required
+          >
+            {props => (
+              <DistrictPicker
+                id={props.id}
+                stateCode={state}
+                value={district}
+                onChange={v => { setDistrict(v); clearProblem('district') }}
+                describedBy={props['aria-describedby']}
+                invalid={!!problems.district}
               />
             )}
           </Field>
