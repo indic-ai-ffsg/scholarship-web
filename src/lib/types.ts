@@ -421,6 +421,23 @@ export interface AccessEntry {
   purpose?: string
 }
 
+/* A request the student has made about their own data (FR-20).
+ *
+ * `due_at` is the erasure recovery window closing, and it comes from the server
+ * for a reason worth keeping: the portal must never compute the date itself, or
+ * a clock drifting by a day would tell somebody they still had time on the
+ * morning their record went. Absent on an export, which has no window. */
+export interface DataRequest {
+  request_id: string
+  request_type: 'EXPORT' | 'ERASURE' | 'CORRECTION'
+  status: 'RECEIVED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'CANCELLED'
+  requested_at: string
+  completed_at?: string
+  rejection_reason?: string
+  download_url?: string
+  due_at?: string
+}
+
 export interface Consent {
   consent_id: string
   organisation_name: string

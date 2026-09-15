@@ -7,7 +7,7 @@ import { useAnnounce } from '../lib/announce'
 import { useI18n } from '../lib/i18n-context'
 import { date, humanise } from '../lib/format'
 import { Empty, ErrorState, Loading, Notice } from '../components/ui'
-import type { AccessEntry, Consent } from '../lib/types'
+import type { AccessEntry, Consent, DataRequest } from '../lib/types'
 
 /* The student's own view of what the platform holds (FR-19 and FR-20).
  *
@@ -35,6 +35,22 @@ export default function MyData() {
   const consents = useQuery<Consent[]>(
     signal => api.get('/me/consents', undefined, signal), [],
   )
+  /* The student's own requests, so the window survives a reload.
+   *
+   * Without this the thirty days existed only in the response to the button:
+   * close the tab and the portal forgot there was a request at all, while the
+   * clock went on running. A student cannot be expected to act inside a window
+   * the screen stops mentioning. */
+  const requests = useQuery<DataRequest[]>(
+    signal => api.get('/me/data-requests', undefined, signal), [],
+  )
+
+  /* The one open erasure, if there is one. RECEIVED and IN_PROGRESS are the
+     two states in which it has not happened and can still be taken back. */
+  const pendingErasure = (requests.data ?? []).find(
+    r => r.request_type === 'ERASURE'
+      && (r.status === 'RECEIVED' || r.status === 'IN_PROGRESS'),
+  )
 
   if (!profile) {
     return <div className="page"><Empty title={t('match.none')} hint={t('match.noneHint')} /></div>
@@ -59,6 +75,21 @@ export default function MyData() {
       const res = await api.post<{ retained: string[] }>('/me/data-requests/erasure')
       setRetained(res.data.retained)
       announce(t('privacy.requested'))
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : t('common.error'))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function cancelErasure(requestId: string) {
+    setBusy('cancel')
+    try {
+      await api.post(`/me/data-requests/${requestId}/cancel`)
+      setRetained(null)
+      requests.reload()
+      setMessage(t('privacy.cancelled'))
+      announce(t('privacy.cancelled'))
     } catch (err) {
       setMessage(err instanceof Error ? err.message : t('common.error'))
     } finally {
@@ -162,11 +193,49 @@ export default function MyData() {
         {/* What survives an erasure is stated before the request, not after.
             A student told "your data has been deleted" who later finds their
             disbursement record intact has been misled. */}
-        {retained ? (
+        {retained && (
           <Notice tone="warn" title={t('privacy.requested')}>
             <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
               {retained.map((r, i) => <li key={i}>{r}</li>)}
             </ul>
+          </Notice>
+        )}
+
+        {/* The window, and the way out of it.
+          *
+          * Read from the server's list rather than from `retained`, so it is
+          * here on a fresh visit and not only in the seconds after the button
+          * was pressed. The heading says nothing has been deleted YET, which is
+          * the single most important fact on this screen: a student who
+          * believes it is already done will not come back inside the window. */}
+        {pendingErasure ? (
+          <Notice tone="warn" title={t('privacy.window')}>
+            <p style={{ marginTop: 0 }}>
+              {pendingErasure.due_at
+                ? t('privacy.windowBody', { date: date(pendingErasure.due_at) })
+                : t('privacy.eraseBody')}
+            </p>
+            {/* .row already gives the gap and the wrap; nothing to add. */}
+            <div className="row">
+              <button
+                onClick={() => cancelErasure(pendingErasure.request_id)}
+                disabled={busy === 'cancel'}
+                aria-busy={busy === 'cancel' || undefined}
+              >
+                {busy === 'cancel' ? t('privacy.cancelling') : t('privacy.cancel')}
+              </button>
+              {/* Beside the cancel rather than under the export heading above:
+                  this is the moment the copy is worth taking, and a student
+                  reading a deletion date should not have to scroll back up to
+                  find out they can keep one. */}
+              <button
+                onClick={requestExport}
+                disabled={busy === 'export'}
+                aria-busy={busy === 'export' || undefined}
+              >
+                {busy === 'export' ? t('privacy.exporting') : t('privacy.export')}
+              </button>
+            </div>
           </Notice>
         ) : (
           <button onClick={requestErasure} disabled={busy === 'erase'} aria-busy={busy === 'erase' || undefined}>

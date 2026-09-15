@@ -679,6 +679,19 @@ export const en: Dict = {
   'privacy.erasing': 'Requesting…',
   'privacy.eraseBody': 'We must keep records of any scholarship paid to you. Everything else is removed.',
   'privacy.requested': 'Requested',
+  /* The window, in the student's own words.
+   *
+   * The date is spelled out rather than "in 30 days", because a student reading
+   * this in week three needs to know when, not how long it was. {date} is
+   * filled from the server's due_at — the portal never counts its own thirty
+   * days, or it could tell somebody they still had time on the morning their
+   * record went. */
+  'privacy.window': 'Nothing has been deleted yet',
+  'privacy.windowBody': 'Your data will be deleted on {date}. Until then you can '
+    + 'change your mind, and nothing is lost. Download a copy first if you want to keep one.',
+  'privacy.cancel': 'Cancel this request',
+  'privacy.cancelling': 'Cancelling…',
+  'privacy.cancelled': 'Your request has been cancelled. Nothing was deleted.',
 
   'common.loading': 'Loading',
   'common.retry': 'Try again',

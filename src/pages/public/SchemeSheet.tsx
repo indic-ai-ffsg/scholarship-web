@@ -259,8 +259,8 @@ export function SchemeSheet({
       {/* What the operator wrote, in the order a reader asks for it.
         *
         * The four below are the point of the panel. They come from backend
-        * 0027's columns, they have been filled in by the admin panel and the
-        * discovery agent since that migration, and until 0048 carried them
+        * 0027's columns, they have been filled in by the admin panel since
+        * that migration, and until 0048 carried them
         * through public_scholarship the public site could not read one of them
         * — so a student deciding whether to spend an afternoon on an
         * application had the sponsor's name and a figure, and nothing about
