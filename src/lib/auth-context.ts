@@ -29,6 +29,14 @@ export interface AuthState {
    */
   justRegistered: boolean
   error: string | null
+  /* Which refusal this is, when the server named one — ACCOUNT_CLOSED,
+   * ACCOUNT_SUSPENDED. Null for everything else, which is most things.
+   *
+   * Separate from `error` rather than parsed out of it: the message is prose
+   * meant for a person and is expected to be reworded, and a screen that
+   * branched on its text would change behaviour the next time somebody fixed a
+   * comma. */
+  errorReason: string | null
 }
 
 export interface AuthApi extends AuthState {

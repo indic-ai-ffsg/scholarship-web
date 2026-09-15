@@ -203,15 +203,30 @@ export function ResultCard({
 /* --- notices --------------------------------------------------------------------- */
 
 export function Notice({
-  tone = 'info', title, children,
+  tone = 'info', title, announce, children,
 }: {
   tone?: 'info' | 'good' | 'warn' | 'danger'
   title?: string
+  /* Speak this when it appears, without claiming something has gone wrong.
+   *
+   * Tone alone decided this, and for a notice rendered with the page that is
+   * right — a screen reader meets it in document order like any other prose.
+   * It is wrong for one that appears in answer to something the reader just
+   * did, because they are looking at the control they pressed and never learn
+   * the notice arrived. Opt-in rather than derived from tone, so no existing
+   * notice starts speaking because this was added.
+   *
+   * `status`, not `alert`: polite, announced at the next pause instead of
+   * cutting off whatever is being read. Nothing here is an emergency. */
+  announce?: boolean
   children: ReactNode
 }) {
   return (
     // Only a genuine problem interrupts; the rest is read in document order.
-    <div className={`notice ${tone}`} role={tone === 'danger' ? 'alert' : undefined}>
+    <div
+      className={`notice ${tone}`}
+      role={tone === 'danger' ? 'alert' : announce ? 'status' : undefined}
+    >
       {title && <strong>{title}</strong>}
       {children}
     </div>

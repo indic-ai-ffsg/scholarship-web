@@ -678,6 +678,19 @@ export const en: Dict = {
   'privacy.erase': 'Delete my data',
   'privacy.erasing': 'Requesting…',
   'privacy.eraseBody': 'We must keep records of any scholarship paid to you. Everything else is removed.',
+  /* A closed account, answered with what happens next.
+   *
+   * Longer than an error banner should be, and that is the point: every other
+   * refusal on this screen is something the student can fix by trying again —
+   * a wrong code, a mistyped number. This one is not, so a red line saying
+   * "closed" leaves somebody staring at a door with no handle. The sentences
+   * say what is true, that there is a way to ask, and that the way is not
+   * built yet, rather than implying the last of those. */
+  'auth.closedTitle': 'Your account is currently closed.',
+  'auth.closedHelp': 'Need help? Our support team can help you understand what '
+    + 'happened and what options are available.',
+  'auth.closedSoon': 'Request support (soon)',
+
   'privacy.requested': 'Requested',
   /* The window, in the student's own words.
    *

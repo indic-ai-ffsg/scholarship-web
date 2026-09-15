@@ -66,7 +66,7 @@ export default function SignIn() {
   const { t } = useI18n()
   const {
     requestCode, submitCode, resendCode, cancelCode, clearError,
-    status, pendingCode, error,
+    status, pendingCode, error, errorReason,
   } = useAuth()
   const location = useLocation()
 
@@ -255,7 +255,26 @@ export default function SignIn() {
           {t('auth.stepOf', { n: step, name: step === 1 ? t('auth.stepPhone') : t('auth.stepCode') })}
         </p>
 
-        {error && <Notice tone="danger">{error}</Notice>}
+        {/* A closed account is answered in full rather than as a red line.
+          *
+          * Branching on the server's reason, not on the words it sent — see
+          * AuthState.errorReason. `warn` rather than `danger`: nothing has gone
+          * wrong here and nothing is broken, which is what danger would say;
+          * the account is in a state, and the panel's job is to explain it.
+          *
+          * "Request support (soon)" is deliberately not a button. A control
+          * that looks pressable and does nothing is worse than a sentence —
+          * somebody clicks it, nothing happens, and now they doubt the rest of
+          * the screen too. It becomes a real link when there is something for
+          * it to open. */}
+        {error && (errorReason === 'ACCOUNT_CLOSED' ? (
+          <Notice tone="warn" announce title={t('auth.closedTitle')}>
+            <p style={{ marginTop: 0 }}>{t('auth.closedHelp')}</p>
+            <p className="muted" style={{ marginBottom: 0 }}>{t('auth.closedSoon')}</p>
+          </Notice>
+        ) : (
+          <Notice tone="danger">{error}</Notice>
+        ))}
 
         {!awaitingCode ? (
           <form onSubmit={sendCode} noValidate>

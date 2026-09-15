@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile: null,
     pendingCode: null,
     justRegistered: false,
-    error: null,
+    error: null, errorReason: null,
   })
 
   /** Whether a code exchange is in flight, held between the two steps. */
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       pendingCode: null,
       justRegistered,
-      error: null,
+      error: null, errorReason: null,
     })
   }, [loadProfile])
 
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.setAccessToken(null)
       setState({
         status: 'anonymous', context: null, profile: null,
-        pendingCode: null, justRegistered: false, error: null,
+        pendingCode: null, justRegistered: false, error: null, errorReason: null,
       })
     })
     return () => api.setAuthLostHandler(null)
@@ -155,7 +155,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          * into "just now", which invites exactly that. */
         : err instanceof otp.ProviderError ? err.message
         : fallback
-    setState(s => ({ ...s, error: message }))
+    /* The reason, when the server named one. `fields` is the same channel
+       validation failures arrive on, so nothing new had to be invented; an
+       error that names none leaves this null and the screen shows the banner
+       it always did. */
+    const reason = err instanceof api.ApiError ? err.fields?.reason ?? null : null
+    setState(s => ({ ...s, error: message, errorReason: reason }))
     throw err
   }, [])
 
@@ -167,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(message)
     }
 
-    setState(s => ({ ...s, error: null }))
+    setState(s => ({ ...s, error: null, errorReason: null }))
     try {
       /* The fork, asked before the code is sent: is this number already
        * registered? Only a label for what the next screen says — the server
@@ -192,7 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const submitCode = useCallback(async (code: string) => {
     if (!pending.current) return
 
-    setState(s => ({ ...s, error: null }))
+    setState(s => ({ ...s, error: null, errorReason: null }))
     try {
       /* The widget checks the code and hands back a signed token; the API
        * exchanges that token for a session. This app never sees the code after
@@ -210,7 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resendCode = useCallback(async (channel?: otp.Channel) => {
     if (!pendingPhone.current) return
 
-    setState(s => ({ ...s, error: null }))
+    setState(s => ({ ...s, error: null, errorReason: null }))
     try {
       // The widget's own retry: it keeps the exchange open and repeats the code
       // on it, rather than starting a new one. The channel, when given, is the
@@ -224,7 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const cancelCode = useCallback(() => {
     pending.current = null
     pendingPhone.current = null
-    setState(s => ({ ...s, status: 'anonymous', pendingCode: null, error: null }))
+    setState(s => ({ ...s, status: 'anonymous', pendingCode: null, error: null, errorReason: null }))
   }, [])
 
   const signOut = useCallback(async () => {
@@ -251,7 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     pendingPhone.current = null
     setState({
       status: 'anonymous', context: null, profile: null,
-      pendingCode: null, justRegistered: false, error: null,
+      pendingCode: null, justRegistered: false, error: null, errorReason: null,
     })
   }, [state.context?.profile_id])
 
@@ -289,7 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState(s => ({ ...s, profile, justRegistered: false }))
   }, [loadProfile])
 
-  const clearError = useCallback(() => setState(s => ({ ...s, error: null })), [])
+  const clearError = useCallback(() => setState(s => ({ ...s, error: null, errorReason: null })), [])
 
   const value = useMemo<AuthApi>(() => ({
     ...state, requestCode, submitCode, resendCode, cancelCode, signOut,
