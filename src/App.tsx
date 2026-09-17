@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { useAuth } from './lib/auth-context'
 import { withNext } from './lib/next'
+import { usePageVisit } from './lib/visit'
 import { useI18n } from './lib/i18n-context'
 import Layout from './components/Layout'
 import { Loading } from './components/ui'
@@ -55,6 +56,15 @@ export default function App() {
    * account controls rather than flashing "Login" at somebody who is already
    * logged in. Everything else renders immediately and finds out about the
    * session when the answer arrives. */
+  /* One line, and the platform can finally answer "how many visitors".
+   *
+   * Mounted here rather than per page so no route has to remember it, and above
+   * the guards so a visitor is counted on the page they actually landed on. It
+   * counts public routes only and sends no identifier of any kind — see
+   * lib/visit.ts, which carries the reasoning and the reason there is still no
+   * consent banner on this site. */
+  usePageVisit()
+
   return (
     <Routes>
       <Route element={<Layout />}>
