@@ -1,0 +1,182 @@
+/* --- tokens ---------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  --bg: #fbfbfa;
+  --surface: #ffffff;
+  --surface-sunken: #f2f4f6;
+  --border: #d9dde3;
+  /* 3.09:1 against --surface. Form control boundaries are non-text
+   * content and must clear 3:1 under WCAG 2.2 (1.4.11); the lighter grey
+   * that looked tidier measured 2.19:1 and failed. */
+  --border-strong: #8e8c95;
+
+  /* Contrast against --surface is stated for each. 4.5:1 is the AA floor for
+   * body text; nothing below it is used for text anywhere. */
+  --text: #14171c;          /* 16.8:1 */
+  --text-muted: #4f5866;    /*  7.4:1 */
+
+  /* Green, not blue.
+   *
+   * The one thing worth writing down about this token, because it looks like a
+   * mistake and is not: --accent and --eligible are the same colour, on purpose.
+   *
+   * A colour that carries white text has to clear 4.5:1 against white, which
+   * puts every candidate green somewhere near this darkness — and every green
+   * that dark lands within about ten degrees of hue of every other. Two greens
+   * ten degrees apart do not read as two colours; they read as one colour
+   * applied inconsistently, which is worse than either merging them or picking
+   * different hues. So they are merged, and it says something true about this
+   * product: the site's colour and the word "eligible" mean the same thing here.
+   *
+   * What keeps a state legible is therefore not its hue. It never was — every
+   * one of the four pairs its colour with a text label and an icon shape, and
+   * none of them is distinguishable by colour alone to begin with. */
+  --accent: #0a5c3a;        /*  8.1:1 — deliberately dark enough to carry text */
+  --accent-weak: #e4f3ea;
+  --accent-text: #ffffff;
+
+  /* The four eligibility states of Table 4.2. Each pairs with a text label and
+   * an icon shape, never colour alone.
+   *
+   * --likely was a slate blue. It is a teal now: the ladder reads green, teal,
+   * amber, grey — "yes", "probably", "not as things stand", "no" — and the step
+   * from the first to the second is a step along one edge of the wheel rather
+   * than a jump across it. */
+  --eligible: #0a5c3a;      /*  8.1:1 — the accent; see above */
+  --eligible-weak: #e4f3ea;
+  --likely: #0f6470;        /*  6.8:1 */
+  --likely-weak: #e0f0f2;
+  --blocked: #8a4b00;       /*  6.8:1 */
+  --blocked-weak: #fdf0de;
+  --ineligible: #5a6472;    /*  6.0:1 */
+  --ineligible-weak: #f0f2f5;
+
+  --danger: #a3231c;        /*  6.7:1 */
+  --danger-weak: #fdecea;
+
+  /* The one blue left on the site, and it exists for exactly one lockup.
+   *
+   * The landing page's headline argues by changing colour — "Dis-" struck out in
+   * grey, "Ability to" in this blue, "Distinction" in the accent green. The
+   * sequence is the message: old perception, capability, outcome. Take the blue
+   * out and the middle step has nowhere to stand; make it the green and the
+   * headline is two greens and a grey, which reads as one colour applied
+   * unevenly rather than as a progression.
+   *
+   * This is the blue that used to be --accent, kept at the darkness that made it
+   * usable for text. It is deliberately not available to anything else: a second
+   * brand colour loose in the palette is how a green site slowly turns blue
+   * again. Grep for it before adding a use. */
+  --ability: #14508c;       /*  8.2:1 on white, 7.2:1 on the hero's wash */
+
+  /* --- the spectrum ------------------------------------------------------
+   *
+   * The note above held the site to one green for a reason that still stands:
+   * a second colour loose in the palette slowly becomes the brand. What changed
+   * is that a single green made every section look like every other, so the
+   * site now has a second KIND of colour, and it has rules of its own.
+   *
+   * These four are decoration, never state. They tell sections and tiles
+   * apart — which step, which figure, which card in a row — and they never
+   * mean "eligible", "closing" or "wrong". That job stays with the status
+   * tokens above, each paired with a word and a mark. A reader who sees no
+   * colour at all loses nothing here, because nothing here was information.
+   *
+   * Each is dark enough to carry text on white and on its own -weak tint, since
+   * the step numerals are set in it. tools/check-contrast.py asserts both. The
+   * green is the accent, and the blue is --ability, so the headline's two
+   * colours are the first two stops rather than two more. */
+  --hue-green: var(--accent);
+  --hue-green-weak: var(--accent-weak);
+  --hue-teal: #0f6470;      /*  6.8:1 — the same teal as --likely */
+  --hue-teal-weak: #e0f0f2;
+  --hue-blue: #14508c;      /*  8.2:1 — --ability */
+  --hue-blue-weak: #e3edf8;
+  --hue-violet: #5b3fa0;    /*  7.9:1 */
+  --hue-violet-weak: #efeafa;
+  --hue-plum: #8a2f6b;      /*  7.6:1 */
+  --hue-plum-weak: #f8e8f2;
+
+  /* The four together, as a rule across the top of the bar and the footer.
+   * A rule, not a fill: at 3px it is a signature, at 30px it would be a banner
+   * competing with the page. */
+  --spectrum: linear-gradient(90deg,
+    var(--hue-green), var(--hue-teal) 30%, var(--hue-blue) 60%, var(--hue-violet) 85%, var(--hue-plum));
+
+  /* --- elevation and motion ----------------------------------------------
+   *
+   * Three steps of shadow, so a lift means the same height everywhere instead
+   * of each component inventing its own rgba. Tinted with --text's hue rather
+   * than pure black, which on a warm near-white ground reads as dirt. */
+  --shadow-1: 0 1px 2px rgb(20 23 28 / 0.05), 0 1px 3px rgb(20 23 28 / 0.04);
+  --shadow-2: 0 2px 4px rgb(20 23 28 / 0.05), 0 8px 20px -6px rgb(20 23 28 / 0.14);
+  --shadow-3: 0 1px 2px rgb(20 23 28 / 0.05), 0 18px 40px -28px rgb(20 23 28 / 0.35);
+
+  /* 120ms is the house hover speed — see the note on controls. The ease is the
+   * lead panel's curve, named so the two stop drifting apart. */
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  --radius: 10px;
+  --radius-lg: 14px;
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Larger than the admin panel's 14px, and set in rem so the browser's own
+   * font-size setting is respected — which is how a low-vision user has
+   * already configured their device before arriving here. */
+  --step--1: 0.9375rem;
+  --step-0: 1.0625rem;
+  /* The three heading steps came down — 20/24/30px to 18/22/26 — because the
+   * pages read as shouting rather than as large. The two reading steps did not
+   * move, and that is the whole point of the change: what a low-vision student
+   * needs is body text they can read, and --step-0 is still above the 16px a
+   * browser defaults to. Headings are navigation, not reading, and 30px of it
+   * over a 17px paragraph is a ratio that made every screen feel like a poster.
+   *
+   * Anything below --step--1 is still not allowed anywhere. */
+  --step-1: 1.125rem;
+  --step-2: 1.375rem;
+  --step-3: 1.625rem;
+
+  /* --- weight ------------------------------------------------------------
+   *
+   * The scale above came down once already — 20/24/30px to 18/22/26 — because
+   * the pages read as shouting. It helped and it did not fix it, and measuring
+   * the landing page says why: of the twenty-odd distinct text styles on it,
+   * exactly three were lighter than 600. Body copy at 400, and everything else
+   * — every heading, every button, every label, every link in a card, the
+   * ticks under the headline — at 600 or 700.
+   *
+   * A page where almost nothing is light does not read as emphatic, it reads as
+   * large-print. Weight had stopped distinguishing anything because there was
+   * nothing for it to be heavier than, so hierarchy fell entirely to size, and
+   * size had just been reduced. That is the combination that makes a page look
+   * like a leaflet rather than a product.
+   *
+   * Headings were the worst of it and nobody chose them: `h1, h2, h3` set only
+   * font-size, so all three inherited the browser's `bold` — 700 by default,
+   * on every heading on the site, by omission.
+   *
+   * Three weights, and each has one job:
+   *
+   *   400  reading. Paragraphs, list items, anything made of sentences.
+   *   500  controls and labels — the things you act on rather than read.
+   *   600  headings, and inline emphasis inside a paragraph.
+   *
+   * Nothing is 700. At these sizes the step from 600 to 700 buys almost no
+   * apparent weight on a system UI face and costs the page its lightest note.
+   *
+   * None of this touches the reading sizes, which the note above defends and
+   * which are the part a low-vision student actually depends on. Weight is not
+   * legibility: 17px at 400 is the same size as 17px at 700, and the lighter
+   * one has more counter space at magnification, not less. */
+  --w-body: 400;
+  --w-medium: 500;
+  --w-strong: 600;
+
+  --gap: 1rem;
+  --measure: 38rem;   /* ~70 characters; longer lines are harder to track back */
+}

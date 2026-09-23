@@ -28,13 +28,30 @@ import { Navigate, useLocation } from 'react-router-dom'
 
 import { useAuth } from '../lib/auth-context'
 import { useI18n } from '../lib/i18n-context'
-import { formatE164, type Channel } from '../lib/otp'
+import { formatE164, waitSecondsOf, type Channel } from '../lib/otp'
 import { safeNext } from '../lib/next'
 import { Field, Notice } from '../components/ui'
+import { IconCall, IconChat, IconEdit, IconMessage, IconPhone, IconShield } from '../components/icons'
 
 
 const CODE_LENGTH = 6
-const RESEND_SECONDS = 30
+/* Now, and when a wait of `seconds` ends. Outside the component because it
+   reads the clock, which the hooks lint rightly keeps out of component bodies;
+   it is only ever called from an event handler. */
+function waitFromNow(seconds: number) {
+  const at = Date.now()
+  return { at, until: at + seconds * 1000 }
+}
+
+/* Tries per way of receiving a code, counted separately for each. */
+const MAX_TRIES = 3
+
+/* The three ways, in the order offered. */
+const CHANNEL_BUTTONS = [
+  { channel: 'sms', label: 'auth.viaSms', Icon: IconMessage },
+  { channel: 'whatsapp', label: 'auth.viaWhatsapp', Icon: IconChat },
+  { channel: 'voice', label: 'auth.viaVoice', Icon: IconCall },
+] as const
 
 /* The same rule toE164 applies, checked here as well so the complaint can land
  * on the field being typed into. A red banner at the top of the page that says
@@ -95,30 +112,38 @@ export default function SignIn() {
   /* Which way the last code was sent, so the confirmation can name it —
      "sent on WhatsApp" is the only way to know the choice took effect. */
   const [sentVia, setSentVia] = useState<Channel>('sms')
-  /* Seconds since the last code went out, counted down from 30.
+  /* After a code goes out: ask, rather than count down.
    *
-   * A number to wait against, not a gate. It used to disable all three channels
-   * while it ran, which is what took WhatsApp away from a student whose SMS had
-   * been dropped — see the note further down. Every button stays pressable; this
-   * only answers "has it been long enough to be worth trying again", which is
-   * the question somebody staring at a phone that has not buzzed is actually
-   * asking, and it stops the reflex press two seconds after the last one. */
-  const [resentAt, setResentAt] = useState<number | null>(null)
-  const [secondsLeft, setSecondsLeft] = useState(0)
+   * The page used to answer "has it been long enough to try again" with a
+   * countdown under the three channels, and then with MSG91's own "wait 50
+   * seconds" — a number to stare at while the one question the student has,
+   * "did it come?", went unasked. Now it is asked: Yes puts them in the code
+   * boxes; No opens the other ways, and those work at once. Nothing on the
+   * screen makes somebody wait for a message that is not coming.
+   *
+   * Each way is limited to three tries, counted separately, so a student can
+   * move from SMS to WhatsApp to a call without one channel's attempts using up
+   * another's. And if MSG91 does refuse a channel with its own wait, only that
+   * button shows it — the other two stay pressable. */
+  const [asking, setAsking] = useState(true)
+  const [choosing, setChoosing] = useState(false)
+  const [tries, setTries] = useState<Record<Channel, number>>({ sms: 0, whatsapp: 0, voice: 0 })
+  const [waitUntil, setWaitUntil] = useState<Partial<Record<Channel, number>>>({})
+  const [now, setNow] = useState(() => Date.now())
 
   const phoneInput = useRef<HTMLInputElement | null>(null)
   const codeInput = useRef<HTMLInputElement | null>(null)
   const awaitingCode = status === 'awaiting_code' && pendingCode
 
+  /* A clock only while some channel is actually waiting, so an ordinary
+     sign-in does not re-render every second for nothing. */
+  const anyWaiting = Object.values(waitUntil).some(u => (u ?? 0) > now)
   useEffect(() => {
-    if (!awaitingCode || resentAt === null) return
-    const tick = () => setSecondsLeft(
-      Math.max(0, RESEND_SECONDS - Math.floor((Date.now() - resentAt) / 1000)),
-    )
-    tick()
-    const id = setInterval(tick, 1000)
+    if (!awaitingCode || !anyWaiting) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
-  }, [awaitingCode, resentAt])
+  }, [awaitingCode, anyWaiting])
+  const waitLeft = (c: Channel) => Math.max(0, Math.ceil(((waitUntil[c] ?? 0) - now) / 1000))
 
 
   /* No shared countdown on the three channels.
@@ -185,7 +210,8 @@ export default function SignIn() {
     setWorking('send')
     try {
       await requestCode(phone)
-      setResentAt(Date.now())
+      setAsking(true)
+      setChoosing(false)
     } catch {
       /* the provider holds the message */
     } finally {
@@ -218,11 +244,24 @@ export default function SignIn() {
     setResent(false)
     try {
       await resendCode(channel)
-      setResentAt(Date.now())
-      setSentVia(channel ?? 'sms')
+      const used = channel ?? 'sms'
+      setTries(t => ({ ...t, [used]: t[used] + 1 }))
+      setSentVia(used)
       setResent(true)
-    } catch {
-      /* the provider holds the message */
+      // Sent: ask again whether this one arrived.
+      setAsking(true)
+      setChoosing(false)
+    } catch (err) {
+      /* A refusal that names its wait holds that one channel for that long,
+         shown on its own button; the other two stay pressable. Anything else,
+         auth has already shown. */
+      const wait = waitSecondsOf(err)
+      if (wait !== null) {
+        const c = channel ?? 'sms'
+        const { at, until } = waitFromNow(wait)
+        setNow(at)
+        setWaitUntil(w => ({ ...w, [c]: until }))
+      }
     } finally {
       setWorking(null)
     }
@@ -231,13 +270,26 @@ export default function SignIn() {
   function startOver() {
     setCode('')
     setResent(false)
+    setAsking(true)
+    setChoosing(false)
+    setTries({ sms: 0, whatsapp: 0, voice: 0 })
+    setWaitUntil({})
     cancelCode()
+  }
+
+  /* "Yes, I have it": the question goes and the cursor goes to the boxes. */
+  function arrived() {
+    setAsking(false)
+    setChoosing(false)
+    codeInput.current?.focus()
   }
 
   const step = awaitingCode ? 2 : 1
 
   return (
-    <div className="page narrow auth">
+    /* auth-wide on the code step, which is two panels on a wide window —
+       see .auth-code-grid. The number step is one field and stays narrow. */
+    <div className={`page narrow auth${awaitingCode ? ' auth-wide' : ''}`}>
       <div className="auth-card">
         {/* How far in, and how far to go, as an eyebrow above the title. Two
             steps is short enough that saying so removes most of the reason to
@@ -278,6 +330,12 @@ export default function SignIn() {
 
         {!awaitingCode ? (
           <form onSubmit={sendCode} noValidate>
+            {/* What this step is about, as a picture above its title: a handset
+                here, a shield on the code. Not the brand mark — the note above
+                keeps that out of the card — but the task, which is what a
+                student glancing back at the screen needs to recognise.
+                Decorative; the heading says it. */}
+            <span className="auth-icon" aria-hidden="true"><IconPhone /></span>
             <h1>{t('auth.title')}</h1>
             <p className="auth-lede">{t('auth.oneDoor')}</p>
 
@@ -318,7 +376,14 @@ export default function SignIn() {
             <p className="auth-fine">{t('auth.privacy')}</p>
           </form>
         ) : (
-          <form onSubmit={verify} noValidate>
+          <form onSubmit={verify} noValidate className="auth-code-grid">
+            {/* Two panels on a wide window, one column otherwise: the code —
+                where it went and the six boxes to type it into — and the other
+                ways to get it. The source order is the reading order in both,
+                so the keyboard and a screen reader meet them left to right
+                exactly as they are drawn. */}
+            <div className="auth-panel auth-panel-code">
+            <span className="auth-icon" aria-hidden="true"><IconShield /></span>
             <h1>{t('auth.codeTitle')}</h1>
 
             {/* The number it went to, with the way back to change it beside it
@@ -327,8 +392,20 @@ export default function SignIn() {
                 should be in the same place as the evidence. */}
             <p className="auth-target">
               <span className="number">{formatE164(pendingCode.phone)}</span>
-              <button type="button" className="quiet small" onClick={startOver} disabled={busy} data-held={held(false)}>
-                {t('auth.changeNumber')}
+              {/* A pencil and "Change", so the correction fits on the number's own
+                  line. The visible word is the whole accessible name (WCAG
+                  2.5.3) and it follows the number in reading order — "+91 77182
+                  29397, Change, button". The longer sentence is the tooltip. */}
+              <button
+                type="button"
+                className="quiet small auth-change"
+                onClick={startOver}
+                disabled={busy}
+                data-held={held(false)}
+                title={t('auth.changeNumber')}
+              >
+                <IconEdit />
+                {t('auth.change')}
               </button>
             </p>
 
@@ -437,57 +514,63 @@ export default function SignIn() {
                 a student sending four messages while the first is still in
                 flight — a purpose that does not change when the second one is
                 a phone call. */}
-            <div className="auth-retry">
-              <span className="muted" id="retry-label">{t('auth.noCode')}</span>
+            </div>
 
-              <div className="auth-channels" role="group" aria-labelledby="retry-label">
-                <button
-                  type="button"
-                  className="quiet"
-                  onClick={() => resend('sms')}
-                  disabled={busy}
-                  aria-busy={working === 'sms' || undefined}
-                  data-held={held(working === 'sms')}
-                >
-                  {t('auth.viaSms')}
+            <div className="auth-panel auth-panel-retry auth-retry">
+              {asking && !choosing ? (
+                /* The question, with its two answers. A group named by the
+                   question, so a screen reader hears it before the buttons. */
+                <div className="auth-arrived" role="group" aria-labelledby="arrived-q">
+                  <span className="auth-arrived-q" id="arrived-q">{t('auth.didArrive')}</span>
+                  <div className="auth-arrived-actions">
+                    <button type="button" className="primary" onClick={arrived}>
+                      {t('auth.arrivedYes')}
+                    </button>
+                    <button type="button" onClick={() => setChoosing(true)}>
+                      {t('auth.arrivedNo')}
+                    </button>
+                  </div>
+                </div>
+              ) : !choosing ? (
+                /* Answered yes: the ways out stay one press away, as a quiet
+                   link rather than three buttons beside a code being typed. */
+                <button type="button" className="quiet auth-reopen" onClick={() => setChoosing(true)}>
+                  {t('auth.noCode')}
                 </button>
-                <button
-                  type="button"
-                  className="quiet"
-                  onClick={() => resend('whatsapp')}
-                  disabled={busy}
-                  aria-busy={working === 'whatsapp' || undefined}
-                  data-held={held(working === 'whatsapp')}
-                >
-                  {t('auth.viaWhatsapp')}
-                </button>
-                <button
-                  type="button"
-                  className="quiet"
-                  onClick={() => resend('voice')}
-                  disabled={busy}
-                  aria-busy={working === 'voice' || undefined}
-                  data-held={held(working === 'voice')}
-                >
-                  {t('auth.viaVoice')}
-                </button>
-              </div>
+              ) : (
+                <>
+                  <span className="muted" id="retry-label">{t('auth.noCode')}</span>
 
-              {/* The number, once, for the group — not repeated inside three
-                  buttons that would then all say the same thing and read as
-                  three separate waits to a screen reader.
-                  *
-                  * aria-live is deliberately absent: a value that changes every
-                  * second would be announced every second, which is the whole
-                  * screen read over and over to somebody trying to hear the
-                  * field they are typing in. The buttons say what they do; this
-                  * is for the eye. */}
-              {secondsLeft > 0 && (
-                <p className="muted auth-wait" aria-hidden="true">
-                  {t('auth.resendIn', { n: secondsLeft })}
-                </p>
+                  {/* Three ways, each its own: pressable at once, three tries
+                      apiece, and a wait — only if MSG91 states one — on that
+                      button alone. The badge says which: the seconds while it
+                      waits, otherwise how many tries it has left. */}
+                  <div className="auth-channels" role="group" aria-labelledby="retry-label">
+                    {CHANNEL_BUTTONS.map(({ channel, label, Icon }) => {
+                      const left = MAX_TRIES - tries[channel]
+                      const wait = waitLeft(channel)
+                      const unavailable = left <= 0 || wait > 0
+                      return (
+                        <button
+                          key={channel}
+                          type="button"
+                          className="quiet auth-channel"
+                          onClick={() => resend(channel)}
+                          disabled={busy || unavailable}
+                          aria-busy={working === channel || undefined}
+                          data-held={unavailable ? undefined : held(working === channel)}
+                        >
+                          <Icon />
+                          <span className="auth-channel-label">{t(label)}</span>
+                          <span className="auth-channel-badge">
+                            {wait > 0 ? `${wait}s` : t('auth.triesLeft', { n: left })}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
               )}
-
             </div>
           </form>
         )}

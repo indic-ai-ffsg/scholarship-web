@@ -63,6 +63,18 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
   return out
 }
 
+/** One line's inline marks — bold, italic, underline — and nothing else.
+ *
+ * For text a caller has already split into lines and wraps itself: the panel's
+ * steps, points, benefit rows and document names. Those went through asLines
+ * and printed as typed, so an operator who bolded "**mobile number**" in How to
+ * apply showed the student the asterisks, while the same mark two sections up,
+ * in Eligibility in detail, rendered — one dialect, honoured in half the panel.
+ */
+export function renderInline(text: string): ReactNode[] {
+  return inline(text, 'i')
+}
+
 /** Marked-up text as elements. Anything unrecognised stays as it was typed. */
 export function renderRichText(text: string): ReactNode {
   const lines = text.split('\n')

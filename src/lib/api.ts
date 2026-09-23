@@ -292,9 +292,18 @@ export async function login(body: unknown) {
 export async function logout() {
   try {
     await request('/auth/logout', { method: 'POST', raw: true })
-  } catch {
+  } catch (err) {
     // A failed sign-out must still clear local state, or the operator is stuck
     // looking at a session they believe they have ended.
+    //
+    // But not silently. When this request fails the server has not revoked the
+    // refresh cookie, so the next page load's /auth/refresh signs the reader
+    // straight back in — and with the error swallowed, "I signed out and it
+    // signed me back in" had nothing to show for itself anywhere. The route no
+    // longer refuses for a bad access token (see Authenticator.Peek on the
+    // server), so what is left here is the network or the server itself, and
+    // that is worth a line in the console.
+    console.warn('[auth] sign-out did not reach the server; the session may resume on reload', err)
   }
 }
 

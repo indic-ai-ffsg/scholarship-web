@@ -1,0 +1,175 @@
+/* A document shown in place, under the card it belongs to.
+ *
+ * Capped in height rather than width: a photographed certificate is usually
+ * portrait, and left to itself a 3000px scan pushes the page down by three
+ * screens. The border and ground say it is the document rather than part of
+ * the page — a scan on a white card on a white page has no edge otherwise. */
+/* The document itself, on its own card.
+ *
+ * Three shapes were tried and two were wrong, so the reasoning is worth
+ * keeping:
+ *
+ *   A fixed rectangle with object-fit: contain letterboxed everything. A
+ *   portrait certificate in a landscape box is a small picture with grey bars
+ *   either side, and the thing you are trying to recognise ends up the
+ *   smallest part of the card.
+ *
+ *   Natural size at full width fixed the bars and overshot: a full-width A4
+ *   page is most of a phone screen, so a list of three documents became three
+ *   screens of scrolling, and the page was hard to scroll past at all.
+ *
+ * What is left is a cap, not a frame. The document keeps its own proportions —
+ * a tall scan stays tall, a wide one stays wide — and is simply not allowed to
+ * be more than a glance tall. Recognising a certificate does not need it
+ * full size; it needs it legible and out of the way.
+ */
+.doc-thumb {
+  display: block;
+  margin-top: 0.75rem;
+  /* Width follows the height for an image, so a portrait scan is a narrow
+     column rather than a full-width slab with empty sides. */
+  max-width: 100%;
+  max-height: 15rem;
+  width: auto;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  /* An image has one page and nothing to operate: no click, no drag, no
+     context menu offering a save. */
+  pointer-events: none;
+}
+
+/* A PDF has no natural size to cap — an iframe is whatever you say it is — so
+   it gets a window instead: full width, a glance tall, and scrollable inside
+   for the pages below the first. The A4 proportion is gone deliberately; it is
+   what made the frame a full page. */
+.doc-thumb-page {
+  width: 100%;
+  height: 15rem;
+  max-height: 15rem;
+  border-color: var(--border);
+  background: var(--surface);
+  /* The one thing here that has to be operable. Inert, a two-page certificate
+     showed page one with no way to reach page two. Scrolling is not opening
+     and not downloading, and the toolbar carrying those is still off. */
+  pointer-events: auto;
+}
+
+/* --- the page, composed ---------------------------------------------------------
+ *
+ * The upload panel, then the documents as a grid of file cards. It was one card
+ * of stacked fields and then a full-width card per document, each ending in a
+ * preview the height of a scan — so two documents were three screens, and the
+ * Remove button sat between a document's name and the picture of it.
+ */
+
+/* Adding a document: a raised panel with the spectrum edge, the site's mark for
+   "the one tool on this screen". */
+.doc-upload {
+  border-radius: var(--radius-lg);
+  padding: 1.375rem 1.5rem 1.5rem;
+  box-shadow: var(--shadow-2);
+  border-top: 4px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--spectrum) border-box;
+}
+.doc-upload h2 { font-size: var(--step-1); margin-bottom: 1rem; }
+.doc-upload-fields {
+  display: grid; gap: 0 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  align-items: start;
+}
+.doc-upload-fields .field { max-width: none; }
+.doc-upload-fields .file-input { width: 100%; max-width: none; }
+
+/* The documents, two or three to a row. */
+.doc-grid {
+  list-style: none; margin: 1.5rem 0 0; padding: 0;
+  display: grid; gap: var(--gap);
+  grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
+}
+.doc-grid > li { display: grid; min-width: 0; }
+@keyframes doc-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+/* Arriving, once, a beat apart — the matched list's movement, for the same
+   reason, and removed outright under reduced motion for the same reason. */
+.doc-grid > li { animation: doc-rise 360ms var(--ease-out) backwards; }
+.doc-grid > li:nth-child(2) { animation-delay: 60ms; }
+.doc-grid > li:nth-child(3) { animation-delay: 120ms; }
+.doc-grid > li:nth-child(n+4) { animation-delay: 180ms; }
+@media (prefers-reduced-motion: reduce) { .doc-grid > li { animation: none; } }
+
+.doc-card {
+  /* min-width: 0 here and on the li: a grid item will not shrink below its
+     content by default, and a camera's unbroken file name is content — at 375px
+     one card pushed the whole page 54px wider than the screen. */
+  min-width: 0;
+  margin: 0;
+  display: flex; flex-direction: column; gap: 0.75rem;
+  border-radius: var(--radius-lg);
+  transition: box-shadow var(--dur) ease-out;
+}
+.doc-card:hover { box-shadow: var(--shadow-2); }
+.doc-card-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 0.5rem 0.75rem; flex-wrap: wrap;
+}
+.doc-card-head h3 { margin: 0; font-size: var(--step-0); }
+
+/* The preview frame: a fixed height on a sunken ground, the document centred
+ * in it and scaled to fit. The height is what lets a grid of cards line up; the
+ * contain is what .doc-thumb's own note insists on — a portrait certificate is
+ * shown portrait, never cropped and never stretched. A PDF fills the frame and
+ * scrolls inside it, as before. */
+.doc-preview {
+  height: 13rem;
+  /* A definite row, so the image's max-height: 100% has something to be a
+     percentage of. An auto row is indefinite and the limit resolved to none —
+     the scan spilled out of the bottom of its frame instead of fitting it. */
+  display: grid; place-items: center;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.doc-preview .doc-thumb {
+  margin: 0;
+  max-width: 100%; max-height: 100%;
+  border: 0; border-radius: 0;
+  object-fit: contain;
+}
+.doc-preview .doc-thumb-page { width: 100%; height: 100%; max-height: none; }
+
+/* The file: its name on one line with an ellipsis — a camera's
+   "file_0000000021dc8211…png" is noise past the first few characters — and its
+   size beside it. The full name stays in the text for a screen reader and in
+   the preview's own accessible name. */
+.doc-file {
+  margin: 0;
+  display: flex; align-items: baseline; gap: 0.5rem;
+  font-size: var(--step--1);
+  min-width: 0;
+}
+.doc-file-name {
+  min-width: 0; flex: 0 1 auto;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.doc-file .muted { flex: none; }
+.doc-valid { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
+.doc-card .notice { margin: 0; }
+.doc-card .notice p { margin: 0; }
+
+/* Remove, last and at the far edge, pushed to the card's foot so the row of
+   cards has its destructive controls on one line. */
+.doc-card-foot {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end;
+}

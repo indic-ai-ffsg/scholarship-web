@@ -1,0 +1,120 @@
+/* --- footer ---------------------------------------------------------------------
+ *
+ * Who runs this. A student handing over a disability certificate is entitled to
+ * know whose platform they are on, and a public service with no visible owner
+ * reads as a scam — the first thing this audience is warned about. */
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  /* Recessed, not white.
+   *
+   * This was --surface: pure white, on a --bg of #fbfbfa. Two near-identical
+   * whites separated by a hairline do not read as "page" and "foot of page";
+   * they read as a white band that has appeared for no reason -- and every way
+   * this footer can move (a lazy chunk collapsing the document, a short page
+   * leaving a gap beneath it, an auth answer adding or removing it) turned that
+   * band into a flash. The band is the thing being seen, so the band is what
+   * changes.
+   *
+   * --surface-sunken is the token already used for a recessed region, and the
+   * contrast script already checks both text colours against it: 12.51:1 for
+   * body, 6.69:1 for secondary. Darker than the page rather than lighter, so it
+   * reads as the floor of the document and no movement of it can look like a
+   * flash of white. */
+  background: var(--surface-sunken);
+  padding: 2rem clamp(1.25rem, 2.5vw, 3rem) 3rem;
+  margin-top: 3rem;
+  /* The bar's spectrum again, so the page is bracketed by the same rule top and
+     bottom. A border-image on the existing hairline rather than a
+     pseudo-element: only the top border has a width, so only the top paints. */
+  border-image: var(--spectrum) 1;
+  border-top-width: 3px;
+}
+.site-footer .inner {
+  /* Three parts: who the foundation is on the reading side, the accounts at the
+   * far side, and the notice centred beneath both.
+   *
+   * It held four columns — brand, two lists of destinations, and a note about
+   * data rights. The lists came out because every place they pointed at is in
+   * the bar at the top of the page, and a footer that repeats the navigation is
+   * a second copy to keep in step. */
+  display: flex; flex-wrap: wrap; align-items: flex-start;
+  gap: 1.5rem 3rem;
+}
+/* The logo alone now the description has gone. The width cap and the grid gap
+ * are kept rather than simplified to a bare block: this column is one of two in
+ * a flex row, and the basis is what decides when the footer wraps to a single
+ * column on a narrow screen. */
+.footer-brand { flex: 1 1 22rem; max-width: 40rem; display: grid; gap: 0.75rem; justify-items: start; }
+.footer-logo {
+  /* The intrinsic ratio is preserved by height:auto, so the image cannot
+   * squash when the row wraps. */
+  width: 9rem; height: auto; flex: none;
+}
+.site-footer p { margin: 0; }
+.footer-logo { filter: saturate(1.1); }
+
+/* The funder, under the foundation's own mark.
+ *
+ * A block rather than a line, so the label sits above the logo instead of
+ * beside it: at 7.5rem the mark is wider than the two words, and a wrapped
+ * "Supported / by HSBC" is the kind of ragged pair that reads as a mistake.
+ *
+ * No filter here, deliberately, unlike .footer-logo directly above. Nudging the
+ * saturation of our own artwork is a liberty we can take with our own artwork.
+ * HSBC's red is specified by HSBC, and a stylesheet is not the place to have an
+ * opinion about somebody else's trademark. Nothing recolours it, and the width
+ * is set in rem with height:auto so it can only ever scale, never distort. */
+/* The sponsor credit, now in the masthead.
+ *
+ * .footer-sponsor is gone with the markup; .sponsor-logo stays because the
+ * masthead uses it, at a smaller width set below. */
+.sponsor-logo { width: 7.5rem; height: auto; }
+
+/* The notice, centred under both columns, because it belongs to neither: it is
+ * about the whole site rather than about the block above it. Under a rule, so it
+ * reads as the foot of the footer rather than the end of a paragraph. */
+.footer-end {
+  flex-basis: 100%;
+  border-top: 1px solid var(--border);
+  padding-top: 1.25rem;
+  display: flex; justify-content: center;
+}
+.footer-end p { font-size: var(--step--1); text-align: center; }
+
+/* The accounts, at the far side and level with the top of the logo. Square 48px
+ * targets, because a row of small icons is the hardest thing on any page for
+ * somebody with a tremor to hit, and this is a site for people who may have one.
+ * The mark itself stays 26px — the target is the space around it, not the
+ * drawing.
+ *
+ * margin-inline-start rather than a fixed order: it pushes the row to the far
+ * edge on a wide window and does nothing once the footer has wrapped to one
+ * column, where it simply follows the paragraph. */
+.footer-social {
+  display: flex; flex-wrap: wrap; gap: 0.25rem;
+  margin-inline-start: auto;
+}
+.footer-social a,
+.footer-social .unlinked {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px;
+  border-radius: var(--radius);
+}
+.footer-social a:hover { background: var(--surface-sunken); }
+.footer-social img { display: block; width: 26px; height: 26px; }
+
+@media (max-width: 40rem) {
+  /* One column, and tighter: on a phone this is four screens below the thing
+   * the reader came for, and every row of it is scrolled past twice. */
+  .site-footer .inner { gap: 1.5rem; }
+  .site-footer { padding-bottom: 2rem; }
+  /* Still centred on a phone: the notice is the last line on the page and
+   * reads as a signature there, not as the start of another column.
+   *
+   * And the accounts centred with it, once the footer has wrapped to a single
+   * column. The auto margin that puts them at the far edge of a wide window
+   * leaves them stranded mid-row here — aligned with nothing, which reads as a
+   * mistake rather than as a decision. */
+  .footer-social { margin-inline-start: 0; width: 100%; justify-content: center; }
+}

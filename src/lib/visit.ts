@@ -65,7 +65,7 @@ const ENDPOINT = `/api/${VERSION}/public/visit`
  * checked against it whenever a route is added.
  *
  * "/" is matched exactly rather than as a prefix, or it would admit everything. */
-const PUBLIC_PREFIXES = ['/scholarships', '/partner', '/impact', '/register', '/signin', '/check']
+const PUBLIC_PREFIXES = ['/scholarships', '/register', '/signin', '/check']
 
 /* CMS pages (0042) live at the top level under a wildcard, so they cannot be
  * listed. They are public by definition — the whole point of that route is a

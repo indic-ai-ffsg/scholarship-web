@@ -11,8 +11,9 @@ import {
 import { applyRoute } from '../../lib/apply'
 import { useApplied } from '../../lib/applied'
 import { recordReferral } from '../../lib/referral'
-import { awardLabel, shortDate } from '../../lib/format'
-import { Deadline, Empty, ErrorState, Field, Loading, Notice, SponsorLogo } from '../../components/ui'
+import { awardLabel, orgKind, orgKindKey, shortDate } from '../../lib/format'
+import { Deadline, Empty, ErrorState, Field, Loading, SponsorLogo } from '../../components/ui'
+import { IconAward, IconForm } from '../../components/icons'
 import { SchemeSheet } from './SchemeSheet'
 import type { Facet, Listing } from '../../lib/types'
 
@@ -182,10 +183,20 @@ export default function Directory() {
    * still loading does not blink the panel away and back. */
   const hideFilters = !narrowed && total === 0 && !query.stale
 
+  /* How many filters are set, for the badge beside the panel's heading. The
+     same eight values `narrowed` reads, counted rather than or-ed. */
+  const activeFilters = [term, disability, course, state, orgType, gender, subject, overseas]
+    .filter(Boolean).length
+
   return (
     <div className="page">
-      <h1>{t('public.title')}</h1>
-      <p className="lede">{t('public.lede')}</p>
+      {/* The page's title on a band of its own — the shared .page-hero, the
+          same wash as the landing page at a smaller size — so the directory
+          opens on a heading rather than on a line of text above a form. */}
+      <header className="page-hero">
+        <h1>{t('public.title')}</h1>
+        <p className="lede">{t('public.lede')}</p>
+      </header>
 
       {/* Filters beside the results, not stacked above them.
         *
@@ -215,7 +226,17 @@ export default function Directory() {
         <aside className="directory-filters">
           <div className="card">
             <div className="filter-head">
-              <h2>{t('public.filters')}</h2>
+              <h2>
+                {t('public.filters')}
+                {/* The count of filters set, as a badge. Decoration beside the
+                    real signal — each select shows its chosen value in words,
+                    and Clear appears only when there is something to clear —
+                    so it is hidden from a screen reader rather than read out
+                    as a stray number after the heading. */}
+                {activeFilters > 0 && (
+                  <span className="filter-count" aria-hidden="true">{activeFilters}</span>
+                )}
+              </h2>
               {/* Offered only when there is something to clear. A permanent
                   "clear" on an unfiltered list is a control that does nothing,
                   and this audience should not have to press one to find out. */}
@@ -263,7 +284,7 @@ export default function Directory() {
                 * would quietly hide the majority of the list. */}
             <VocabSelect
               label={t('public.filter.disability')}
-              options={disabilityChoices()}
+              options={disabilityChoices(t)}
               anyLabel={t('public.filter.anyDisability')}
               value={disability}
               onChange={v => setFilter('disability_type', v)}
@@ -277,7 +298,7 @@ export default function Directory() {
                 * ?course_level=UNDERGRADUATE still works. */}
             <VocabSelect
               label={t('public.filter.qualification')}
-              options={qualificationChoices()}
+              options={qualificationChoices(t)}
               anyLabel={t('public.filter.anyQualification')}
               value={course}
               onChange={v => setFilter('course_level', v)}
@@ -301,7 +322,7 @@ export default function Directory() {
 
             <VocabSelect
               label={t('public.filter.state')}
-              options={stateChoices()}
+              options={stateChoices(t)}
               anyLabel={t('public.filter.allStates')}
               value={state}
               onChange={v => setFilter('state_code', v)}
@@ -309,7 +330,7 @@ export default function Directory() {
 
             <VocabSelect
               label={t('public.filter.gender')}
-              options={genderFilterChoices()}
+              options={genderFilterChoices(t)}
               anyLabel={t('public.filter.anyGender')}
               value={gender}
               onChange={v => setFilter('gender', v)}
@@ -322,7 +343,7 @@ export default function Directory() {
                 publicdir. */}
             <VocabSelect
               label={t('public.filter.course')}
-              options={subjectChoices()}
+              options={subjectChoices(t)}
               anyLabel={t('public.filter.anyCourse')}
               value={subject}
               onChange={v => setFilter('tags', v)}
@@ -407,11 +428,16 @@ export default function Directory() {
           account". Somebody who has just read forty summaries and cannot tell
           which apply to them is one question short of an answer, not one form
           short of one — so this leads to the check, which needs nothing. */}
+      {/* The same closing band as the landing page — components/cta-band —
+          so the offer looks the same wherever it is made. */}
       {status !== 'authenticated' && listings.length > 0 && (
-        <Notice tone="info" title={t('public.cta')}>
-          <p>{t('public.ctaHelp')}</p>
-          <Link className="btn primary" to="/register">{t('public.cta')}</Link>
-        </Notice>
+        <section className="cta-band directory-cta" aria-labelledby="directory-cta">
+          <div>
+            <h2 id="directory-cta">{t('public.cta')}</h2>
+            <p>{t('public.ctaHelp')}</p>
+          </div>
+          <Link className="btn cta-inverse" to="/register">{t('public.cta')}</Link>
+        </section>
       )}
         </div>
       </div>
@@ -533,7 +559,7 @@ const CRITERIA_SHOWN = 2
  * audience includes people with a tremor driving a phone one-handed.
  *
  * It folds on a container query, not a media query. This component is also
- * rendered in the partner page's narrow aside, where the window is wide and
+ * rendered in narrow asides elsewhere, where the window is wide and
  * the card is not, and a media query would give that column a two-column row
  * eleven characters across.
  */
@@ -543,11 +569,11 @@ export function ListingCard({
   listing: Listing
   /* Opens the scheme in a panel over the list. Optional, and the fallback is
    * the point: without it every control here is an ordinary link to
-   * /scholarships/<slug>, which is what the partner page — one card, no list to
+   * /scholarships/<slug>, which is what a lone card — one card, no list to
    * stay in — should get. */
   onOpen?: () => void
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { status } = useAuth()
 
   /* Whether this student has already applied for this one. Shared across every
@@ -608,7 +634,9 @@ export function ListingCard({
   const forThis = <span className="sr-only"> — {listing.title}</span>
 
   return (
-    <article className="listing" aria-labelledby={`${id}-title`}>
+    /* data-kind picks the row's hue — see components/listing.css. Decoration:
+       the kind is also said in words on the chip in the head. */
+    <article className="listing" data-kind={orgKindKey(listing.org_type)} aria-labelledby={`${id}-title`}>
       <div className="listing-head">
         {/* The mark leads the band, before the name, and only when there is
             one — see SponsorLogo, which draws nothing rather than a grey box.
@@ -623,11 +651,17 @@ export function ListingCard({
             {t('public.offeredBy')} <strong>{listing.organisation_name}</strong>
           </p>
         </div>
+        {/* Who runs it, as a word on a tinted chip — the same words the matched
+            list badges it with. The colour is the row's hue and is never the
+            only way to tell: the chip says "Government" or "Corporate". */}
+        {listing.org_type && (
+          <span className="kind-chip">{orgKind(t, listing.org_type)}</span>
+        )}
       </div>
 
       <div className="listing-body">
         <div className="listing-facts">
-          {/* Only when there are rules to show. The lead-in used to fall back
+          {/* The fallback, and only when there are rules to show. The lead-in used to fall back
               to listing.summary, which is the "About this scholarship" prose —
               so a scheme with no criteria printed its description under a
               heading reading "To be eligible", labelling a paragraph about the
@@ -635,9 +669,41 @@ export function ListingCard({
               thing this row must not get wrong, and it was worse than the
               empty lead-in the fallback existed to avoid: an absent section
               says nothing, a mislabelled one says something false. */}
-          {shown.length > 0 && (
+          {/* The scheme in its own words, first — "Financial assistance for
+              students with benchmark disabilities studying in Classes 9 or
+              10…" — with no heading over it.
+              *
+              * The row used to lead with the eligibility rules instead, on the
+              * argument that "is this me?" is what a reader scans a directory
+              * for. In practice the rules on a row were two generic sentences
+              * ("You need a certified disability of 40% or more") that read the
+              * same on most schemes, and they told a reader nothing about what
+              * the scheme is. The description does; the rules are one press
+              * away, in full and as a checklist, in the panel "Read more"
+              * opens — and the matched list still leads with the reader's own
+              * verdict against them.
+              *
+              * Clamped to three lines in the stylesheet, so forty rows stay
+              * rows. A screen reader gets the whole paragraph.
+              *
+              * The rules come back as the fallback when a scheme has no
+              * description, under their own heading, so a row is never an empty
+              * block. The summary is never labelled as rules — the mistake the
+              * note above records. */}
+          {listing.summary ? (
+            <div className="listing-fact">
+              <p className="listing-about">{listing.summary}</p>
+              <Link className="listing-more" to={detail} onClick={intercept}>
+                {t('public.readMore')}
+                <span className="go" aria-hidden="true">→</span>
+                <span className="sr-only"> — {listing.title}</span>
+              </Link>
+            </div>
+          ) : shown.length > 0 && (
           <section className="listing-fact" aria-labelledby={`${id}-elig`}>
-            <h3 className="listing-label" id={`${id}-elig`}>{t('public.eligibility')}</h3>
+            <h3 className="listing-label" id={`${id}-elig`}>
+              <IconForm />{t('public.eligibility')}
+            </h3>
 
             {/* Prose on the row, a checklist in the panel.
                 *
@@ -683,9 +749,15 @@ export function ListingCard({
               * the button is what it qualifies. */}
           <section className="listing-fact" aria-labelledby={`${id}-benefit`}>
             <div className="listing-fact-head">
-              <h3 className="listing-label" id={`${id}-benefit`}>{t('public.benefits')}</h3>
+              <h3 className="listing-label" id={`${id}-benefit`}>
+                <IconAward />{t('public.benefits')}
+              </h3>
             </div>
             <p className="amount">
+              {/* The same mark the landing page's deadline list gives an award,
+                  hidden from a screen reader for the reason the deadline's clock
+                  is: the words are the fact, the glyph is the shape. */}
+              <span className="mark" aria-hidden="true">💰</span>
               {awardLabel(t, listing.award_amount, listing.benefit_summary,
                 listing.award_amount_min, listing.award_amount_max)}
             </p>
@@ -850,7 +922,7 @@ export function ListingCard({
               * scheme has no window. */}
           <Deadline days={listing.days_remaining}>
             {listing.closes_at && (
-              <span className="sr-only"> — {shortDate(listing.closes_at)}</span>
+              <span className="sr-only"> — {shortDate(listing.closes_at, locale)}</span>
             )}
           </Deadline>
         </div>

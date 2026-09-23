@@ -1,0 +1,376 @@
+/* --- the registration form ---------------------------------------------------
+ *
+ * One card on the page's own background, wider than the sign-in card because it
+ * holds nine questions rather than one, and still constrained: the chip rows
+ * want horizontal room and the text inputs do not, so the card is 44rem and the
+ * inputs inside it keep to --measure. A name field stretched to the full width
+ * of a desktop window is a 700px box for twenty characters, and it makes the
+ * form look like a spreadsheet.
+ */
+
+.register-page { max-width: 48rem; margin: 0 auto; }
+
+.register-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+  /* The same hairline-plus-soft-drop as .auth-card. Both are cards on a
+     near-white ground, where a border alone reads as a rectangle rather than a
+     surface. */
+  box-shadow: 0 1px 2px rgb(20 23 28 / 0.05), 0 18px 40px -28px rgb(20 23 28 / 0.35);
+}
+.register-card h1 { font-size: var(--step-2); margin-bottom: 0.375rem; }
+.register-sub { color: var(--text-muted); margin-bottom: 1.75rem; }
+
+/* The three section headings.
+ *
+ * A rule above the words rather than a box around the fields. Grouping nine
+ * questions into three named runs is the whole reason this form is legible as
+ * one screen — "personal", "disability", "education" tells a student what is
+ * coming and that the third is the last — and a heading plus a line does that
+ * without adding three nested borders inside a card that already has one.
+ *
+ * A real <h2>, so the sections are in the document outline and a screen reader
+ * can jump between them. That is the other half of what replaced the wizard's
+ * progress meter: the meter said "4 of 11", the outline says "you are in
+ * Disability details, and Education details is next".
+ */
+.register-section {
+  font-size: var(--step--1);
+  font-weight: var(--w-strong);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 2.25rem 0 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+.register-card form > .register-section:first-child {
+  margin-top: 0; padding-top: 0; border-top: 0;
+}
+
+/* One column edge for the whole form.
+ *
+ * Three different right edges met at this form. The fields stopped at
+ * --measure; the section headings inherited the 40ch every heading carries, so
+ * the rule drawn along their top ended roughly halfway across; and the submit
+ * button, .wide, ran on to the card's own edge. Each was reasonable on its own
+ * and together they read as a form nobody had lined up. The form takes the
+ * fields' measure, and the headings and the button follow it. */
+.register-card form { max-width: var(--measure); }
+.register-card .register-section { max-width: none; }
+
+.register-card .field > input,
+.register-card .field > .input-group,
+.register-card .field > .combo { max-width: var(--measure); }
+/* Two short numbers that should not be drawn as long boxes. A 300px field for
+   "40" invites a sentence. */
+.input-short { max-width: 8rem !important; }
+
+/* The label above a chip group.
+ *
+ * Not a <label>: the control underneath is a fieldset of twenty-one inputs and
+ * there is nothing single for a `for` to point at, so the group carries its own
+ * <legend> (visually hidden, since this text is already on screen) and this is
+ * a plain span styled to match .field > label. Matching it matters — a form
+ * where four of nine questions are labelled in a different weight reads as two
+ * forms spliced together. */
+/* The required star. --danger is the only colour here that already means
+ * "pay attention to this", and the mark is a glyph rather than a colour on its
+ * own, so 1.4.1 is satisfied by the asterisk and the red is reinforcement. It
+ * measures 6.52:1 on the card, the same as the error text it borrows from. */
+label .req, .field-label .req { color: var(--danger); font-weight: var(--w-strong); }
+
+.field-label {
+  display: block;
+  font-weight: var(--w-medium);
+  font-size: var(--step-0);
+  margin-bottom: 0.375rem;
+}
+.field-label .hint {
+  font-weight: 400; color: var(--text-muted); font-size: var(--step--1);
+}
+
+/* The group headings inside the program question — "Graduation",
+   "Post-Graduation / Masters". Words, not chips: "Graduation" is not a program
+   anybody is enrolled on, and a chip that looks exactly like its neighbours and
+   does nothing when pressed is worse than a word that never looked pressable. */
+.chip-heading {
+  margin: 1rem 0 0.5rem;
+  font-size: var(--step--1);
+  font-weight: var(--w-strong);
+  color: var(--text-muted);
+}
+
+/* --- chips that are checkboxes and radios ------------------------------------
+ *
+ * components/ChipSelector carries the argument for why these are real inputs
+ * rather than spans with role="checkbox". What the CSS has to do is hide the
+ * input without hiding it from the accessibility tree, and draw every state
+ * from the input's own pseudo-classes so they keep working before the JS lands.
+ *
+ * Deliberately unlike .chip above, which is a non-interactive tag used to
+ * display a filter or a category elsewhere on the site and is correctly small.
+ * These are targets, so they are 48px — the floor for this product.
+ */
+
+.chip-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.chip-choices { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.chip-choice {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 0.4375rem;
+  min-height: 48px;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--step--1);
+  font-weight: var(--w-medium);
+  line-height: 1.25;
+  cursor: pointer;
+  /* Colour and border only. No transform: a chip that grows on selection shifts
+     every chip after it in the wrap, so ticking the third of twenty-one moves
+     the other eighteen under the reader's finger. */
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+/* Over the chip and invisible, rather than display:none or visibility:hidden —
+   either of those takes the control out of the accessibility tree and out of
+   the tab order, which is the whole thing being preserved here. */
+.chip-choice input {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+  /* Undoes the global min-height on form controls, which would otherwise fight
+     the chip's own. */
+  min-height: 0;
+}
+
+.chip-choice:hover { background: var(--surface-sunken); }
+
+/* Selected: three signals, because colour is never allowed to be the only one.
+   The tick appears, the border thickens into the accent, and the fill changes.
+   Printed in monochrome or read by somebody who cannot separate the greens, the
+   tick is still there. */
+.chip-choice .tick {
+  width: 0; overflow: hidden;
+  flex: none;
+  font-weight: 700;
+  transition: width 120ms ease;
+}
+.chip-choice .tick::before { content: '✓'; }
+.chip-choice:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+.chip-choice:has(input:checked) .tick { width: 0.875rem; }
+
+/* The ring belongs to the chip, since the input it belongs to is invisible.
+   3px at 3px offset, the same as every other focus ring on the site. */
+.chip-choice:has(input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Shown and not selectable — a year that does not belong to the chosen program.
+ * Greyed *and* struck through: "disabled" carried by colour alone is exactly
+ * the thing this product does not do, and aria-disabled already says it to a
+ * screen reader. lib/fields explains why these are disabled rather than
+ * removed. */
+.chip-choice.off {
+  border-color: var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.chip-choice.off:hover { background: var(--surface-sunken); }
+
+/* --- the phone-and-code row --------------------------------------------------
+ *
+ * The one part of the form that acts before the form is submitted. Wraps rather
+ * than shrinks: at 320px the button drops under the number instead of being
+ * squeezed to three characters, which is what a flex row without wrap does to
+ * the longer of two children. */
+
+.phone-otp { display: flex; flex-wrap: wrap; gap: 0.625rem; align-items: stretch; }
+.phone-otp .input-group { flex: 1 1 12rem; min-width: 0; }
+.phone-otp button { flex: none; }
+.otp-input {
+  flex: 1 1 9rem; min-width: 0; max-width: 12rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.15em;
+}
+
+.otp-step {
+  margin-top: 0.875rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+/* The number the code went to, with the way back to change it beside it rather
+   than at the foot of the form: a typo in the number is discovered here, at the
+   moment nothing arrives, and the remedy belongs next to the evidence. */
+.otp-target {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+.otp-target .number { font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
+.otp-sent { margin: 0.625rem 0 0; color: var(--accent); font-size: var(--step--1); }
+.otp-sent:empty { display: none; }
+.otp-retry { margin-top: 0.875rem; font-size: var(--step--1); }
+.otp-channels { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.otp-retry p { margin: 0.5rem 0 0; }
+
+/* Verified, and the phone question collapses to this line. The whole block goes
+   because there is nothing left to do in it, and a disabled number field over a
+   disabled button is four controls saying "not any more". */
+.register-verified {
+  display: flex; align-items: baseline; gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: var(--accent-weak);
+  color: var(--accent);
+  font-weight: var(--w-medium);
+}
+.register-verified .mark { font-weight: 700; flex: none; }
+.register-verified .number { font-variant-numeric: tabular-nums; }
+
+/* --- the file question -------------------------------------------------------
+ *
+ * A real <input type="file"> styled up, not a div with a click handler over a
+ * hidden input. The wireframe draws a dashed drop box, and building that as a
+ * div costs the keyboard: a file input is reachable by Tab and opens its picker
+ * on Enter, and the div version has to reimplement both and usually forgets
+ * Enter. So the input keeps its own button and gets the box drawn around it.
+ */
+.file-input {
+  padding: 0.875rem;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  cursor: pointer;
+  max-width: var(--measure);
+}
+.file-input::file-selector-button {
+  margin-inline-end: 0.75rem;
+  min-height: 40px;
+  padding: 0 1rem;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-weight: var(--w-medium);
+  cursor: pointer;
+}
+.file-input:hover { border-color: var(--accent); }
+
+/* --- the searchable state list -----------------------------------------------
+ * components/SearchableSelect carries the argument for the pattern. The CSS has
+ * to make the listbox float over the fields under it without clipping, and keep
+ * every row a 48px target. */
+
+.combo { position: relative; }
+.combo input { padding-inline-end: 2.5rem; }
+.combo-arrow {
+  position: absolute; top: 0; inset-inline-end: 0.875rem;
+  height: 100%;
+  display: flex; align-items: center;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.combo-list {
+  position: absolute; z-index: 20;
+  top: calc(100% + 0.25rem); inset-inline-start: 0; inset-inline-end: 0;
+  /* Eight-and-a-bit rows, so the list is visibly scrollable rather than ending
+     on a clean edge that reads as the end of thirty-six states. */
+  max-height: 19rem; overflow-y: auto;
+  margin: 0; padding: 0.25rem;
+  list-style: none;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px -12px rgb(20 23 28 / 0.35);
+}
+.combo-option {
+  display: flex; align-items: center;
+  min-height: 48px;
+  padding: 0 0.75rem;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+}
+/* One highlight for both, because there is only ever one active row and a
+   pointer user and a keyboard user are looking for the same thing. */
+.combo-option.active,
+.combo-option:hover { background: var(--accent-weak); color: var(--accent); }
+.combo-option.selected { font-weight: var(--w-strong); }
+.combo-option.selected::after {
+  content: '✓'; margin-inline-start: auto; color: var(--accent); font-weight: 700;
+}
+.combo-empty { padding: 0.875rem 0.75rem; color: var(--text-muted); }
+
+/* --- the end of the form ----------------------------------------------------- */
+
+.register-cta { margin-top: 2rem; padding-block: 0.875rem; font-size: var(--step-0); }
+
+/* Why the button will not finish the job yet, in words under it.
+ *
+ * The button is not disabled while the code is unverified — a disabled control
+ * announces nothing and explains nothing, and pressing it is how a student asks
+ * "what is wrong". It submits, fails the check, and focuses the phone field.
+ * This line is what stops them having to press it to find that out. */
+.register-gate {
+  display: flex; align-items: baseline; gap: 0.5rem;
+  margin: 0.875rem 0 0;
+  color: var(--blocked);
+  font-size: var(--step--1);
+  font-weight: var(--w-medium);
+}
+.register-gate .mark {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.25rem; height: 1.25rem;
+  border-radius: 50%;
+  background: var(--blocked); color: var(--surface);
+  font-weight: 700; font-size: 0.75rem;
+}
+
+.register-alt {
+  margin: 1.5rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* The profile view's one button, now that its rows no longer carry eleven. */
+.detail-actions { margin-top: 1.75rem; }
+
+/* The form ends at its last control.
+ *
+ * .page carries 5rem of bottom padding, which is right for a page of content
+ * whose last paragraph should not sit on the fold. Under a card it is a
+ * screenful of nothing between the submit button and the end of the document —
+ * and with the footer gone from this route (see showsFooter in Layout) there is
+ * nothing below it to separate from. */
+.register-page { padding-bottom: 2rem; }
+
+/* What a CGPA becomes, under the marks field. .wizard-derived's look, with the
+   gap a field leaves below it — without it the line sat against the next
+   question's label and read as part of it. */
+.register-derived { margin: -0.5rem 0 1.25rem; }
+/* The scale chips sit under the help line, a step apart from it. */
+.register-marks .chip-fieldset { margin-top: 0.5rem; }
+.register-marks { margin-bottom: 1rem; }
+/* The income box: as wide as a large rupee figure needs, and no wider — a
+   field sized for ₹25,00,000 rather than for a sentence. */
+.register-card .field > .input-group.register-income { max-width: 16rem; }

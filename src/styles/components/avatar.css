@@ -1,0 +1,30 @@
+/* --- the avatar -------------------------------------------------------------------
+ *
+ * The student's photograph over their initials (components/Avatar), in the
+ * account menu and on the profile. The circle is the spectrum, and the initials
+ * are white on it — every stop of which check-contrast measures above 6.8:1 for
+ * white text. The photograph, once it loads, covers both; cover rather than
+ * contain, because a face cropped to a circle is how every avatar works, and a
+ * letterboxed photograph in a ring reads as a thumbnail that failed to fit.
+ * Each user sets only the size.
+ */
+.avatar {
+  position: relative;
+  overflow: hidden;
+  flex: none;
+  display: inline-grid; place-items: center;
+  width: 2rem; height: 2rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--hue-green), var(--hue-teal) 45%, var(--hue-blue) 80%, var(--hue-violet));
+  color: #fff;
+  font-weight: var(--w-strong);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.avatar-initials { font-size: 0.8125em; }
+.avatar img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  background: var(--surface);
+}

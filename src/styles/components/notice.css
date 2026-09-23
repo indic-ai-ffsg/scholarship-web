@@ -1,0 +1,28 @@
+/* --- messages ----------------------------------------------------------------------- */
+
+.notice {
+  padding: 1rem 1.125rem;
+  border-radius: var(--radius);
+  border: 2px solid currentColor;
+  margin-bottom: var(--gap);
+}
+.notice > :last-child { margin-bottom: 0; }
+.notice.info    { color: var(--accent);   background: var(--accent-weak); }
+.notice.good    { color: var(--eligible); background: var(--eligible-weak); }
+.notice.warn    { color: var(--blocked);  background: var(--blocked-weak); }
+.notice.danger  { color: var(--danger);   background: var(--danger-weak); }
+.notice p, .notice h2, .notice h3 { color: var(--text); }
+.notice > strong:first-child { display: block; margin-bottom: 0.25rem; }
+
+/* Loading, empty and failed, when a whole region has nothing else to show.
+   Bounded by a dashed edge on the sunken ground: a sentence centred on the bare
+   page read as the page failing to render, and a solid card would say there is
+   content in it. Dashed is the usual mark for "a space waiting to be filled". */
+.state-block {
+  padding: 3rem 1.25rem; text-align: center; color: var(--text-muted);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+}
+.state-block > * { margin-inline: auto; }
+.state-block strong { display: block; color: var(--text); font-size: var(--step-1); margin-bottom: 0.5rem; }

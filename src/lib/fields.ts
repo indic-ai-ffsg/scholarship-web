@@ -14,9 +14,37 @@
  * exists to make impossible.
  *
  * The values are the API's enums (see 0001_extensions_and_enums.sql) and are
- * never translated. The labels were bilingual until Hindi came out of the app;
- * the Devanagari halves went with it.
+ * never translated. The labels are, and that is the whole shape of this file:
+ * every function below takes `t` and returns the enum in `value` with a
+ * translated `label` beside it. Nothing that reaches the API passes through a
+ * translation, so a student answering in Odia and a student answering in Tamil
+ * store the identical row.
+ *
+ * Two English strings here are deliberately not translated because they are
+ * identities rather than words:
+ *
+ *   STATES holds the English name districtsFor() looks the district list up by
+ *   (lib/districts), so translating it in place would empty every district
+ *   picker. stateChoices() below translates the label and keeps the code as the
+ *   value, which is what the form and the filter actually send.
+ *
+ *   ALL_YEARS.label is the <select>'s own value in the registration form, so it
+ *   is the identity of the chosen year; `key` beside it is what gets drawn. A
+ *   student who changes language mid-form keeps their answer, because the value
+ *   never moved.
+ *
+ * The program chips are not translated at all. BA, BTech, MSc and MBBS are
+ * written in Latin on every Indian marksheet and degree certificate, and a
+ * student looking for the one that matches their certificate is matching
+ * letterforms, not reading a word. They are also stored verbatim as
+ * course_name, so translating them would put a different string in the database
+ * for the same answer.
  */
+
+/** The lookup every function here takes. Structurally identical to I18n['t'];
+ *  named locally so this file does not import a React context to describe a
+ *  string function. */
+type T = (key: string) => string
 
 /** The shape both the wizard's ChoiceGroup and a plain <select> can render. */
 export interface Choice {
@@ -37,29 +65,14 @@ export const DISABILITY_TYPES = [
   'ACID_ATTACK_VICTIM', 'PARKINSONS_DISEASE',
 ] as const
 
-export const DISABILITY_LABELS: Record<string, string> = {
-  BLINDNESS: 'Blindness',
-  LOW_VISION: 'Low vision',
-  LEPROSY_CURED: 'Leprosy (cured)',
-  HEARING_IMPAIRMENT: 'Hearing impairment',
-  LOCOMOTOR_DISABILITY: 'Locomotor disability',
-  DWARFISM: 'Dwarfism',
-  INTELLECTUAL_DISABILITY: 'Intellectual disability',
-  MENTAL_ILLNESS: 'Mental illness',
-  AUTISM_SPECTRUM_DISORDER: 'Autism spectrum disorder',
-  CEREBRAL_PALSY: 'Cerebral palsy',
-  MUSCULAR_DYSTROPHY: 'Muscular dystrophy',
-  CHRONIC_NEUROLOGICAL_CONDITION: 'Chronic neurological condition',
-  SPECIFIC_LEARNING_DISABILITY: 'Specific learning disability',
-  MULTIPLE_SCLEROSIS: 'Multiple sclerosis',
-  SPEECH_AND_LANGUAGE_DISABILITY: 'Speech and language disability',
-  THALASSEMIA: 'Thalassemia',
-  HAEMOPHILIA: 'Haemophilia',
-  SICKLE_CELL_DISEASE: 'Sickle cell disease',
-  MULTIPLE_DISABILITIES: 'Multiple disabilities, including deafblindness',
-  ACID_ATTACK_VICTIM: 'Acid attack survivor',
-  PARKINSONS_DISEASE: "Parkinson's disease",
-}
+/* The label for one condition, as the Act words it.
+ *
+ * The twenty-one English strings that used to sit here are now
+ * field.disability.* in the string table, so they translate with everything
+ * else. The key is built from the enum, which means a condition added to
+ * DISABILITY_TYPES above shows its own enum name until somebody writes the
+ * label — loud, and in exactly one place. */
+const disabilityLabel = (t: T, value: string) => t(`field.disability.${value}`)
 
 export const STATES: Record<string, string> = {
   AN: 'Andaman and Nicobar Islands', AP: 'Andhra Pradesh', AR: 'Arunachal Pradesh',
@@ -80,12 +93,16 @@ export const COURSE_LEVELS: { value: string; label: string; sub: string }[] = [
   { value: 'DOCTORAL', label: 'Doctoral', sub: 'PhD' },
 ]
 
-export function disabilityChoices(): Choice[] {
-  return DISABILITY_TYPES.map(v => ({ value: v, label: DISABILITY_LABELS[v] }))
+export function disabilityChoices(t: T): Choice[] {
+  return DISABILITY_TYPES.map(v => ({ value: v, label: disabilityLabel(t, v) }))
 }
 
-export function courseChoices(): Choice[] {
-  return COURSE_LEVELS.map(c => ({ value: c.value, label: c.label, sub: c.sub }))
+export function courseChoices(t: T): Choice[] {
+  return COURSE_LEVELS.map(c => ({
+    value: c.value,
+    label: t(`field.level.${c.value}`),
+    sub: t(`field.level.${c.value}.sub`),
+  }))
 }
 
 /* The directory's qualification filter, in the words the register form uses.
@@ -110,16 +127,16 @@ export function courseChoices(): Choice[] {
  * control here would either return everything or need a facet that does not
  * exist yet.
  */
-export function qualificationChoices(): Choice[] {
+export function qualificationChoices(t: T): Choice[] {
   return [
-    { value: 'SCHOOL', label: 'School', sub: 'Class 1 to 12' },
+    { value: 'SCHOOL', label: t('field.qual.SCHOOL'), sub: t('field.qual.SCHOOL.sub') },
     {
       value: 'UNDERGRADUATE',
-      label: 'Graduation',
-      sub: 'BA, BSc, BCom, BE / BTech, MBBS — and Diploma or ITI',
+      label: t('field.qual.UNDERGRADUATE'),
+      sub: t('field.qual.UNDERGRADUATE.sub'),
     },
-    { value: 'POSTGRADUATE', label: 'Post-graduation', sub: 'MA, MSc, MTech, MBA and similar' },
-    { value: 'DOCTORAL', label: 'PhD / Doctorate' },
+    { value: 'POSTGRADUATE', label: t('field.qual.POSTGRADUATE'), sub: t('field.qual.POSTGRADUATE.sub') },
+    { value: 'DOCTORAL', label: t('field.qual.DOCTORAL') },
   ]
 }
 
@@ -141,19 +158,13 @@ export function qualificationChoices(): Choice[] {
  * a few lines up is the four-value course_level enum — the LEVEL a student has
  * reached — and two functions called course-something that answer different
  * questions is how the wrong one gets imported. */
-export function subjectChoices(): Choice[] {
-  return [
-    { value: 'engineering', label: 'Engineering' },
-    { value: 'medical', label: 'Medical' },
-    { value: 'management', label: 'Management' },
-    { value: 'science', label: 'Science' },
-    { value: 'commerce', label: 'Commerce' },
-    { value: 'arts', label: 'Arts and humanities' },
-    { value: 'vocational', label: 'Vocational' },
-    { value: 'fellowship', label: 'Fellowship' },
-    { value: 'talent', label: 'Talent' },
-    { value: 'sports', label: 'Sports' },
-  ]
+const SUBJECTS = [
+  'engineering', 'medical', 'management', 'science', 'commerce',
+  'arts', 'vocational', 'fellowship', 'talent', 'sports',
+] as const
+
+export function subjectChoices(t: T): Choice[] {
+  return SUBJECTS.map(v => ({ value: v, label: t(`field.subject.${v}`) }))
 }
 
 /* Gender, as the directory filters it.
@@ -164,16 +175,19 @@ export function subjectChoices(): Choice[] {
  * unrestricted scheme, because the query treats a scheme naming no gender as
  * open to all.
  */
-export function genderFilterChoices(): Choice[] {
+export function genderFilterChoices(t: T): Choice[] {
   return [
-    { value: 'FEMALE', label: 'Female' },
-    { value: 'MALE', label: 'Male' },
-    { value: 'TRANSGENDER', label: 'Third gender / transgender' },
+    { value: 'FEMALE', label: t('field.gender.FEMALE') },
+    { value: 'MALE', label: t('field.gender.MALE') },
+    /* Not field.gender.TRANSGENDER: the filter names the census category a
+       scheme is written against, and the profile question asks the student how
+       they describe themselves. Same stored value, two different questions. */
+    { value: 'TRANSGENDER', label: t('field.genderFilter.TRANSGENDER') },
   ]
 }
 
-export function stateChoices(): Choice[] {
-  return Object.entries(STATES).map(([code, name]) => ({ value: code, label: name }))
+export function stateChoices(t: T): Choice[] {
+  return Object.keys(STATES).map(code => ({ value: code, label: t(`field.state.${code}`) }))
 }
 
 /* --- the registration form's own two vocabularies -----------------------------
@@ -242,21 +256,25 @@ export function programCategory(program: string | null | undefined): ProgramCate
  * turn one of these numbers back into words.
  */
 export const ALL_YEARS: {
+  /** The <select>'s value, and therefore this year's identity. Never drawn and
+   *  never translated — see the header. */
   label: string
+  /** What is drawn in its place. */
+  key: string
   ordinal: number
   cats: ProgramCategory[]
 }[] = [
-  { label: 'Below 9th class', ordinal: 1, cats: ['School'] },
-  { label: 'Class 9', ordinal: 2, cats: ['School'] },
-  { label: 'Class 10', ordinal: 3, cats: ['School'] },
-  { label: 'Class 11', ordinal: 4, cats: ['School'] },
-  { label: 'Class 12', ordinal: 5, cats: ['School'] },
-  { label: '1st year', ordinal: 1, cats: ['grad', 'Diploma / ITI'] },
-  { label: '2nd year', ordinal: 2, cats: ['grad', 'Diploma / ITI'] },
-  { label: '3rd year', ordinal: 3, cats: ['grad', 'Diploma / ITI'] },
-  { label: '4th year', ordinal: 4, cats: ['grad'] },
-  { label: 'Post-graduate year 1', ordinal: 1, cats: ['pg'] },
-  { label: 'Post-graduate year 2', ordinal: 2, cats: ['pg'] },
+  { label: 'Below 9th class', key: 'field.year.below9', ordinal: 1, cats: ['School'] },
+  { label: 'Class 9', key: 'field.year.c9', ordinal: 2, cats: ['School'] },
+  { label: 'Class 10', key: 'field.year.c10', ordinal: 3, cats: ['School'] },
+  { label: 'Class 11', key: 'field.year.c11', ordinal: 4, cats: ['School'] },
+  { label: 'Class 12', key: 'field.year.c12', ordinal: 5, cats: ['School'] },
+  { label: '1st year', key: 'field.year.y1', ordinal: 1, cats: ['grad', 'Diploma / ITI'] },
+  { label: '2nd year', key: 'field.year.y2', ordinal: 2, cats: ['grad', 'Diploma / ITI'] },
+  { label: '3rd year', key: 'field.year.y3', ordinal: 3, cats: ['grad', 'Diploma / ITI'] },
+  { label: '4th year', key: 'field.year.y4', ordinal: 4, cats: ['grad'] },
+  { label: 'Post-graduate year 1', key: 'field.year.pg1', ordinal: 1, cats: ['pg'] },
+  { label: 'Post-graduate year 2', key: 'field.year.pg2', ordinal: 2, cats: ['pg'] },
 ]
 
 /* --- what the API is actually sent -------------------------------------------
@@ -327,14 +345,14 @@ const DISABILITY_CHIP_ORDER = [
   'MULTIPLE_DISABILITIES',
 ]
 
-export function disabilityChips(): Choice[] {
+export function disabilityChips(t: T): Choice[] {
   /* Built from DISABILITY_TYPES rather than from the order list, so a condition
      added to the Act's list still appears — at the end, unordered, rather than
      silently missing because nobody updated two arrays. */
   const ranked = new Map(DISABILITY_CHIP_ORDER.map((v, i) => [v, i]))
   return [...DISABILITY_TYPES]
     .sort((a, b) => (ranked.get(a) ?? 99) - (ranked.get(b) ?? 99))
-    .map(v => ({ value: v, label: DISABILITY_LABELS[v] }))
+    .map(v => ({ value: v, label: disabilityLabel(t, v) }))
 }
 
 /* One enum column, and the form asks for a set.
@@ -351,12 +369,13 @@ export function disabilityChips(): Choice[] {
  * stored as MULTIPLE_DISABILITIES, and a scheme filtering specifically on
  * Blindness will not match them.
  *
- * That is a real cost and it is the reason this function exists in one place
- * instead of being inlined at the call site. Fixing it properly means a
- * `student_disability` join table and a matcher that reads a set, which is a
- * backend change; until then the single value is what can be stored, and the
- * form says "select all that apply" because the answer is still worth having
- * for the certificate check that happens after a match.
+ * That was a real cost, and the form now avoids it by asking a single-choice
+ * question: the student picks the condition on their certificate or, for more
+ * than one, MULTIPLE_DISABILITIES themselves — so what they chose is what is
+ * stored. This function still takes a list, because the chip selector hands
+ * one back; with a single choice it returns that choice unchanged. Recording
+ * each condition properly means a `student_disability` join table and a
+ * matcher that reads a set, which is a backend change.
  */
 export function disabilityTypeFor(selected: string[]): string | null {
   if (selected.length === 0) return null
@@ -380,13 +399,8 @@ export function disabilityTypeFor(selected: string[]): string | null {
  * worse than one that can — the enum has always had the value, so declining is
  * a stored answer here rather than a blank the matcher keeps asking about.
  */
-export const GENDERS: { value: string; label: string }[] = [
-  { value: 'FEMALE', label: 'Female' },
-  { value: 'MALE', label: 'Male' },
-  { value: 'TRANSGENDER', label: 'Transgender' },
-  { value: 'UNDISCLOSED', label: 'Prefer not to say' },
-]
+export const GENDERS = ['FEMALE', 'MALE', 'TRANSGENDER', 'UNDISCLOSED'] as const
 
-export function genderChoices(): Choice[] {
-  return GENDERS.map(g => ({ value: g.value, label: g.label }))
+export function genderChoices(t: T): Choice[] {
+  return GENDERS.map(v => ({ value: v, label: t(`field.gender.${v}`) }))
 }

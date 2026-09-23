@@ -1,0 +1,554 @@
+/* --- landing page ------------------------------------------------------------------ */
+
+.home section { margin-bottom: 3rem; }
+.home section:last-child { margin-bottom: 0; }
+
+/* The hero, in two columns where the window has two columns to give.
+ *
+ * The pitch and the search on one side, the deadlines on the other. The panel
+ * is fixed-width and the text takes the slack, for the same reason as on a
+ * scheme page: a reading measure benefits from more room, a list of three short
+ * rows does not. Below 64rem the panel drops under the pitch — it is a
+ * supporting fact, and on a phone the sentence explaining the site has to come
+ * first. */
+/* One column, and a second only when there is something to put in it.
+ *
+ * The two-column rule used to be unconditional, and .hero-side renders only
+ * when the directory returned something. With an empty directory — which is
+ * what production has been serving — the grid still reserved its 22rem track,
+ * so the headline, the lede and both buttons were squeezed into what was left
+ * while a third of the screen stayed blank beside them. The page looked like it
+ * had failed to load, which was nearly true and not the impression to give.
+ *
+ * :has() rather than a class toggled in React, so the layout follows what is
+ * actually rendered. A flag passed down from the query would be a second
+ * statement of the same fact, and the two would eventually disagree — the
+ * aside's own condition is `listings.length > 0`, which is not the same test as
+ * `total > 0` and would drift the first time one changed. */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+
+  /* Full-bleed: out through the page gutter to both window edges and up to the
+     masthead, the same arithmetic .slides uses, with the padding putting the
+     content back on the page's reading line. */
+  position: relative;
+  isolation: isolate;
+  margin: -1.5rem calc(-1 * var(--page-pad)) 0;
+  padding: clamp(2.25rem, 6vw, 4.5rem) var(--page-pad) clamp(2.5rem, 6vw, 4.5rem);
+  border-bottom: 1px solid var(--border);
+
+  /* A wash of three spectrum hues from three corners, over the page's own
+     ground. Each is a tint at a tenth of its strength, so every piece of text on
+     the hero is still text on near-white: --text-muted measures above 6.5:1
+     anywhere on it. Colour as atmosphere, not as a block — a flat green panel
+     here was tried once and read as an alert. */
+  background:
+    radial-gradient(46rem 28rem at 0% 0%, rgb(10 92 58 / 0.11), transparent 62%),
+    radial-gradient(40rem 26rem at 100% 0%, rgb(20 80 140 / 0.09), transparent 60%),
+    radial-gradient(34rem 24rem at 75% 100%, rgb(91 63 160 / 0.08), transparent 60%),
+    var(--bg);
+}
+/* A faint dot grid over the wash, fading out towards the reading side so it
+   never sits under a line of text at any strength that matters. Decoration on
+   a pseudo-element, behind everything (isolation above keeps the -1 local). */
+.hero::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background-image: radial-gradient(rgb(20 23 28 / 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to left, #000 0%, transparent 60%);
+  pointer-events: none;
+}
+/* Three columns on a wide window: the words, the drawing, the deadlines.
+ *
+ * The words take the slack, because they hold the search box and a reading
+ * measure; the drawing grows with the window at a little over half their rate,
+ * and the card is held near its own width. At 1280px that is about 500px of
+ * words and a 300px drawing; at 1600px, 680 and 385. It is also why the
+ * drawing goes first as the window narrows: below 75rem the words would be
+ * squeezed to fit it.
+ *
+ * With nothing listed there is no card, and the drawing takes the far column. */
+.hero:has(.hero-side) {
+  grid-template-columns: minmax(0, 1.25fr) minmax(12rem, 0.75fr) minmax(17rem, 21rem);
+  gap: 2rem clamp(1.5rem, 3vw, 3rem);
+}
+.hero:not(:has(.hero-side)) {
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 22rem);
+}
+@media (max-width: 75rem) {
+  /* Two columns: words and deadlines. The drawing is the one thing here that
+     says nothing the words do not. */
+  .hero:has(.hero-side) { grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem); }
+  .hero:has(.hero-side) .hero-art { display: none; }
+}
+@media (max-width: 64rem) {
+  .hero, .hero:has(.hero-side), .hero:not(:has(.hero-side)) { grid-template-columns: 1fr; }
+}
+/* With announcements published the band sits above, and the hero meets it
+   rather than tucking under it. */
+.home .slides { margin-bottom: 0; }
+.home .slides + .hero { margin-top: 0; }
+
+/* The lockup, as a pill over the title. Inline on one line: the two-line break
+   was composition for a headline, and as an eyebrow it is a phrase. The
+   colours are the lead panel's — grey struck in red, blue, green. */
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  margin: 0 0 1.125rem;
+  padding: 0.375rem 0.875rem 0.375rem 0.625rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+  font-size: var(--step--1);
+  font-weight: var(--w-strong);
+  max-width: 100%;
+}
+/* A spectrum dot, the bar's rule shrunk to a point. */
+.hero-eyebrow::before {
+  content: "";
+  flex: none;
+  width: 0.625rem; height: 0.625rem;
+  border-radius: 50%;
+  background: var(--spectrum);
+}
+.hero-eyebrow .hl-line { display: inline; }
+
+/* The one large type on the site.
+ *
+ * The headings came down twice, and the notes in foundation/base.css and on the
+ * lead headline say why: a page where everything is big reads as shouting.
+ * That argument was about a page with two headlines in its first screen. There
+ * is one now, and a hero whose title is the same --step-3 as every other page's
+ * h1 has no top — the eye enters at the buttons. So this one steps up, fluidly,
+ * to 2.5rem on a monitor and to --step-3 on a phone, and stays at the site's
+ * 600: size is the hierarchy here, weight is not. */
+.hero h1 {
+  font-size: clamp(var(--step-3), 1.2rem + 2.2vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  max-width: 20ch;
+  margin-bottom: 1rem;
+  text-wrap: balance;
+}
+.hero-lede {
+  font-size: var(--step-1);
+  color: var(--text-muted);
+  max-width: 34rem;
+  margin-bottom: 1.75rem;
+  text-wrap: pretty;
+}
+.hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.hero-actions .btn { padding-inline: 1.5rem; }
+/* On a phone, two full-width buttons rather than two ragged ones, and the
+   primary is the one the thumb meets first. */
+@media (max-width: 30rem) { .hero-actions .btn { flex: 1 1 100%; } }
+/* The secondary action on a white ground of its own, so it reads as a button
+   on the wash rather than an outline drawn on it. */
+.hero-actions .btn:not(.primary) { background: var(--surface); }
+
+/* The three claims, in a row of small hued discs. */
+.hero-points {
+  list-style: none; margin: 1.5rem 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 0.625rem 1.5rem;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  font-weight: var(--w-medium);
+}
+.hero-points li { display: flex; align-items: center; gap: 0.5rem; }
+.hero-points .tick {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.375rem; height: 1.375rem;
+  border-radius: 50%;
+  background: var(--tick-hue, var(--accent)); color: #fff;
+  font-size: 0.75rem; font-weight: 700; line-height: 1;
+}
+.hero-points li:nth-child(2) { --tick-hue: var(--hue-teal); }
+.hero-points li:nth-child(3) { --tick-hue: var(--hue-blue); }
+
+/* Arriving. Once, on mount, the words first and fast and the panel behind them
+   — the lead panel's rise, reused. Removed outright under reduced motion rather
+   than shortened, because a `backwards` fill with a delay would otherwise hold
+   an element invisible and then snap it in. */
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.hero-main > * { animation: hero-rise 420ms var(--ease-out) backwards; }
+.hero-main > :nth-child(2) { animation-delay: 40ms; }
+.hero-main > :nth-child(3) { animation-delay: 90ms; }
+.hero-main > :nth-child(4) { animation-delay: 140ms; }
+.hero-main > :nth-child(n+5) { animation-delay: 190ms; }
+.hero-side { animation: hero-rise 520ms var(--ease-out) 160ms backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-main > *, .hero-side { animation: none; }
+}
+
+/* The drawing's own entrance comes from .slide-lead-reveal in
+   components/slides.css, which already switches itself off under reduced
+   motion. */
+.hero-art { display: flex; justify-content: center; align-self: center; }
+.hero-art .lead-art { flex: none; width: 100%; max-width: 24rem; }
+@media (max-width: 64rem) { .hero-art { display: none; } }
+
+/* The empty directory's line wraps to two, so it needs the measure every other
+   paragraph has — without it the sentence runs the full width of a monitor. */
+.hero-meta-empty { max-width: 62ch; }
+
+.hero-side .card {
+  display: grid; gap: 0.75rem;
+  padding: 1.375rem 1.5rem 1rem;
+  border-radius: var(--radius-lg);
+  /* The highest surface on the page: it floats over the wash. */
+  box-shadow: var(--shadow-3), var(--shadow-1);
+  border-top: 4px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--spectrum) border-box;
+}
+.hero-side-head { display: flex; align-items: flex-start; gap: 0.75rem; }
+/* The clock, in the amber the site keeps for "act on this now" — this card is
+   the one place on the landing page that is about time running out. */
+.hero-side-icon {
+  flex: none;
+  display: grid; place-items: center;
+  width: 2.5rem; height: 2.5rem;
+  border-radius: var(--radius);
+  background: var(--blocked-weak); color: var(--blocked);
+}
+.hero-side-icon .icon { width: 20px; height: 20px; }
+.hero-side h2 { font-size: var(--step-1); margin: 0; }
+.hero-side .small { font-size: var(--step--1); margin: 0; }
+.hero-side .btn { justify-self: start; margin-inline-start: -0.75rem; }
+.hero-side .btn .go { transition: transform var(--dur-fast) ease-out; }
+.hero-side .btn:hover .go { transform: translateX(2px); }
+
+/* Three rows, each a scheme and its clock. Ruled rather than boxed: a card
+ * inside a card is a border for nothing. */
+.deadline-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.deadline-list li {
+  padding: 0.875rem 0; border-top: 1px solid var(--border);
+  /* The sponsor's mark in its own column, so a title that wraps to three lines
+     stays aligned under itself rather than running back under the mark. */
+  display: grid; grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem; align-items: start;
+}
+.deadline-list .org-mark { margin-top: 0.125rem; }
+.deadline-body { min-width: 0; }
+/* The award beside its mark, spaced as .deadline spaces its clock, so the two
+   facts on the line read as a pair. Flex, so a benefit written as a sentence
+   wraps under itself rather than back under the mark. */
+.deadline-list .amount { display: inline-flex; align-items: baseline; gap: 0.3rem; }
+.deadline-list .amount .mark { flex: none; }
+.deadline-list li:first-child { border-top: 0; }
+
+/* No underline on the titles, and this is the one place on the site that is
+ * true of a link in running colour.
+ *
+ * 1.4.1 wants a link inside a block of text to be marked by more than its
+ * colour, because there the underline is the only thing separating it from the
+ * words around it. These are not in a block of text: each is the whole of its
+ * own row, in a bordered list, one per line, at a heavier weight than anything
+ * near it, and the row's remaining content sits underneath rather than beside.
+ * Nothing here can be mistaken for prose, so the underline is decoration — and
+ * on three titles that wrap to three lines each ("SBI Platinum Jubilee Asha
+ * Scholarship for Undergraduate students") it was nine underlined lines in a
+ * 17rem column, which is the densest thing on the landing page.
+ *
+ * It comes back on hover and on focus, where it is doing work again: it is the
+ * confirmation that this row is the one about to be followed. */
+.deadline-list a {
+  font-weight: var(--w-strong);
+  text-decoration: none;
+  color: var(--text);
+  /* The row is the target, not the words. */
+  display: block;
+  line-height: 1.35;
+}
+.deadline-list a:hover,
+.deadline-list a:focus-visible { text-decoration: underline; color: var(--accent); }
+
+.deadline-list p {
+  /* The award and the date, one line apart from the title rather than crowding
+     it: at --step--1 against a --w-strong title they are two levels, and the
+     0.375rem is what stops three-line titles running into their own numbers. */
+  margin: 0.375rem 0 0;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem;
+  font-size: var(--step--1);
+}
+
+/* The search box and its button on one line, the button sized to its own text
+ * rather than stretched. It drops below the field on a narrow screen, where a
+ * side-by-side pair would leave the input too short to read what was typed. */
+.hero-search {
+  display: flex; gap: 0.75rem; align-items: flex-end;
+  max-width: var(--measure);
+  margin-bottom: 0.75rem;
+  /* A panel of its own: white on the wash, the same lift as the card beside
+     it, so it reads as a second way in rather than a field floating loose. */
+  padding: 1rem 1.125rem 1.125rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  /* Clear of the buttons above it, which it did not need when it came first.
+   *
+   * More space than the gap inside the hero, deliberately: the two buttons and
+   * this box are alternatives, not steps, and a tight stack reads as one
+   * control group where the search label looks like a caption on the buttons.
+   * That is what it did at 0 — "Browse all scholarships" sat directly on top of
+   * "Search scholarships (optional)". */
+  margin-top: 1.5rem;
+}
+.hero-search .field { flex: 1; margin-bottom: 0; }
+@media (max-width: 30rem) {
+  .hero-search { display: block; }
+  .hero-search button { width: 100%; margin-top: 0.75rem; }
+}
+
+.hero-meta { margin: 0.25rem 0 0; font-size: var(--step--1); }
+.hero-search button { padding-inline: 1.5rem; }
+
+.home-section h2 { font-size: var(--step-2); }
+.home-section h3 { font-size: var(--step-1); margin-top: 1.25rem; }
+
+/* --- how it works ----------------------------------------------------------
+ *
+ * A rail with the numbers threaded on it, not a row of cards.
+ *
+ * Three steps fitted the auto-fit card grid this replaces. Seven do not: the
+ * grid gave three, three and a widow, and a last row holding one card reads as
+ * a card that got separated from the others rather than as the end of a
+ * sequence. The deeper problem is that a grid asks the eye to travel
+ * left-right-and-down while the numerals count 1 to 7 — two orders on one
+ * list, which is the exact ambiguity a numbered list exists to remove.
+ *
+ * The line between the bubbles is doing the remaining work. It says these are
+ * one path rather than seven independent options, which is the difference
+ * between "do all of this, in this order" and "pick whichever applies to you";
+ * for a walkthrough of a sign-up, only the first reading is true. It costs
+ * nothing on a 320px screen, where a card grid is a single column anyway and
+ * the relationship between one card and the next was left entirely to the
+ * numbers.
+ */
+.how-body {
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: minmax(0, 1fr);
+}
+/* Two columns only where the panel can hold its own line length beside the
+   steps. Below this it falls under the last step, which is also where somebody
+   who has just read "Apply" and is still unsure would look for the number. */
+@media (min-width: 62rem) {
+  .how-body {
+    grid-template-columns: minmax(0, 1fr) 19rem;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  /* Follows the reader down the steps, at the same offset as the directory's
+     filters and a scheme's facts — the sticky masthead is 5.5rem of it. The
+     panel is shorter than any viewport this breakpoint applies to, so it never
+     becomes a pane that cannot be scrolled past, and the number to call stays
+     on screen for the whole of the list it is the answer to. */
+  .how-aside { position: sticky; top: 5.5rem; }
+}
+
+/* Numbered because the order is the point: the code comes before the details,
+ * the details before the matches, and the matches before the application.
+ * counter-increment on the list rather than the browser's own markers, which
+ * cannot be sized to this and sit outside the text block. */
+.steps {
+  list-style: none; padding: 0; margin: 0;
+  counter-reset: step;
+}
+.steps > li {
+  counter-increment: step;
+  position: relative;
+  /* The rail is the item's own left border, so it cannot fall out of step with
+     the bubbles when a body wraps to a different number of lines. */
+  border-inline-start: 2px solid var(--border);
+  margin-inline-start: 1.125rem;      /* half the bubble: the line runs through its centre */
+  padding: 0 0 0.875rem 2rem;
+}
+/* The rail stops at the last number instead of running on into nothing. */
+.steps > li:last-child { border-inline-start-color: transparent; padding-bottom: 0; }
+
+.steps > li::before {
+  content: counter(step);
+  position: absolute; inset-inline-start: -1.125rem; top: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem;
+  border-radius: 999px;
+  background: var(--step-hue-weak, var(--accent-weak)); color: var(--step-hue, var(--accent));
+  font-weight: 700;
+  /* Sits on the rail rather than being crossed by it. The halo is the page's
+     own background, so the line appears to stop at the bubble and start again
+     under it. */
+  box-shadow: 0 0 0 4px var(--bg);
+}
+/* A hue per step, round the spectrum and back again. The numeral is the order
+   and the colour is not: seven steps in one green read as one long block, and a
+   colour change at each number is what makes the eye stop at each one. The
+   hues are decoration in the strict sense — check-contrast measures each
+   numeral on its own tint, and nothing here means "done" or "next". */
+.steps > li:nth-child(5n+1) { --step-hue: var(--hue-green);  --step-hue-weak: var(--hue-green-weak); }
+.steps > li:nth-child(5n+2) { --step-hue: var(--hue-teal);   --step-hue-weak: var(--hue-teal-weak); }
+.steps > li:nth-child(5n+3) { --step-hue: var(--hue-blue);   --step-hue-weak: var(--hue-blue-weak); }
+.steps > li:nth-child(5n+4) { --step-hue: var(--hue-violet); --step-hue-weak: var(--hue-violet-weak); }
+.steps > li:nth-child(5n+5) { --step-hue: var(--hue-plum);   --step-hue-weak: var(--hue-plum-weak); }
+/* The step itself, as a card on the rail. The bubble sits level with the
+   card's first line, and the card takes the step's hue on its leading edge when
+   a pointer is over it — the one place the colour and the number meet. */
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--step-hue-weak, var(--accent-weak));
+  border-radius: var(--radius);
+  padding: 0.875rem 1.125rem;
+  box-shadow: var(--shadow-1);
+  transition: box-shadow var(--dur) ease-out, border-color var(--dur) ease-out;
+}
+.step-card:hover { box-shadow: var(--shadow-2); border-inline-start-color: var(--step-hue, var(--accent)); }
+.steps > li::before { top: 0.5rem; }
+.steps h3 { margin: 0 0 0.25rem; font-size: var(--step-0); }
+.steps p { margin: 0; color: var(--text-muted); max-width: var(--measure); font-size: var(--step--1); }
+
+/* What the steps cannot say: the three things you do not need, and the number
+   to call when one of them goes wrong. A card, because it is an aside to the
+   list beside it and needs a boundary to say so. */
+.how-aside {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.375rem 1.5rem;
+  box-shadow: var(--shadow-2);
+  border-top: 4px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--spectrum) border-box;
+}
+.how-aside h3 { margin: 0 0 0.75rem; font-size: var(--step-1); }
+
+.assurances { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.assurances li { display: flex; align-items: flex-start; gap: 0.5rem; }
+
+.helpline { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.helpline p { margin: 0 0 0.75rem; color: var(--text-muted); font-size: var(--step--1); }
+/* Full width in the panel: the one action here should not be a short button
+   floating in a wide card, and the wider target is free. */
+.helpline .btn { width: 100%; }
+
+/* Browse entry points. Links rather than the .chip span used for read-only
+ * tags elsewhere, so they carry a full-size target and look pressable. */
+.chip-link {
+  /* The gap is the space between the label and its count. JSX writes one, but
+   * a flex container drops whitespace-only text between its children, so
+   * without this the chips read "Corporate(3)". */
+  display: inline-flex; align-items: center; gap: 0.35em;
+  min-height: 48px;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: var(--w-medium);
+  text-decoration: none;
+}
+.chip-link:hover { background: var(--accent-weak); border-color: var(--accent); }
+/* --- browse by --------------------------------------------------------------
+ *
+ * Tiles, not pills. A row of outlined pills with a count in brackets was the
+ * weakest thing on the page: nothing said they were doorways, and "(3)" in body
+ * grey is the kind of number the eye skips. A tile gives each entry an icon, a
+ * name and a count on a badge, at 64px tall — a larger target than the pill, on
+ * a page whose readers include people with a tremor.
+ *
+ * A hue per tile, round the spectrum. Decoration: the name is the content, and
+ * two tiles of one colour mean nothing more than that there are more than five.
+ */
+.browse-grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+}
+.browse-grid > li:nth-child(5n+1) { --tile-hue: var(--hue-green);  --tile-hue-weak: var(--hue-green-weak); }
+.browse-grid > li:nth-child(5n+2) { --tile-hue: var(--hue-teal);   --tile-hue-weak: var(--hue-teal-weak); }
+.browse-grid > li:nth-child(5n+3) { --tile-hue: var(--hue-blue);   --tile-hue-weak: var(--hue-blue-weak); }
+.browse-grid > li:nth-child(5n+4) { --tile-hue: var(--hue-violet); --tile-hue-weak: var(--hue-violet-weak); }
+.browse-grid > li:nth-child(5n+5) { --tile-hue: var(--hue-plum);   --tile-hue-weak: var(--hue-plum-weak); }
+
+.browse-tile {
+  display: flex; align-items: center; gap: 0.875rem;
+  min-height: 64px;
+  padding: 0.625rem 0.875rem 0.625rem 0.625rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: var(--w-medium);
+  transition:
+    box-shadow var(--dur) ease-out,
+    border-color var(--dur-fast) ease-out,
+    transform var(--dur-fast) ease-out;
+}
+/* The whole tile is the link, so it may lift the one pixel every button does. */
+.browse-tile:hover {
+  border-color: var(--tile-hue);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
+}
+.browse-tile:active { transform: none; box-shadow: var(--shadow-1); }
+.browse-icon {
+  flex: none;
+  display: grid; place-items: center;
+  width: 2.75rem; height: 2.75rem;
+  border-radius: var(--radius);
+  background: var(--tile-hue-weak); color: var(--tile-hue);
+}
+.browse-icon .icon { width: 22px; height: 22px; }
+.browse-label {
+  flex: 1; min-width: 0;
+  /* Whole words. The body's break-word is for unbroken strings like a
+     reference code; on a tile it split "Undergraduate" across two lines. */
+  overflow-wrap: normal;
+  hyphens: auto;
+}
+.browse-count {
+  flex: none;
+  min-width: 2rem; padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.browse-tile:hover .browse-count { background: var(--tile-hue-weak); color: var(--tile-hue); }
+.home-section h3 + .browse-grid { margin-top: 0.75rem; }
+
+/* Section rhythm: one ruled break between subjects rather than the same gap
+ * everywhere, which left the page reading as one long column of blocks. */
+.home-section + .home-section,
+.home-section:first-of-type {
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+}
+
+/* A short spectrum bar over each section's heading: the bar's rule in
+   miniature, so the eye finds where a subject starts before it reads the words.
+   Decoration, drawn with a pseudo-element, so it is not in the accessible tree. */
+.home-section > h2::before {
+  content: "";
+  display: block;
+  width: 2.5rem; height: 4px;
+  margin-bottom: 0.75rem;
+  border-radius: 999px;
+  background: var(--spectrum);
+}

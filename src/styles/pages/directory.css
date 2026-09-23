@@ -1,0 +1,93 @@
+/* --- the directory ----------------------------------------------------------------
+ *
+ * Filters beside the results rather than above them: as a band across the top
+ * they held four controls in the left third of a wide screen, and they scrolled
+ * out of reach the moment the results began. The column is fixed-width so the
+ * results take the slack — a grid of cards can use another 200px, a stack of
+ * four selects cannot. */
+/* One column when the filter panel is not rendered.
+ *
+ * Without this the grid keeps its 17rem track and the empty state sits in the
+ * right-hand column with a third of the page blank beside it — which is what
+ * the hero did before .hero:has(.hero-side), and reads the same way: as a
+ * layout that failed to load rather than a directory with nothing in it. */
+.directory.one-col { grid-template-columns: minmax(0, 1fr); }
+
+.directory {
+  display: grid;
+  grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+  gap: 1.5rem 2.5rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+/* Offset by the top bar's height, so the panel's own heading is not tucked
+ * under it when it sticks. */
+.directory-filters { position: sticky; top: 5.5rem; }
+.directory-filters .card { display: grid; gap: 0.25rem; }
+.directory-filters .field { margin-bottom: 0.75rem; }
+.directory-filters .field:last-child { margin-bottom: 0; }
+
+.filter-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 0.25rem 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem;
+}
+.filter-head h2 {
+  font-size: var(--step-0); margin: 0;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+}
+/* How many filters are set. aria-hidden in the markup; see the note there. */
+.filter-count {
+  display: inline-grid; place-items: center;
+  min-width: 1.5rem; height: 1.5rem; padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--accent); color: var(--accent-text);
+  font-size: var(--step--1); font-weight: var(--w-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The panel as the tool it is: the same raised surface and spectrum edge as
+   the landing page's aside, so the two read as one family. */
+.directory-filters .card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  border-top: 4px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--spectrum) border-box;
+}
+
+/* A select that is narrowing the list, marked on the control itself. The
+   chosen value is already written in it — "Undergraduate" where it said
+   "Any qualification" — so the tint and the accent edge are the second signal,
+   there to be found at a glance down seven controls. */
+.directory-filters select:not(:has(option[value=""]:checked)) {
+  border-color: var(--accent);
+  background-color: var(--accent-weak);
+  font-weight: var(--w-medium);
+}
+.filter-head button { min-height: 0; padding: 0.25rem 0.5rem; }
+
+/* The invitation at the foot of the results, not welded to the last card. */
+.directory-results .notice { margin-top: 1.5rem; }
+.directory-cta { margin-top: 2rem; }
+
+.result-count { margin: 0 0 0.875rem; font-weight: var(--w-strong); font-size: var(--step-1); }
+
+@media (max-width: 64rem) {
+  /* One column, filters first: they are the control for what follows, and the
+   * reading order has to say so on a phone as much as on a monitor.
+   *
+   * Two selects to a row, though. Stacked one per row they were six hundred
+   * pixels of controls between the reader and the first result — on the page
+   * whose whole job is to show results. */
+  .directory { grid-template-columns: 1fr; }
+  .directory-filters { position: static; }
+  .directory-filters .card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+    gap: 0 1rem;
+    align-items: start;
+  }
+  .filter-head, .filter-search { grid-column: 1 / -1; }
+  .filter-search { max-width: 26rem; }
+}

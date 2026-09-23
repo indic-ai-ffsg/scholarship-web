@@ -104,6 +104,21 @@ export class ProviderError extends Error {
   }
 }
 
+/* The seconds MSG91 says to wait before another resend, or null.
+ *
+ * Its throttle answers a resend inside the cooldown with a sentence — "wait 50
+ * seconds to retry." — through the failure path, and that sentence used to be
+ * shown to the student as an error at the top of the card, above a countdown
+ * of the page's own that said 17. It is not an error; it is the real length of
+ * the wait. The sign-in screen reads the number from it and runs its countdown
+ * to that instead. Matched loosely, because the wording is MSG91's and not
+ * ours: a number followed by "sec". */
+export function waitSecondsOf(err: unknown): number | null {
+  const message = err instanceof Error ? err.message : typeof err === 'string' ? err : ''
+  const m = /(\d+)\s*sec/i.exec(message)
+  return m ? Number(m[1]) : null
+}
+
 export class NotConfiguredError extends Error {
   constructor() {
     super(

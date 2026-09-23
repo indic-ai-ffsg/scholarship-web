@@ -1,0 +1,506 @@
+/* --- the scheme sheet -------------------------------------------------------------
+ *
+ * A panel over the directory, from the trailing edge on a wide screen and from
+ * the bottom on a phone.
+ *
+ * Which edge is not decoration, and the reason is the footer rather than the
+ * close button. The one thing a reader came to do is Apply, it is pinned to the
+ * panel's bottom edge, and on a phone held one-handed the bottom edge is the
+ * only part of the screen a thumb reaches without regripping. A panel arriving
+ * from the right on the same screen is a full-height column whose action sits
+ * at the same place — but whose scrim is a sliver, and the scrim is the large
+ * dismissal target that makes the close button a fallback rather than the only
+ * way out. Coming up from the bottom leaves the top of the list showing, which
+ * is both the scrim and the reassurance that the directory is still there.
+ *
+ * It is a <dialog>, so the browser supplies the top layer, the focus trap, the
+ * inert background and Escape. Everything here is appearance.
+ */
+
+/* The element is the whole window; the panel inside it is the visible box. That
+ * is what makes a press on the scrim detectable — see Sheet.tsx — and it is why
+ * width and height are set here rather than on .sheet-inner. */
+.sheet {
+  /* Overriding the UA's centred, shrink-to-fit, bordered box. `inset: 0` with
+   * auto margins is what pins it to an edge. */
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  max-width: 100%;
+  max-height: 100%;
+  width: min(34rem, 100%);
+  height: 100%;
+  /* dvh, not vh: on iOS Safari the address bar counts against vh, so a 100vh
+   * sheet puts its footer — the Apply button — under the browser chrome. */
+  height: 100dvh;
+  color: var(--text);
+}
+.sheet::backdrop {
+  /* Dark enough to put the list behind out of play, light enough that the
+   * reader can still see it is there and has not been navigated away. */
+  background: rgb(20 23 28 / 0.55);
+}
+
+.sheet-inner {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: 100%;
+  background: var(--surface);
+  border-inline-start: 1px solid var(--border);
+  position: relative;
+}
+
+/* Over the content rather than in a bar of its own.
+ *
+ * A header bar holding one button costs 64px of a phone screen for the life of
+ * the panel. Sticky, so it is still there after a long rule set has scrolled,
+ * and on its own ground so it never sits on top of a word. */
+.sheet-close {
+  position: absolute;
+  /* Far enough in that the 3px focus ring and its offset clear the panel's
+     edge — at 0.5rem the ring was shaved by the corner. */
+  inset-block-start: 0.75rem;
+  inset-inline-end: 0.75rem;
+  z-index: 1;
+  min-width: 48px;
+  padding: 0.5rem;
+  background: var(--surface);
+  border-radius: 50%;
+  font-size: var(--step-1);
+}
+.sheet-close:hover:not(:disabled) { background: var(--surface-sunken); }
+
+.sheet-body {
+  /* Named, so the head below can bleed to the panel's edges by exactly this
+     much rather than by a copy of the numbers. */
+  --sheet-pad-top: 1.5rem;
+  --sheet-pad-start: 1.5rem;
+  /* Room for the close button, so a long title does not run under it. */
+  --sheet-pad-end: 4rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;   /* a flick at the end does not scroll the list behind */
+  padding: var(--sheet-pad-top) var(--sheet-pad-end) 2rem var(--sheet-pad-start);
+  padding-inline: var(--sheet-pad-start) var(--sheet-pad-end);
+  -webkit-overflow-scrolling: touch;
+}
+.sheet-body > :first-child { margin-top: 0; }
+.sheet-body h2 { margin: 0 0 1rem; font-size: var(--step-2); }
+.sheet-body h3 { font-size: var(--step-1); margin: 1.75rem 0 0.625rem; }
+.sheet-body p { max-width: var(--measure); }
+
+/* A hairline over each section, because seven of them in a column all set the
+ * same way is a wall.
+ *
+ * The rule does the grouping that spacing alone could not: at 1.75rem the gap
+ * between two sections and the gap between a heading and its own text were
+ * close enough that the eye had to read the words to find the boundary. A
+ * border is a cheaper signal than more space, and space is what a panel this
+ * long has least of.
+ *
+ * Not on the first: a rule directly under the facts strip reads as part of the
+ * strip's frame rather than as the start of what follows it. And not above the
+ * caveats, which are already a coloured band — a hairline over their own ground
+ * is a second boundary drawn on top of a boundary. */
+.sheet-body section + section {
+  border-top: 1px solid var(--border);
+  padding-top: 0.25rem;
+}
+
+/* A short bar in front of each section's heading, a hue per section round the
+ * spectrum. Seven headings in one panel all set alike read as one long
+ * document; a coloured start to each is where the eye stops. Decoration on a
+ * pseudo-element: the heading's words are the heading. */
+.sheet-body section > h3 {
+  display: flex; align-items: center; gap: 0.625rem;
+}
+.sheet-body section > h3::before {
+  content: "";
+  flex: none;
+  width: 4px; height: 1.1em;
+  border-radius: 999px;
+  background: var(--section-hue, var(--accent));
+}
+.sheet-body section:nth-of-type(5n+1) { --section-hue: var(--hue-green); }
+.sheet-body section:nth-of-type(5n+2) { --section-hue: var(--hue-teal); }
+.sheet-body section:nth-of-type(5n+3) { --section-hue: var(--hue-blue); }
+.sheet-body section:nth-of-type(5n+4) { --section-hue: var(--hue-violet); }
+.sheet-body section:nth-of-type(5n+5) { --section-hue: var(--hue-plum); }
+
+/* Who it is for: the checklist's ticks as filled discs, the landing hero's
+   lockup, so a condition reads as an item rather than as loose punctuation. */
+.sheet-body .criteria { gap: 0.5rem; }
+.sheet-body .criteria li { grid-template-columns: 1.75rem 1fr; }
+.sheet-body .criteria .mark {
+  display: inline-grid; place-items: center;
+  width: 1.25rem; height: 1.25rem; margin-top: 0.2rem;
+  border-radius: 50%;
+  background: var(--eligible-weak); color: var(--eligible);
+  font-size: 0.75rem;
+}
+
+.sheet-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.875rem; }
+.sheet-head .sponsor-mark { background: #fff; border: 1px solid var(--border); }
+.sheet-eyebrow { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
+.sheet-eyebrow strong { font-weight: var(--w-medium); color: var(--text); }
+
+/* The head: mark and kind, then the name, then the sponsor — on the sponsor
+ * kind's hue, bled to the panel's edges and up to its top, fading out across
+ * it the way the directory row's band does. It is what ties the panel to the
+ * row it was opened from.
+ *
+ * `.sheet-body > .sheet-hero` rather than the bare class: it is the body's
+ * first child, and the rule above that zeroes a first child's top margin
+ * outranks a single class. */
+.sheet-body > .sheet-hero {
+  margin: calc(-1 * var(--sheet-pad-top)) 0 1.25rem;
+  margin-inline: calc(-1 * var(--sheet-pad-start)) calc(-1 * var(--sheet-pad-end));
+  padding: var(--sheet-pad-top) var(--sheet-pad-end) 1.25rem var(--sheet-pad-start);
+  padding-inline: var(--sheet-pad-start) var(--sheet-pad-end);
+  background: linear-gradient(160deg, var(--kind-hue-weak) 0%, var(--surface) 75%);
+  border-bottom: 1px solid var(--border);
+}
+/* The name one step above the award, so the panel's order is name, then what
+   it pays — the award is --step-2 below, and the note there says why it stays
+   large. */
+.sheet-hero h2 {
+  font-size: var(--step-3);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem;
+  text-wrap: balance;
+}
+
+/* The facts, as tiles side by side while there is room for them.
+ *
+ * A single grey block holding three facts let the award's large type crowd the
+ * other two; as tiles each fact has its own edge, and the award tile spans the
+ * row so a benefit written as a sentence has the width to be one line. */
+.sheet-facts {
+  /* A wrapping row rather than an auto-fit grid. The award spans the full
+     width, and in a grid that span keeps every track occupied, so auto-fit
+     cannot collapse the empty one: the other two tiles took two thirds of the
+     row with "Closes in 6 days" broken across two lines beside a blank third.
+     Flex shares the row between whatever tiles there are. */
+  display: flex; flex-wrap: wrap; gap: 0.625rem;
+  margin: 0;
+}
+.sheet-facts > div { flex: 1 1 10rem; }
+.sheet-facts > div {
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+.sheet-facts > div:first-child { flex-basis: 100%; }
+.sheet-facts .amount .mark { margin-inline-end: 0.375rem; }
+.sheet-facts dt {
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  margin-bottom: 0.125rem;
+}
+.sheet-facts dd { margin: 0; }
+.sheet-facts .block { display: block; font-size: var(--step--1); }
+
+/* The award, at the size of the question it answers.
+ *
+ * "Is it worth an afternoon" is what a reader opens this panel to settle, and
+ * the figure that settles it was --step-1 — the same size as the section
+ * headings and a step above the prose, which made it one fact among four. It is
+ * the only number here that decides anything.
+ *
+ * Size rather than colour, and that is the rule this file keeps: the accent is
+ * spent on the deadline, which is the one thing on the panel that expires. Two
+ * coloured figures in one strip and neither of them leads. */
+.sheet-facts .amount {
+  font-size: var(--step-2);
+  line-height: 1.25;
+  display: block;
+}
+
+/* Discs, and deliberately not the criteria checklist a few sections above.
+ * A tick there means "you already meet this"; these are things the reader has
+ * to go and find, and wearing the same mark would say the opposite. */
+/* --- the benefits table ---------------------------------------------------------
+ *
+ * A real table of two columns, in a panel 27rem wide on a laptop and the width
+ * of a phone below that. The component names are short and the amounts are not
+ * — "₹1,200 a month for hostelers, ₹650 for day scholars" — so the second
+ * column takes the slack and the first is held near its content width.
+ *
+ * It does not scroll sideways. A two-column table of wrapping text has nothing
+ * to scroll: both cells wrap, the rows get taller, and that is the correct
+ * failure at 320px. The overflow-x rule this project applies to wide tables is
+ * for the ones with a fixed minimum, which this is not.
+ */
+.sheet-benefit-intro { margin: 0 0 0.75rem; max-width: var(--measure); }
+
+.sheet-benefits {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 0.5rem;
+  font-size: var(--step--1);
+}
+.sheet-benefits th,
+.sheet-benefits td {
+  text-align: start;
+  vertical-align: baseline;
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  border-block-end: 1px solid var(--border);
+}
+/* The header row, in the same muted 500 as .listing-label and for the same
+   reason: it names the columns without competing with the values under it. */
+.sheet-benefits thead th {
+  font-size: var(--step--1);
+  font-weight: var(--w-medium);
+  color: var(--text-muted);
+  border-block-end-width: 2px;
+  border-block-end-color: var(--border-strong);
+}
+/* The component is a row header, so it carries the weight of a label rather
+   than of a heading — it is scanned down the column, not read as prose. */
+.sheet-benefits tbody th {
+  font-weight: var(--w-medium);
+  padding-inline-end: 1rem;
+  width: 40%;
+}
+.sheet-benefits tbody tr:last-child th,
+.sheet-benefits tbody tr:last-child td { border-block-end: 0; }
+.sheet-benefits td:last-child { padding-inline-end: 0; }
+
+/* The table as a bounded object: a rounded frame, a tinted header row and
+ * alternate rows banded, so five rows of "component, amount" can be followed
+ * across without a ruler. separate + zero spacing is what lets the frame take
+ * a radius at all; collapse ignores it. The amounts carry the weight — they are
+ * what a reader is scanning the column for. */
+.sheet-benefits {
+  border-collapse: separate; border-spacing: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.sheet-benefits th,
+.sheet-benefits td { padding: 0.625rem 0.875rem; }
+.sheet-benefits td:last-child { padding-inline-end: 0.875rem; }
+.sheet-benefits thead th { background: var(--surface-sunken); }
+.sheet-benefits tbody tr:nth-child(even) { background: var(--bg); }
+.sheet-benefits tbody td {
+  font-weight: var(--w-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- prose the panel marked up ---------------------------------------------------
+ *
+ * See lib/richtext. Only the shapes that renderer can produce are styled here,
+ * and each is given the spacing the rest of the sheet uses rather than the
+ * browser default, which puts a full line between every paragraph.
+ */
+.richtext > :first-child { margin-block-start: 0; }
+.richtext > :last-child { margin-block-end: 0; }
+.richtext p { margin: 0 0 0.625rem; max-width: var(--measure); }
+.richtext ul, .richtext ol {
+  margin: 0 0 0.625rem; padding-inline-start: 1.25rem;
+  display: grid; gap: 0.375rem;
+}
+.richtext li { max-width: var(--measure); }
+/* h4/h5 out of `##` and `###`. Sized against the sheet's own h3 rather than the
+   browser's defaults, which would make an h4 smaller than the body text here. */
+.richtext-heading {
+  margin: 0.875rem 0 0.375rem;
+  font-size: var(--step-0);
+  font-weight: var(--w-strong);
+}
+.richtext h5.richtext-heading { font-size: var(--step--1); }
+/* An underline that is not a link.
+ *
+ * The panel offers this because sponsors' own pages use it, and its note says
+ * plainly that on the web an underline means a link. Nothing here can make that
+ * unambiguous, but the offset keeps it off the descenders so it reads as
+ * emphasis on the text rather than as the target of a press, and it inherits
+ * the body colour where every real link on this site is accent green. */
+/* And in the panel's steps, points and table, which render the same marks
+   through renderInline rather than inside a .richtext block. */
+.richtext u, .sheet-body u { text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+
+/* What to bring, as a grid of chips rather than a bulleted column: eight
+ * documents in a list are eight lines to read, and as tiles they are a set to
+ * tick off. Each carries a page glyph so a chip reads as a document before its
+ * words are read. role="list" in the markup keeps the count for a screen
+ * reader, now the markers are gone. */
+.sheet-docs {
+  list-style: none;
+  margin: 0 0 0.75rem; padding: 0;
+  display: grid; gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
+}
+.sheet-docs li {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--hue-blue-weak);
+  font-size: var(--step--1);
+  line-height: 1.4;
+}
+.sheet-docs li::before {
+  content: "";
+  flex: none;
+  width: 0.75rem; height: 0.95rem; margin-top: 0.15rem;
+  border: 2px solid var(--hue-blue);
+  border-radius: 2px;
+  opacity: 0.7;
+}
+
+/* What the scheme covers, and what to do to get it — one line each, as the
+ * operator typed them. See the Prose component in SchemeSheet for why these are
+ * lists at all rather than a paragraph with the line breaks drawn in.
+ *
+ * The gap is the whole point. Items a line apart are countable at a glance;
+ * items on consecutive lines are a paragraph that happens to wrap oddly, which
+ * is exactly what these looked like. */
+.sheet-points,
+.sheet-steps {
+  margin: 0 0 1rem;
+  padding-inline-start: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+  max-width: var(--measure);
+}
+
+/* Numerals, aligned on the marker rather than hugging the text. A six-step
+ * process is a sequence and the reader's place in it is worth keeping. */
+/* The steps as numbered discs on a rail, the landing page's how-it-works in
+ * miniature: a counter rather than the browser's marker, which cannot be given
+ * a ground or sized, and a line down through the discs that says these are one
+ * path in order rather than eleven options. role="list" in the markup keeps
+ * the count once the markers are gone. */
+.sheet-steps {
+  list-style: none;
+  padding: 0;
+  counter-reset: sheet-step;
+  gap: 0;
+}
+.sheet-steps li {
+  counter-increment: sheet-step;
+  position: relative;
+  padding: 0 0 0.875rem 2.5rem;
+  min-height: 1.75rem;
+}
+.sheet-steps li::before {
+  content: counter(sheet-step);
+  position: absolute; inset-inline-start: 0; top: 0;
+  display: grid; place-items: center;
+  width: 1.75rem; height: 1.75rem;
+  border-radius: 50%;
+  background: var(--accent-weak); color: var(--accent);
+  font-size: var(--step--1); font-weight: var(--w-strong);
+  font-variant-numeric: tabular-nums;
+}
+.sheet-steps li:not(:last-child)::after {
+  content: "";
+  position: absolute; inset-inline-start: calc(0.875rem - 1px); top: 1.875rem; bottom: 0.125rem;
+  width: 2px; background: var(--border);
+}
+.sheet-steps li:last-child { padding-bottom: 0; }
+
+/* The caveats, last and visibly a different kind of thing. .notice supplies the
+ * ground and the rule; this only stops its heading behaving like a section
+ * heading, since it sits inside the band rather than over it. */
+.sheet-notes { margin-top: 1.75rem; }
+.sheet-notes h3 { margin-top: 0; font-size: var(--step-0); }
+/* A caution panel rather than a boxed alert: the amber on the leading edge and
+   in the heading, the body in ink on the pale ground. A 2px frame all round in
+   amber was the loudest thing in the panel for a list that qualifies, not
+   warns. The heading still says what it is, so the tint is not the signal. */
+.sheet-body .sheet-notes {
+  border: 0;
+  border-inline-start: 4px solid var(--blocked);
+  border-radius: var(--radius);
+  padding: 1rem 1.125rem;
+}
+.sheet-notes .richtext ul, .sheet-notes .richtext ol { gap: 0.5rem; }
+/* .notice colours its whole box in the tone and restores ink only to p and the
+   headings, so list items stayed amber — a paragraph of caveats in warning
+   colour. Ink for the words, amber for the edge and the heading. */
+.sheet-notes .richtext li { color: var(--text); }
+.sheet-notes .richtext li::marker { color: var(--blocked); font-weight: var(--w-strong); }
+.sheet-body .sheet-notes h3 { color: var(--blocked); }
+
+/* Pinned, and outside the scrolling region: the one action must not be
+ * something you have to reach the end of the rules to find. */
+.sheet-foot {
+  display: grid; gap: 0.5rem; justify-items: center;
+  padding: 1rem 1.5rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  /* Lifted off the scrolling content, so it reads as fixed over it rather than
+     as the last line of it. */
+  box-shadow: 0 -6px 16px -10px rgb(20 23 28 / 0.18);
+}
+.sheet-foot .btn { width: 100%; }
+/* A bottom sheet on a phone.
+ *
+ * Not full height: the strip of list left showing above it is what says the
+ * directory is still there and this is a panel over it, which is the whole
+ * difference between a sheet and a page. */
+@media (max-width: 40rem) {
+  .sheet {
+    margin: auto 0 0;
+    width: 100%;
+    height: auto;
+    max-height: 88dvh;
+  }
+  .sheet-inner {
+    border-inline-start: 0;
+    border-top: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  /* The grab handle every bottom sheet has, and the affordance it stands for:
+     this came up from the bottom edge and goes back down there. Decoration, so
+     it is hidden from the accessible tree — the close button is the control. */
+  .sheet-inner::before {
+    content: "";
+    position: absolute; inset-block-start: 0.5rem;
+    inset-inline-start: 50%; translate: -50% 0;
+    width: 2.25rem; height: 0.25rem; border-radius: 999px;
+    background: var(--border-strong);
+  }
+  /* The variable, not padding-top: the head bleeds up by exactly this. */
+  .sheet-body { --sheet-pad-top: 2rem; }
+}
+
+/* Arriving.
+ *
+ * The panel slides from its own edge and the scrim fades. @starting-style is
+ * what lets a dialog animate in at all — it is display:none until it opens, and
+ * a transition needs a value to come from. `display` and `overlay` are in the
+ * transition list with allow-discrete so the closing animation is not cut off
+ * by the element leaving the top layer on frame one.
+ *
+ * The global prefers-reduced-motion rule cuts every duration here to nothing,
+ * which is the correct end state and not a broken one: the panel appears.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .sheet {
+    transition:
+      translate 220ms ease-out,
+      opacity 220ms ease-out,
+      display 220ms allow-discrete,
+      overlay 220ms allow-discrete;
+    translate: 100% 0;
+    opacity: 0;
+  }
+  .sheet[open] { translate: 0 0; opacity: 1; }
+  @starting-style { .sheet[open] { translate: 100% 0; opacity: 0; } }
+
+  .sheet::backdrop { transition: opacity 220ms ease-out, display 220ms allow-discrete; opacity: 0; }
+  .sheet[open]::backdrop { opacity: 1; }
+  @starting-style { .sheet[open]::backdrop { opacity: 0; } }
+
+  @media (max-width: 40rem) {
+    .sheet { translate: 0 100%; }
+    .sheet[open] { translate: 0 0; }
+    @starting-style { .sheet[open] { translate: 0 100%; opacity: 0; } }
+  }
+}

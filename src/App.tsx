@@ -4,7 +4,6 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './lib/auth-context'
 import { withNext } from './lib/next'
 import { usePageVisit } from './lib/visit'
-import { useI18n } from './lib/i18n-context'
 import Layout from './components/Layout'
 import { Loading } from './components/ui'
 /* Eager: the three screens somebody arrives on.
@@ -19,6 +18,7 @@ import Home from './pages/public/Home'
 import CustomPage from './pages/public/Page'
 import SignIn from './pages/SignIn'
 import Register from './pages/Register'
+import NotFound from './pages/NotFound'
 
 /* Everything else, as its own chunk.
  *
@@ -28,8 +28,6 @@ import Register from './pages/Register'
  * than a handful of these in a session, and a student who never applies sees
  * none of them. */
 const Directory = lazy(() => import('./pages/public/Directory'))
-const Partner = lazy(() => import('./pages/public/Partner'))
-const Impact = lazy(() => import('./pages/public/Impact'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Matches = lazy(() => import('./pages/Matches'))
 const Documents = lazy(() => import('./pages/Documents'))
@@ -95,8 +93,6 @@ export default function App() {
         {/* Two pages the platform had the endpoints for and no way into:
             organisations could not apply to join at all, and nothing published
             what the platform is carrying. */}
-        <Route path="/partner" element={<Partner />} />
-        <Route path="/impact" element={<Impact />} />
         {/* The scheme is a panel over the list, at this address as well as at
             ?scheme=. It was a page of its own; the panel replaced it, and the
             path is kept rather than redirected because it is the address
@@ -192,14 +188,4 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   // forgotten they are signed out.
   if (status !== 'authenticated') return <Navigate to="/register" replace />
   return <>{children}</>
-}
-
-function NotFound() {
-  const { t } = useI18n()
-  return (
-    <div className="page narrow">
-      <h1>404</h1>
-      <p><a href="/scholarships">{t('public.back')}</a></p>
-    </div>
-  )
 }

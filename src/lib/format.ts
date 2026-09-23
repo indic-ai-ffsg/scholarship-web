@@ -4,7 +4,17 @@
  * numbering system is used throughout: ₹1,00,000 rather than ₹100,000. Pinned
  * to en-IN rather than taking the browser's locale, so two students comparing
  * the same scheme see the same figure.
+ *
+ * That pinning is for the figures and not for the dates, and the difference is
+ * worth stating because the two look like the same decision. A rupee amount is
+ * a quantity being checked against a printed notice, and it has to read the
+ * same to everybody; a date is prose, and a Tamil page that says "15 January
+ * 2027" in the middle of a Tamil sentence has switched language mid-sentence.
+ * So money and count stay en-IN, and the three date formatters below follow the
+ * language on screen.
  */
+
+import { isLocale } from './locales'
 
 const RUPEES = new Intl.NumberFormat('en-IN', {
   style: 'currency', currency: 'INR', maximumFractionDigits: 0,
@@ -18,14 +28,27 @@ export const money = (n: number) => RUPEES.format(n)
 const COUNT = new Intl.NumberFormat('en-IN')
 export const count = (n: number) => COUNT.format(n)
 
+/* The BCP 47 tag the date formatters ask Intl for.
+ *
+ * -IN on every one of the fourteen, because the regional half of the tag is
+ * what decides day-before-month and the 12-hour clock, and this platform's
+ * readers are in India whichever language they read in. An unrecognised code
+ * falls back to en-IN rather than being passed through: Intl throws a
+ * RangeError on a malformed tag, and a date is not worth an exception.
+ *
+ * Intl carries its own data for all fourteen, so nothing is downloaded and
+ * nothing is translated here — the month name in Odia comes from the browser. */
+const dateLocale = (lang: string): string =>
+  isLocale(lang) ? `${lang}-IN` : 'en-IN'
+
 export function date(iso: string, lang = 'en') {
-  return new Intl.DateTimeFormat(lang === 'hi' ? 'hi-IN' : 'en-IN', {
+  return new Intl.DateTimeFormat(dateLocale(lang), {
     day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date(iso))
 }
 
 export function shortDate(iso: string, lang = 'en') {
-  return new Intl.DateTimeFormat(lang === 'hi' ? 'hi-IN' : 'en-IN', {
+  return new Intl.DateTimeFormat(dateLocale(lang), {
     day: 'numeric', month: 'short', year: 'numeric',
   }).format(new Date(iso))
 }
@@ -41,7 +64,7 @@ export function shortDate(iso: string, lang = 'en') {
  * en-IN, so the clock is the 12-hour one people here read, with the date first.
  */
 export function dateTime(iso: string, lang = 'en') {
-  return new Intl.DateTimeFormat(lang === 'hi' ? 'hi-IN' : 'en-IN', {
+  return new Intl.DateTimeFormat(dateLocale(lang), {
     day: 'numeric', month: 'short', year: 'numeric',
     hour: 'numeric', minute: '2-digit',
   }).format(new Date(iso))
@@ -137,7 +160,11 @@ export function deadlineLabel(
   }
   if (days < 0) return { text: t('public.closed'), state: 'closed', mark: '\u00d7' }
   if (days === 0) return { text: t('public.closesToday'), state: 'today', mark: URGENT_MARK }
-  if (days <= 7) return { text: t('public.closingSoon'), state: 'soon', mark: URGENT_MARK }
+  /* The last week keeps the count too. It said "Closing soon", which is the
+   * one phrasing that tells the reader nothing they can act on — soon is a
+   * mood, and "Closes in 3 days" is a plan. The urgency is already carried by
+   * the state and the mark; the words can afford to be exact. */
+  if (days <= 7) return { text: t('public.closesIn', { n: days }), state: 'soon', mark: URGENT_MARK }
   /* Eight to thirty days: the count, in the warning ink.
    *
    * A band rather than colouring every dated scheme, and the difference is the
@@ -149,9 +176,8 @@ export function deadlineLabel(
    * certificates to gather, a form to sit down with — is genuinely the point at
    * which leaving it is a risk.
    *
-   * It keeps the day count rather than becoming "Closing soon". The number is
-   * what a reader plans around, and above a week they still have a choice to
-   * make rather than a warning to obey. */
+   * It keeps the day count, as every dated band now does. The number is what
+   * a reader plans around. */
   if (days <= 30) return { text: t('public.closesIn', { n: days }), state: 'closing', mark: URGENT_MARK }
   /* Past a month: the count, and no colour at all.
    *
@@ -234,3 +260,28 @@ export function stripNumbering(items: string[]): string[] {
     ? items.map(i => i.replace(NUMBERED, ''))
     : items
 }
+
+/* The sponsor's kind, in the words the directory uses.
+ *
+ * Shared by the matched list and the directory's rows, which badge it the same
+ * way; it lived in Matches until the directory needed it too.
+ *
+ * humanise() would give "Ngo" for NGO — it title-cases anything longer than
+ * five characters — and an initialism rendered as a word is the kind of small
+ * wrongness that makes a page look machine-written. The map is four entries and
+ * exact; anything unrecognised falls through to humanise rather than to a
+ * blank, because a new org type should show up as itself rather than vanish. */
+const ORG_KIND = new Set(['NGO', 'CORPORATE', 'GOVERNMENT', 'GOVT', 'PRIVATE'])
+
+/* The set is membership only; the words are field.orgKind.* in the string
+   table, because "Corporate" on a Hindi page is the same failure as twenty-one
+   English disability types were. GOVT and GOVERNMENT share one key: the enum
+   has carried both spellings and they name one thing. */
+export const orgKind = (t: (key: string) => string, value: string) =>
+  ORG_KIND.has(value) ? t(`field.orgKind.${value === 'GOVT' ? 'GOVERNMENT' : value}`) : humanise(value)
+
+/* The kind as a stable key for styling — one spelling per kind, so GOVT and
+   GOVERNMENT get one colour — or undefined for a kind this file does not know,
+   which then takes the neutral badge rather than a guessed hue. */
+export const orgKindKey = (value?: string) =>
+  value && ORG_KIND.has(value) ? (value === 'GOVT' ? 'GOVERNMENT' : value).toLowerCase() : undefined

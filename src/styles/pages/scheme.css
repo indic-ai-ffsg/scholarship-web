@@ -1,0 +1,63 @@
+/* --- one scheme -------------------------------------------------------------------
+ *
+ * Two columns: what there is to read, and the facts that decide whether to read
+ * it. The panel is narrow and fixed in width so the main column takes the slack
+ * — the reading measure is what should grow with the window, not a box holding
+ * three short lines.
+ *
+ * Below 64rem it is one column with the panel first: on a phone, "₹25,000,
+ * closes in two days" is what decides whether the criteria get read at all. */
+.scheme {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem);
+  gap: 2rem 3rem;
+  align-items: start;
+}
+.scheme-main > section { margin-top: 2rem; }
+/* The first section in the column sits level with the top of the panel beside
+ * it, rather than two rem below it for no reason. */
+.scheme-main > section.first { margin-top: 0; }
+.scheme-main h2 { font-size: var(--step-2); }
+
+/* Sticks while the criteria scroll, offset by the height of the top bar so it
+ * does not tuck underneath it. */
+.scheme-facts { position: sticky; top: 5.5rem; }
+
+@media (max-width: 64rem) {
+  .scheme { grid-template-columns: 1fr; }
+  /* The facts before the reading: with the title and summary now above both
+   * columns, this puts "₹25,000, closes in 2 days" directly under the name of
+   * the scheme — which is the order somebody decides in. */
+  .scheme-facts { position: static; order: -1; }
+  .scheme-main > section.first { margin-top: 2rem; }
+}
+
+/* The award, set as the loudest thing on the page. It was a line of body text
+ * inside a list of three, which for the one number the whole page is about is
+ * a strange way to say it. */
+.fact-award { display: grid; gap: 0.125rem; margin: 0; }
+.fact-award strong {
+  font-size: var(--step-3); font-weight: 700;
+  line-height: 1.1; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.fact-award .muted { font-size: var(--step--1); }
+
+.facts { display: grid; gap: 0.875rem; margin: 0; }
+.facts dt { font-size: var(--step--1); margin-bottom: 0.125rem; }
+.facts dd { margin: 0; font-weight: var(--w-medium); }
+.facts .block { display: block; font-weight: 400; font-size: var(--step--1); }
+
+.scheme-facts .card { display: grid; gap: 1rem; }
+.scheme-facts hr { border: 0; border-top: 1px solid var(--border); margin: 0; width: 100%; }
+.scheme-facts .small { font-size: var(--step--1); margin: 0.5rem 0 0; }
+
+/* A checklist, not bullets: every line is a condition to measure yourself
+ * against, and the tick says that where a disc says "list item". The mark is
+ * its own column so a wrapped sentence stays aligned under itself rather than
+ * running back under the tick. */
+.criteria { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.625rem; }
+.criteria li { display: grid; grid-template-columns: 1.5rem 1fr; align-items: start; }
+.criteria .mark { color: var(--eligible); font-weight: 700; }
+
+.breadcrumb { margin-bottom: 0.5rem; }

@@ -27,20 +27,10 @@ const DOC_TYPES = [
   'FEE_RECEIPT', 'BANK_PASSBOOK', 'IDENTITY_PROOF', 'PHOTOGRAPH',
 ]
 
-const DOC_LABELS: Record<string, string> = {
-  DISABILITY_CERTIFICATE: 'Disability certificate',
-  UDID_CARD: 'UDID card',
-  INCOME_CERTIFICATE: 'Income certificate',
-  DOMICILE_CERTIFICATE: 'Domicile certificate',
-  CASTE_CERTIFICATE: 'Category certificate',
-  MARKSHEET: 'Marksheet',
-  ADMISSION_LETTER: 'Admission letter',
-  BONAFIDE_CERTIFICATE: 'Bonafide certificate',
-  FEE_RECEIPT: 'Fee receipt',
-  BANK_PASSBOOK: 'Bank passbook',
-  IDENTITY_PROOF: 'Proof of identity',
-  PHOTOGRAPH: 'Photograph',
-}
+/* The labels are field.doc.* in the string table. The key is built from the
+   enum, so a document type the API adds shows its own enum name until somebody
+   writes the label — loud, and in one place. */
+const DOC_LABEL_KEY = (type: string) => `field.doc.${type}`
 
 export default function Documents() {
   const { t } = useI18n()
@@ -58,7 +48,7 @@ export default function Documents() {
   )
 
   const label = (type: string) =>
-    DOC_LABELS[type] ?? type
+    t(DOC_LABEL_KEY(type))
 
   async function upload() {
     const file = fileInput.current?.files?.[0]
@@ -93,15 +83,21 @@ export default function Documents() {
   const docs = query.data ?? []
 
   return (
-    <div className="page">
-      <h1>{t('doc.title')}</h1>
-      <p className="lede">{t('doc.lede')}</p>
+    <div className="page docs">
+      {/* The shared title band (components/page-hero). */}
+      <header className="page-hero">
+        <h1>{t('doc.title')}</h1>
+        <p className="lede">{t('doc.lede')}</p>
+      </header>
 
-      <section className="card" aria-labelledby="add-doc">
-        <h2 id="add-doc" style={{ fontSize: 'var(--step-1)' }}>{t('doc.upload')}</h2>
+      <section className="card doc-upload" aria-labelledby="add-doc">
+        <h2 id="add-doc">{t('doc.upload')}</h2>
 
         {error && <Notice tone="danger">{error}</Notice>}
 
+        {/* What it is and which file, side by side where there is room: two
+            answers to one question, and stacked they read as two steps. */}
+        <div className="doc-upload-fields">
         <Field label={t('doc.type')} required>
           {props => (
             <select {...props} value={docType} onChange={e => setDocType(e.target.value)}>
@@ -119,6 +115,10 @@ export default function Documents() {
               {...props}
               ref={fileInput}
               type="file"
+              /* The registration form's drop box: a real file input with the
+                 box drawn round it, so Tab reaches it and Enter opens the
+                 picker — see .file-input. */
+              className="file-input"
               accept="application/pdf,image/jpeg,image/png,image/webp"
               // capture is deliberately absent: offering the camera by default
               // is wrong for somebody who has already scanned the document, and
@@ -126,6 +126,7 @@ export default function Documents() {
             />
           )}
         </Field>
+        </div>
 
         <button className="primary" onClick={upload} disabled={busy || !docType} aria-busy={busy || undefined}>
           {busy ? t('doc.uploading') : t('doc.upload')}
@@ -138,7 +139,7 @@ export default function Documents() {
       {query.data && docs.length === 0 && <Empty title={t('doc.none')} />}
 
       {docs.length > 0 && (
-        <ul role="list" className="stack" style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0 0' }}>
+        <ul role="list" className="doc-grid">
           {docs.map(doc => (
             <li key={doc.document_id}>
               <DocumentCard doc={doc} label={label(doc.doc_type)} onChange={query.reload} />
@@ -157,7 +158,7 @@ function DocumentCard({
   label: string
   onChange: () => void
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const announce = useAnnounce()
   const [busy, setBusy] = useState(false)
 
@@ -233,9 +234,13 @@ function DocumentCard({
   }
 
   return (
-    <article className="card">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h3 style={{ margin: 0, fontSize: 'var(--step-0)' }}>{label}</h3>
+    /* A file card: what it is and where it stands, the document itself, the
+       file's particulars, then Remove — the destructive control last and
+       apart, rather than between the name and the picture of the thing it
+       would destroy. */
+    <article className="card doc-card">
+      <div className="doc-card-head">
+        <h3>{label}</h3>
 
         {v?.is_live ? (
           <span className="state-badge eligible">
@@ -250,15 +255,50 @@ function DocumentCard({
         )}
       </div>
 
-      <p className="muted" style={{ margin: '0.5rem 0 0', fontSize: 'var(--step--1)' }}>
-        {doc.original_name} · {fileSize(doc.size_bytes)}
+      {/* The document itself, in a frame of fixed height, so a grid of cards
+          lines up whatever shape each scan is. Empty until the signed URL
+          arrives, and the frame holds its place meanwhile. */}
+      <div className="doc-preview">
+      {/* #toolbar=0&navpanes=0 removes Chrome's PDF chrome — which is where the
+            download and print buttons were, and the reason a "preview" was
+            offering a download at all.
+
+            An image is inert — nothing to click, drag or right-click-save. A PDF
+            is not, and cannot be: a two-page certificate whose second page is
+            unreachable is a preview hiding half the evidence. It scrolls, and
+            that is all it does; the toolbar carrying download and print is
+            still off. */}
+        {preview && (
+          isImage ? (
+            // alt is the document's own name. Describing the picture is not
+            // something this code can do, and "UDID card" is what tells the
+            // reader it is the right one.
+            <img className="doc-thumb" src={preview}
+                 alt={`${label} — ${doc.original_name}`} referrerPolicy="no-referrer"
+                 onError={() => { void signedURL().then(u => u && setPreview(u)) }} />
+          ) : (
+            <iframe className="doc-thumb doc-thumb-page"
+                    // FitH fits the page to the frame's width, so the text is
+                    // readable at a glance and the rest of the page is below the
+                    // fold of the window rather than shrunk to fit it.
+                    src={`${preview}#toolbar=0&navpanes=0&view=FitH`}
+                    title={`${label} — ${doc.original_name}`}
+                    referrerPolicy="no-referrer" />
+          )
+        )}
+      </div>
+
+      <p className="doc-file">
+        <span className="doc-file-name">{doc.original_name}</span>
+        <span className="muted">{fileSize(doc.size_bytes)}</span>
       </p>
 
       {v?.is_live && (
-        <p style={{ margin: '0.5rem 0 0', fontSize: 'var(--step--1)' }}>
-          {v.verified_by_organisation && t('doc.verifiedBy', { org: v.verified_by_organisation })}
-          {' · '}
-          {t('doc.validUntil', { date: shortDate(v.valid_until) })}
+        <p className="doc-valid">
+          {v.verified_by_organisation && (
+            <>{t('doc.verifiedBy', { org: v.verified_by_organisation })}{' · '}</>
+          )}
+          {t('doc.validUntil', { date: shortDate(v.valid_until, locale) })}
         </p>
       )}
 
@@ -266,18 +306,18 @@ function DocumentCard({
           a missed deadline, so it is a notice rather than a line of grey text. */}
       {expiringSoon && (
         <Notice tone="warn">
-          <p style={{ margin: 0 }}>{t('doc.expiring', { n: v!.days_to_expiry })}</p>
+          <p>{t('doc.expiring', { n: v!.days_to_expiry })}</p>
         </Notice>
       )}
       {expired && (
         <Notice tone="warn">
-          <p style={{ margin: 0 }}>
-            {t('doc.expired')} — {shortDate(v!.valid_until)}
+          <p>
+            {t('doc.expired')} — {shortDate(v!.valid_until, locale)}
           </p>
         </Notice>
       )}
 
-      <div className="row" style={{ margin: '0.75rem 0 0' }}>
+      <div className="doc-card-foot">
         <button
           className="quiet destructive"
           onClick={remove}
@@ -294,33 +334,6 @@ function DocumentCard({
         </button>
       </div>
 
-      {/* #toolbar=0&navpanes=0 removes Chrome's PDF chrome — which is where the
-          download and print buttons were, and the reason a "preview" was
-          offering a download at all.
-
-          An image is inert — nothing to click, drag or right-click-save. A PDF
-          is not, and cannot be: a two-page certificate whose second page is
-          unreachable is a preview hiding half the evidence. It scrolls, and
-          that is all it does; the toolbar carrying download and print is
-          still off. */}
-      {preview && (
-        isImage ? (
-          // alt is the document's own name. Describing the picture is not
-          // something this code can do, and "UDID card" is what tells the
-          // reader it is the right one.
-          <img className="doc-thumb" src={preview}
-               alt={`${label} — ${doc.original_name}`} referrerPolicy="no-referrer"
-               onError={() => { void signedURL().then(u => u && setPreview(u)) }} />
-        ) : (
-          <iframe className="doc-thumb doc-thumb-page"
-                  // FitH fits the page to the frame's width, so the text is
-                  // readable at a glance and the rest of the page is below the
-                  // fold of the window rather than shrunk to fit it.
-                  src={`${preview}#toolbar=0&navpanes=0&view=FitH`}
-                  title={`${label} — ${doc.original_name}`}
-                  referrerPolicy="no-referrer" />
-        )
-      )}
     </article>
   )
 }

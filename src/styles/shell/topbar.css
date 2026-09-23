@@ -1,0 +1,127 @@
+/* --- the top bar ----------------------------------------------------------------
+ *
+ * Sticky, as one block with the offline banner above it. Forty results down the
+ * directory, the way back used to be a scroll to the top; now the bar is where
+ * it was. It costs 64px of a phone screen, which is affordable only because the
+ * bar is 64px — see the two groups below. */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--surface);
+  /* Frosted where the browser can blur: the page scrolls under a bar that is
+     still nearly white, so every word in it measures as it does on --surface
+     (the worst case, dark text scrolled directly underneath, still leaves the
+     bar's ground above 85% white — body text over 12:1, muted over 5:1). Where
+     it cannot, the solid white above is what paints, and nothing is lost. */
+  border-bottom: 1px solid var(--border);
+  /* Only the shadow animates, and only between two states, so this is cheap
+   * and it is also the one movement on the page that says "the content is
+   * scrolling under here". */
+  transition: box-shadow 160ms ease-out;
+}
+
+/* An accent rule across the very top.
+ *
+ * Three pixels, and they do most of the work of making a plain white bar look
+ * like a decision. It starts in the accent that marks the current page and fills
+ * the one button, and runs through the rest of the spectrum — the one place all
+ * four decorative hues appear together, which is what introduces them before
+ * they turn up one at a time on the steps and the tiles below. */
+.topbar::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: var(--accent);
+  background: var(--spectrum);
+}
+
+/* Raised once the page has scrolled under it. Class toggled from an
+ * IntersectionObserver in Layout.tsx — see the sentinel there. */
+.topbar.stuck { box-shadow: 0 4px 16px rgb(0 0 0 / 0.10); }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar {
+    background: rgb(255 255 255 / 0.86);
+    -webkit-backdrop-filter: saturate(1.6) blur(14px);
+    backdrop-filter: saturate(1.6) blur(14px);
+  }
+}
+
+/* The watched pixel. No height of its own: it sits at the very top of the
+ * document and is either in view or not. */
+.topbar-sentinel { height: 1px; margin-bottom: -1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar { transition: none; }
+}
+/* Focus moving into <main> — from the skip link, or on every route change —
+ * would otherwise scroll it under the sticky bar. */
+html { scroll-padding-top: 5rem; }
+main { scroll-margin-top: 5rem; }
+
+.masthead {
+  padding: 0.625rem clamp(1.25rem, 2.5vw, 3rem);
+}
+/* Uncapped, so the brand sits at one edge of the window and the controls at the
+ * other rather than both huddling in a 52rem strip down the middle.
+ *
+ * Three tracks, not one wrapping queue: identity, destinations, controls. The
+ * middle one takes the slack, so the group on each edge stays put as the window
+ * changes instead of drifting. */
+.masthead .inner {
+  display: flex; align-items: center; gap: 0.5rem 1.5rem; flex-wrap: wrap;
+}
+/* The middle zone. It takes the slack on both sides, which is what centres the
+ * destinations in the bar rather than leaving them against the brand with the
+ * window's empty third between them and the controls. */
+.masthead .nav-main { flex: 1 1 auto; justify-content: center; }
+.masthead .nav-end { display: flex; align-items: center; gap: 0.5rem; }
+/* On a wide window the account menu and the two actions read as one cluster at
+ * the far edge, whatever the markup says. */
+.masthead .account { margin-inline-start: 0.5rem; }
+/* The lockup: the full logo, then the site's name beside it.
+ *
+ * It was a cropped tree over 15px of type, which read as a caption — the
+ * smallest words in the bar were the site's own name, and the mark above them
+ * was a cluster of dots with the foundation's wordmark cut off. Now the logo is
+ * whole, with "Indic-ai" under the tree, and the product's name sits beside it
+ * behind a hairline: the foundation, then what this site of theirs is.
+ *
+ * On a narrower window the name goes and the logo stays, because the logo
+ * already says whose site this is in its own lettering; see nav.css. */
+.masthead .brand {
+  text-decoration: none; color: var(--text);
+  display: inline-flex; flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 48px;
+  line-height: 1.1;
+  border-radius: var(--radius);
+}
+.masthead .brand-name {
+  font-weight: var(--w-strong); font-size: var(--step-0);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  padding-inline-start: 0.75rem;
+  border-inline-start: 1px solid var(--border);
+}
+
+
+/* The mark is a glow drawn to sit on a dark ground. On this page's white it is
+ * still legible — the strokes are a saturated blue, not a pale halo — but it
+ * loses the surrounding bloom that gives it weight, so it is given a fraction
+ * more contrast rather than being redrawn.
+ *
+ * Sized by height, since that is what the bar has to spare: 52px, which puts
+ * the "Indic-ai" lettering at about 14px, and the width follows the file's
+ * 320:265. In rem, so it grows with the reader's font size rather than staying
+ * a fixed size while the words beside it grow to 200%. */
+.brand-mark {
+  flex: none;
+  height: 3.25rem; width: auto;
+  filter: saturate(1.15) contrast(1.05);
+}
+
+@media (max-width: 44rem) {
+  /* A shade smaller on a phone, where the bar is three rows and every pixel of
+   * height is paid for above the page. The lettering is still about 13px. */
+  .brand-mark { height: 3rem; }
+}

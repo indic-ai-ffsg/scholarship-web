@@ -168,13 +168,22 @@ export const today = new Date().toISOString().slice(0, 10)
  *
  * The vocabularies they offer are in lib/fields, which the registration form
  * writes from, so the two cannot offer different values for one field. */
-export function buildQuestions(): Question[] {
+/** The same lookup lib/fields takes. */
+type T = (key: string) => string
+
+/* Takes `t` because the profile view draws these, and the review screen is the
+ * one place a student reads their own answers back. The marks scale above is
+ * deliberately left in English: SCALES is reachable only from marksProblem and
+ * problemFor, and no screen renders either since the wizard went — translating
+ * fifteen strings nobody can see would be fifteen strings to keep in step for
+ * nothing. If a marks control comes back, that is the moment. */
+export function buildQuestions(t: T): Question[] {
   return [
     {
       field: 'full_name',
       kind: 'text',
-      question: 'What is your name?',
-      help: 'Exactly as it appears on your disability certificate. Providers check the two match.',
+      question: t('q.full_name'),
+      help: t('q.full_name.help'),
     },
     {
       /* Optional, and it is the one question here where that word carries a
@@ -184,29 +193,29 @@ export function buildQuestions(): Question[] {
       field: 'gender',
       kind: 'choice',
       optional: true,
-      question: 'What is your gender?',
-      help: 'Some scholarships are open to women only, or to transgender students. Leave it if you would rather not say.',
-      options: genderChoices(),
+      question: t('q.gender'),
+      help: t('q.gender.help'),
+      options: genderChoices(t),
     },
     {
       field: 'disability_type',
       kind: 'choice',
-      question: 'What is your disability?',
-      help: 'As written on your certificate. Most scholarships filter on this.',
-      options: disabilityChoices(),
+      question: t('q.disability_type'),
+      help: t('q.disability_type.help'),
+      options: disabilityChoices(t),
     },
     {
       field: 'disability_percent',
       kind: 'number',
       inputMode: 'numeric',
-      question: 'What percentage is on your certificate?',
-      help: 'A number between 0 and 100. Many scholarships need 40% or more.',
+      question: t('q.disability_percent'),
+      help: t('q.disability_percent.help'),
       placeholder: '40',
       min: 0,
       max: 100,
       integer: true,
       unit: 'percent',
-      outOfRange: 'A certificate percentage is between 0 and 100.',
+      outOfRange: t('q.disability_percent.range'),
     },
     {
       /* Asked here because it comes off the same document as the two answers
@@ -214,14 +223,14 @@ export function buildQuestions(): Question[] {
       field: 'udid_number',
       kind: 'text',
       optional: true,
-      question: 'What is your UDID number?',
-      help: 'The number on your UDID (Unique Disability ID) card. Leave it if you have not been issued one — it changes nothing about what you qualify for, and you can add it later.',
+      question: t('q.udid_number'),
+      help: t('q.udid_number.help'),
     },
     {
       field: 'date_of_birth',
       kind: 'date',
-      question: 'When were you born?',
-      help: 'Some scholarships have an age limit.',
+      question: t('q.date_of_birth'),
+      help: t('q.date_of_birth.help'),
     },
     /* "What are you studying?" was here, offering the four course_level values.
      *
@@ -243,8 +252,8 @@ export function buildQuestions(): Question[] {
       field: 'course_name',
       kind: 'text',
       optional: true,
-      question: 'What are you studying?',
-      help: 'The course you picked when you registered.',
+      question: t('q.course_name'),
+      help: t('q.course_name.help'),
     },
     {
       /* Free text rather than a chooser, and that is not laziness. The
@@ -254,34 +263,34 @@ export function buildQuestions(): Question[] {
       field: 'institution_name',
       kind: 'text',
       optional: true,
-      question: 'Where do you study?',
-      help: 'The name of your school, college or university, as it is written on your bonafide certificate. Leave it if you have not started yet.',
-      placeholder: 'Name of your school or college',
+      question: t('q.institution_name'),
+      help: t('q.institution_name.help'),
+      placeholder: t('q.institution_name.placeholder'),
     },
     {
       field: 'state_code',
       kind: 'choice',
-      question: 'Which state do you live in?',
-      help: 'Many scholarships are open only to residents of certain states.',
-      options: stateChoices(),
+      question: t('q.state_code'),
+      help: t('q.state_code.help'),
+      options: stateChoices(t),
     },
     {
       field: 'annual_family_income',
       kind: 'number',
       inputMode: 'numeric',
-      question: "What is your family's yearly income?",
-      help: 'In rupees, as on your income certificate. Most scholarships have a ceiling.',
+      question: t('q.annual_family_income'),
+      help: t('q.annual_family_income.help'),
       placeholder: '250000',
       min: 0,
       unit: 'money',
-      outOfRange: 'An income cannot be less than zero.',
+      outOfRange: t('q.annual_family_income.range'),
     },
     {
       field: 'academic_percentage',
       kind: 'marks',
       unit: 'percent',
-      question: 'What were your last exam marks?',
-      help: 'Choose the way your marksheet states them, then type the number. Many scholarships ask for a minimum.',
+      question: t('q.academic_percentage'),
+      help: t('q.academic_percentage.help'),
     },
   ]
 }

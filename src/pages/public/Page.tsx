@@ -4,6 +4,7 @@ import * as api from '../../lib/api'
 import { useQuery } from '../../lib/hooks'
 import { usePageTitle } from '../../lib/page-title'
 import { ErrorState, Loading } from '../../components/ui'
+import NotFound from '../NotFound'
 
 /* A page written in the admin panel rather than in this repository.
  *
@@ -63,12 +64,19 @@ export default function Page() {
      than blanking the tab for a second. */
   usePageTitle(query.data?.title)
 
-  if (query.loading) return <Loading label="Loading" />
-  /* A missing page arrives here as a 404 from the API, and ErrorState says so.
-   * Not routed to the app's own NotFound screen: this component has already
-   * been matched, and re-routing mid-render to show the same message in a
-   * different place is a redirect nobody benefits from. */
-  if (query.error) return <ErrorState error={query.error} onRetry={query.reload} />
+  /* Inside .page, both of these. Returned bare they sat flush against the
+   * viewport edges — the one error box on the site with no margin — because
+   * every other screen draws its states inside its own page container. */
+  if (query.loading) return <div className="page"><Loading /></div>
+  /* A missing page arrives here as a 404 from the API: this route matches every
+   * address, so a mistyped one lands here too. It gets the NotFound screen,
+   * rendered in place rather than redirected to, so the address bar keeps what
+   * was typed. ErrorState is for a request that failed, and offering Try again
+   * for a page that does not exist is a retry that cannot succeed. */
+  if (query.error instanceof api.ApiError && query.error.status === 404) return <NotFound />
+  if (query.error) {
+    return <div className="page"><ErrorState error={query.error} onRetry={query.reload} /></div>
+  }
   if (!query.data) return null
 
   const { title, blocks } = query.data

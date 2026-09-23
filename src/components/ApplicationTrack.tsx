@@ -1,4 +1,5 @@
 import { useI18n } from '../lib/i18n-context'
+import { shortDate } from '../lib/format'
 import type { Track } from '../lib/track'
 
 /* Where an application has got to, drawn.
@@ -27,12 +28,41 @@ import type { Track } from '../lib/track'
  * glance that says "you got it", and a student should never have to read the
  * small print to find out otherwise.
  */
-export default function ApplicationTrack({ track }: { track: Track }) {
-  const { t } = useI18n()
+/* The track tells the story on its own now: each step carries the date it
+ * happened, where the application knows it, and the last step is named by how
+ * it ended — "Awarded", "Not awarded this time" — rather than "Decision" with a
+ * tick. It was three identical ticks over "Sent / Review / Decision", with the
+ * outcome in a separate line underneath, so the one fact a student opens this
+ * page for was the last thing on the card.
+ *
+ * Both dates are optional, so a caller with neither draws the track as before. */
+const OUTCOME_KEY: Record<string, string> = {
+  approved: 'appl.outcomeApproved',
+  rejected: 'appl.outcomeRejected',
+  withdrawn: 'appl.outcomeWithdrawn',
+}
+
+export default function ApplicationTrack({ track, submittedAt, decidedAt }: {
+  track: Track
+  submittedAt?: string
+  decidedAt?: string
+}) {
+  const { t, locale } = useI18n()
+
+  function nameOf(key: string) {
+    if (key === 'decision' && track.outcome !== 'none') return t(OUTCOME_KEY[track.outcome])
+    return t(`track.${key}`)
+  }
+  function whenOf(key: string) {
+    if (key === 'sent' && submittedAt) return shortDate(submittedAt, locale)
+    if (key === 'decision' && track.finished && decidedAt) return shortDate(decidedAt, locale)
+    return undefined
+  }
 
   return (
     <ol
-      className={`track${track.outcome === 'rejected' || track.outcome === 'withdrawn' ? ' track-ended' : ''}`}
+      className={`track${track.outcome === 'rejected' || track.outcome === 'withdrawn' ? ' track-ended' : ''}${
+        track.outcome === 'approved' ? ' track-won' : ''}`}
       aria-label={t('track.label')}
     >
       {track.steps.map(step => (
@@ -54,7 +84,8 @@ export default function ApplicationTrack({ track }: { track: Track }) {
             )}
           </span>
 
-          <span className="track-name">{t(`track.${step.key}`)}</span>
+          <span className="track-name">{nameOf(step.key)}</span>
+          {whenOf(step.key) && <span className="track-when">{whenOf(step.key)}</span>}
 
           {/* The state in words, for anyone not reading the shape. Visually
               hidden because sighted readers have the tick and the fill, and a

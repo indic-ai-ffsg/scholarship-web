@@ -66,6 +66,8 @@ import { ChipSelector } from '../components/ChipSelector'
 import { SearchableSelect } from '../components/SearchableSelect'
 import { DistrictPicker } from '../components/DistrictPicker'
 import { Field, Notice } from '../components/ui'
+import { SCALES, marksProblem, scaleOf, toPercent, type ScaleId } from '../lib/questions'
+import { money } from '../lib/format'
 import type { Profile } from '../lib/types'
 
 /* Same rule as the sign-in screen, checked here as well so the complaint can
@@ -165,6 +167,23 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     () => yearLabel(profile?.course_level, profile?.current_year) ?? '',
   )
   const [institution, setInstitution] = useState(profile?.institution_name ?? '')
+  /* Last exam marks, on whichever scale the marksheet uses. The API stores a
+     percentage and only that (academic_percentage), so a CGPA is converted on
+     the way out by lib/questions' toPercent — the one conversion the profile
+     question also uses, so a CGPA means the same number wherever it is typed.
+     An edit opens on the stored percentage, since the scale it was first given
+     on is not stored. */
+  /* The family's yearly income, in whole rupees, as digits only — the input
+     drops anything else as it is typed, so "2,50,000" from habit is 250000
+     here. Optional, for the reason marks are: a scheme with an income ceiling
+     reads a missing answer as "one step away" rather than refusing. */
+  const [income, setIncome] = useState(
+    profile?.annual_family_income != null ? String(Math.round(profile.annual_family_income)) : '',
+  )
+  const [marksScale, setMarksScale] = useState<ScaleId>('PERCENT')
+  const [marks, setMarks] = useState(
+    profile?.academic_percentage != null ? String(profile.academic_percentage) : '',
+  )
 
   const [problems, setProblems] = useState<Record<string, string>>({})
   /* Which action is in flight, not merely that one is.
@@ -350,6 +369,9 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     // PhD is the one program with no year to give.
     if (category !== 'phd' && !year) found.year = required
     if (!institution.trim()) found.institution = required
+    // Optional, so only a number that cannot be right is a problem.
+    const marksBad = marksProblem(scaleOf(marksScale), marks.trim())
+    if (marksBad) found.marks = marksBad
 
     return found
   }
@@ -417,6 +439,12 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     // accepts, and sending it fails the whole form on a question nobody has to
     // answer.
     if (gender) payload.gender = gender
+    // Only when answered. A number, which is what the API decodes it as.
+    if (income !== '') payload.annual_family_income = Number(income)
+    // Only when answered, and always as the percentage the column holds.
+    if (marks.trim() !== '' && !marksProblem(scaleOf(marksScale), marks.trim())) {
+      payload.academic_percentage = toPercent(Number(marks), scaleOf(marksScale))
+    }
 
     /* Email is asked for and not sent, and that is a gap rather than a
      * decision. There is no email column on student_profile and no field for it
@@ -669,7 +697,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             <ChipSelector
               legend={t('reg.gender')}
               name="gender"
-              options={genderChoices()}
+              options={genderChoices(t)}
               selected={gender ? [gender] : []}
               onChange={v => { setGender(v[0] ?? ''); clearProblem('gender') }}
             />
@@ -677,6 +705,41 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               <span className="error" role="alert">{problems.gender}</span>
             )}
           </div>
+
+          {/* The family's yearly income, with the rupee as fixed furniture
+              inside the box — the phone field's arrangement — so the number
+              is typed without a symbol to type around. */}
+          <Field
+            label={t('q.annual_family_income')}
+            hint={t('q.annual_family_income.help')}
+          >
+            {props => (
+              <span className="input-group register-income">
+                <span className="prefix" aria-hidden="true">₹</span>
+                <input
+                  {...props}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="250000"
+                  value={income}
+                  // Digits only, and no leading zeros. Nothing typed here can
+                  // be negative or fractional, so the range check has nothing
+                  // left to catch.
+                  onChange={e => setIncome(e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''))}
+                />
+              </span>
+            )}
+          </Field>
+          {/* The amount read back in lakh grouping. 250000 and 2500000 differ
+              by one zero and a scholarship's ceiling, and a run of zeros is
+              the easiest thing on a form to mistype. */}
+          {income !== '' && (
+            <p className="wizard-derived register-derived" aria-live="polite">
+              <span className="mark" aria-hidden="true">=</span>
+              <span>{money(Number(income))}</span>
+            </p>
+          )}
 
           <h2 className="register-section">{t('reg.disability')}</h2>
 
@@ -727,14 +790,19 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                   chip group has nothing to carry it. */}
               <span className="req" aria-hidden="true"> *</span>
               <span className="sr-only"> ({t('common.required')})</span>
-              <span className="hint"> {t('reg.selectAll')}</span>
             </span>
+            {/* One choice, not "select all that apply". The profile stores a
+                single disability_type, and a multi-select was folded into
+                MULTIPLE_DISABILITIES on the way out — so a student who ticked
+                Blindness and Thalassemia was saved as neither, without being
+                told. Now they choose what is stored: the condition on their
+                certificate, or "Multiple disabilities, including deafblindness",
+                which is the schedule's own item for more than one. */}
             <ChipSelector
-              legend={`${t('reg.disabilityType')} — ${t('reg.selectAll')}`}
+              legend={t('reg.disabilityType')}
               name="disability"
-              options={disabilityChips()}
+              options={disabilityChips(t)}
               selected={disabilities}
-              multi
               onChange={v => { setDisabilities(v); clearProblem('disability') }}
             />
             {problems.disability && (
@@ -773,7 +841,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             {props => (
               <SearchableSelect
                 {...props}
-                options={stateChoices()}
+                options={stateChoices(t)}
                 value={state}
                 /* Changing the state clears the district: the districts
                    belonged to the old one, and a Kerala student who corrects
@@ -890,13 +958,72 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               <ChipSelector
                 legend={t('reg.year')}
                 name="year"
-                options={ALL_YEARS.map(y => ({ value: y.label, label: y.label }))}
+                options={ALL_YEARS.map(y => ({ value: y.label, label: t(y.key) }))}
                 selected={year ? [year] : []}
                 disabledValues={yearsOff}
                 onChange={v => { setYear(v[0] ?? ''); clearProblem('year') }}
               />
               {problems.year && <span className="error" role="alert">{problems.year}</span>}
             </div>
+          )}
+
+          {/* Last exam marks — a percentage, or a CGPA on a ten- or five-point
+              scale, since marksheets say it all three ways and making somebody
+              convert their own grade is where the wrong number comes from.
+              Optional: a student below Class 9 may have none to give, and a
+              scheme with a marks minimum already reads a missing answer as
+              "one step away" rather than refusing the student. */}
+          <div className="field register-marks">
+            <span className="field-label" id="reg-marks">
+              {t('q.academic_percentage')}
+              <span className="muted"> ({t('common.optional')})</span>
+            </span>
+            <span className="hint">{t('q.academic_percentage.help')}</span>
+            <ChipSelector
+              legend={t('q.academic_percentage')}
+              name="marks-scale"
+              options={SCALES.map(sc => ({ value: sc.value, label: sc.label }))}
+              selected={[marksScale]}
+              /* A single choice that is never empty: pressing the chosen chip
+                 again reports no selection, and a scale is always in force. */
+              onChange={v => { if (v[0]) { setMarksScale(v[0] as ScaleId); clearProblem('marks') } }}
+            />
+          </div>
+
+          <Field
+            label={scaleOf(marksScale).field}
+            hint={scaleOf(marksScale).hint}
+            error={problems.marks || undefined}
+            optional={false}
+          >
+            {props => (
+              <input
+                {...props}
+                type="number"
+                // decimal, unlike the disability percentage: 76.5% and a CGPA
+                // of 8.2 are both ordinary answers here.
+                inputMode="decimal"
+                className="input-short"
+                step={0.01}
+                min={0}
+                max={scaleOf(marksScale).max}
+                placeholder={marksScale === 'PERCENT' ? '00.0' : '0.0'}
+                value={marks}
+                onChange={e => { setMarks(e.target.value); clearProblem('marks') }}
+              />
+            )}
+          </Field>
+
+          {/* What a CGPA becomes, said as it is typed: the number that will be
+              saved and compared against every scheme's minimum. Polite, so it
+              is read once the typing pauses rather than on every digit. */}
+          {marksScale !== 'PERCENT' && marks.trim() !== '' && !marksProblem(scaleOf(marksScale), marks.trim()) && (
+            <p className="wizard-derived register-derived" aria-live="polite">
+              <span className="mark" aria-hidden="true">=</span>
+              {/* A number and a percent sign, which read the same in every
+                  language this site speaks — no sentence to translate. */}
+              <span>{toPercent(Number(marks), scaleOf(marksScale))}%</span>
+            </p>
           )}
 
           <Field label={t('reg.institution')} error={problems.institution || undefined} required>

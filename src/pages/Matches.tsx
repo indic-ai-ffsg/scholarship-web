@@ -5,8 +5,8 @@ import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { useI18n } from '../lib/i18n-context'
-import { awardLabel, deadlineLabel, humanise } from '../lib/format'
-import { Empty, ErrorState, Loading } from '../components/ui'
+import { awardLabel, date, deadlineLabel, orgKind } from '../lib/format'
+import { Empty, ErrorState } from '../components/ui'
 import {
   IconAward, IconCalendar, IconForm, IconIdea, IconNo, IconProvider, IconYes,
 } from '../components/icons'
@@ -66,6 +66,13 @@ const FILTERS = [
   { key: 'step', label: 'match.filterStep' },
   { key: 'closing', label: 'match.filterClosing' },
   { key: 'no', label: 'match.filterNo' },
+  /* The two below are fed by requests of their own, since the open list never
+     contains them: what is about to open, and what just shut. */
+  { key: 'soon', label: 'match.filterSoon' },
+  /* Last, and fed by its own request: schemes that shut in the last ninety
+     days, with the verdict they would have given. The open list above never
+     contains them — see the note where closedQuery is made. */
+  { key: 'closed', label: 'public.closed' },
 ] as const
 
 type FilterKey = typeof FILTERS[number]['key']
@@ -114,6 +121,9 @@ const inFilter = (m: Match, key: FilterKey): boolean => {
     case 'step': return m.state === 'BLOCKED'
     case 'closing': return isClosing(m)
     case 'no': return m.state === 'NOT_ELIGIBLE'
+    // Never true of an open match: these two tabs read their own lists.
+    case 'closed': return false
+    case 'soon': return false
     default: return true
   }
 }
@@ -165,6 +175,30 @@ export default function Matches() {
 
   const matches = useMemo(() => query.data ?? [], [query.data])
 
+  /* The Closed tab's list, from its own endpoint.
+   *
+   * /me/matches is bounded to what is open — it joins the directory's view,
+   * which drops a scheme the moment its deadline passes — so the schemes that
+   * just shut are not in it to filter. /me/matches/closed evaluates the last
+   * ninety days of them against this profile live (matching.ListRecentlyClosed).
+   * Separate, and not merged into `matches`, so "All" keeps meaning what a
+   * student can act on now. A failure leaves the tab at zero rather than
+   * taking the page down: it is the least important list here. */
+  const closedQuery = useQuery<Match[]>(
+    signal => api.get('/me/matches/closed', undefined, signal),
+    [],
+  )
+  const closedMatches = useMemo(() => closedQuery.data ?? [], [closedQuery.data])
+
+  /* The Coming soon tab: published, not open yet (matching.ListUpcoming). The
+     same shape and the same reasoning as closedQuery, the other side of the
+     window. */
+  const soonQuery = useQuery<Match[]>(
+    signal => api.get('/me/matches/upcoming', undefined, signal),
+    [],
+  )
+  const soonMatches = useMemo(() => soonQuery.data ?? [], [soonQuery.data])
+
   /* Counted over every match, not over the filtered set: a filter chip showing
      the size of the list it would produce is the only figure that makes the row
      worth pressing. */
@@ -174,7 +208,9 @@ export default function Matches() {
     step: matches.filter(m => inFilter(m, 'step')).length,
     closing: matches.filter(m => inFilter(m, 'closing')).length,
     no: matches.filter(m => inFilter(m, 'no')).length,
-  }), [matches])
+    closed: closedMatches.length,
+    soon: soonMatches.length,
+  }), [matches, closedMatches, soonMatches])
 
   if (!profile) {
     return (
@@ -191,7 +227,11 @@ export default function Matches() {
   /* Ordered so the ones a student can act on come first, and within that by the
      engine's own score. The server already sorts by state and score; this keeps
      the order stable when a filter removes rows from the middle of it. */
-  const shown = sortMatches(matches.filter(m => inFilter(m, filter)), sort)
+  const shown = filter === 'closed'
+    ? sortMatches(closedMatches, sort)
+    : filter === 'soon'
+      ? sortMatches(soonMatches, sort)
+      : sortMatches(matches.filter(m => inFilter(m, filter)), sort)
 
   return (
     <div className="page">
@@ -201,6 +241,15 @@ export default function Matches() {
           <h1>{t('match.title')}</h1>
           <p>{t('match.lede')}</p>
         </div>
+
+        {/* The four tiles' places, held while the list is fetched, so the hero
+            is its final height from the first frame rather than growing when
+            the counts land. Decorative: the status line below says it once. */}
+        {query.loading && !query.data && (
+          <ul className="match-figures" aria-hidden="true">
+            {[0, 1, 2, 3].map(i => <li key={i} className="match-figure skeleton-tile" />)}
+          </ul>
+        )}
 
         {query.data && matches.length > 0 && (
           <ul role="list" className="match-figures">
@@ -240,7 +289,36 @@ export default function Matches() {
             it is context for the figures beside it — not an interruption. */}
       </section>
 
-      {query.loading && !query.data && <Loading />}
+      {/* The shape of the list while it is fetched: the tab strip and three
+          rows, where the whole page used to be one line of "Loading…" and then
+          arrive at once. The same skeleton lines the Apply page uses, and the
+          same pairing: the shapes are aria-hidden, and one polite status line
+          says it for a screen reader. */}
+      {query.loading && !query.data && (
+        <>
+          <p className="sr-only" role="status" aria-busy="true">{t('common.loading')}</p>
+          <div className="match-skeleton" aria-hidden="true">
+            <span className="skeleton-line match-skeleton-tabs" />
+            {[0, 1, 2].map(i => (
+              <div key={i} className="skeleton-card match-skeleton-row">
+                <div className="match-skeleton-col">
+                  <span className="skeleton-line short" />
+                  <span className="skeleton-line head" />
+                  <span className="skeleton-line" />
+                  <span className="skeleton-line short" />
+                </div>
+                <div className="match-skeleton-col">
+                  <span className="skeleton-line short" />
+                  <span className="skeleton-line short" />
+                </div>
+                <div className="match-skeleton-col">
+                  <span className="skeleton-line button" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       {query.error ? <ErrorState error={query.error} onRetry={query.reload} /> : null}
 
       {query.data && matches.length === 0 && (
@@ -282,10 +360,13 @@ export default function Matches() {
               ))}
             </div>
 
-            {/* The directory, beside the filters rather than above the list.
-                For a signed-in student /scholarships is this page with the
-                answer taken out, so it is not a place they move between — it is
-                the escape hatch for "show me the ones you did not match". */}
+            {/* Sort only. The "Browse all scholarships" link that sat here is
+                gone: this list is meant to be every scheme a student may see,
+                each with its verdict — the "Not open to you" tab is where the
+                ones they did not match live — so a link out to the same schemes
+                without the answer was an exit from the page that answers them.
+                It survives in the empty state above, where there is nothing
+                here to stay for. */}
             <div className="match-filters-right">
               <label className="match-sort">
                 <span>{t('match.sortBy')}</span>
@@ -295,19 +376,23 @@ export default function Matches() {
                   ))}
                 </select>
               </label>
-              <Link className="match-browse" to="/scholarships">
-                {t('home.browseAll')}<span aria-hidden="true"> →</span>
-              </Link>
             </div>
           </div>
 
           {shown.length === 0 ? (
             <p className="muted match-empty-filter">{t('match.filterEmpty')}</p>
           ) : (
-            <ul role="list" className="match-list">
+            /* Keyed on the tab, so switching tabs mounts a fresh list and the
+               rows' entrance plays again — the movement says the list changed,
+               which a silent swap of rows in place does not. */
+            <ul role="list" className="match-list" key={filter}>
               {shown.map(m => (
                 <li key={m.scholarship_id}>
-                  <ScholarshipRow match={m} onOpen={() => openScheme(m.slug)} />
+                  <ScholarshipRow
+                    match={m}
+                    outside={filter === 'closed' ? 'closed' : filter === 'soon' ? 'upcoming' : undefined}
+                    onOpen={() => openScheme(m.slug)}
+                  />
                 </li>
               ))}
             </ul>
@@ -348,8 +433,17 @@ function Figure({ n, label, tone }: { n: number; label: string; tone: string }) 
  * columns line up between rows — which is the whole reason this is a row and
  * not a card.
  */
-function ScholarshipRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
-  const { t } = useI18n()
+function ScholarshipRow({ match, onOpen, outside }: {
+  match: Match
+  onOpen: () => void
+  /* A scheme outside the open window — from the Closed or the Coming soon
+     tab. Read-only: no Apply, and no link to the scheme either — its page and
+     panel read the directory, which refuses both, so a link would lead to
+     "could not find that page". */
+  outside?: 'closed' | 'upcoming'
+}) {
+  const readOnly = outside !== undefined
+  const { t, locale } = useI18n()
 
   /* A real link that a plain left-click turns into a panel.
    *
@@ -403,7 +497,7 @@ function ScholarshipRow({ match, onOpen }: { match: Match; onOpen: () => void })
     : undefined
 
   return (
-    <article className={`match-row ${stateClass(match.state)}`}>
+    <article className={`match-row ${stateClass(match.state)}${readOnly ? ' is-outside' : ''}`}>
       {/* A. Who this is for, what it is, and what it gives. */}
       <div className="match-col match-col-say">
         <span className={`state-badge ${stateClass(match.state)}`}>
@@ -427,9 +521,11 @@ function ScholarshipRow({ match, onOpen }: { match: Match; onOpen: () => void })
             {/* The title is the link. The row has one target and not four: a
                 keyboard user tabbing a list of fourteen should reach one stop
                 per scheme, not one per column. */}
-            <Link to={`/scholarships/${match.slug}`} onClick={intercept}>
-              {match.title}
-            </Link>
+            {readOnly ? match.title : (
+              <Link to={`/scholarships/${match.slug}`} onClick={intercept}>
+                {match.title}
+              </Link>
+            )}
           </h2>
         </div>
 
@@ -449,13 +545,15 @@ function ScholarshipRow({ match, onOpen }: { match: Match; onOpen: () => void })
             run to nine lines stops being a row. */}
         {match.summary && <p className="match-summary">{match.summary}</p>}
 
-        <Link
-          className="match-more"
-          to={`/scholarships/${match.slug}`}
-          onClick={intercept}
-        >
-          {t('match.learnMore')}<span aria-hidden="true"> →</span>
-        </Link>
+        {!readOnly && (
+          <Link
+            className="match-more"
+            to={`/scholarships/${match.slug}`}
+            onClick={intercept}
+          >
+            {t('match.learnMore')}<span aria-hidden="true"> →</span>
+          </Link>
+        )}
       </div>
 
       <div className="match-rule" aria-hidden="true" />
@@ -486,7 +584,7 @@ function ScholarshipRow({ match, onOpen }: { match: Match; onOpen: () => void })
         {match.org_type && (
           <li className="match-fact">
             <IconProvider />
-            {orgKind(match.org_type)}
+            {orgKind(t, match.org_type)}
           </li>
         )}
 
@@ -502,8 +600,24 @@ function ScholarshipRow({ match, onOpen }: { match: Match; onOpen: () => void })
       </ul>
 
       {/* C. The one action, in a panel that says which kind of answer this is. */}
-      <div className={`match-do ${eligible ? 'yes' : 'no'}`}>
-        {match.already_applied ? (
+      <div className={`match-do ${eligible && !readOnly ? 'yes' : 'no'}`}>
+        {/* Closed, and not applied for: said in words, with nothing to press.
+            An application already made still links to itself below — that
+            record outlives the scheme's window. */}
+        {outside === 'upcoming' ? (
+          /* When it opens, in place of the button — the one thing to do about
+             a scheme that is coming is to come back for it. */
+          <strong>
+            {match.opens_at ? t('match.opensOn', { when: date(match.opens_at, locale) }) : t('match.filterSoon')}
+          </strong>
+        ) : readOnly && !match.already_applied ? (
+          <>
+            <strong>{t('public.closedNote')}</strong>
+            {/* The day it shut: the fact that says when next year's round is
+                likely to open, which is the only thing to do about it now. */}
+            {match.closes_at && <p>{date(match.closes_at, locale)}</p>}
+          </>
+        ) : match.already_applied ? (
           <>
             <strong>{t('match.appliedTitle')}</strong>
             <Link className="btn" to={`/applications/${match.application_id}`}>
@@ -536,7 +650,7 @@ function ScholarshipRow({ match, onOpen }: { match: Match; onOpen: () => void })
         ) : (
           <>
             <strong>{t('match.yesTitle')}</strong>
-            <p>{note ?? t('match.youQualify')}</p>
+            <p>{t('match.youQualify')}</p>
             {route.kind === 'external' ? (
               /* An anchor, and labelled as leaving. noopener denies the opened
                  page a handle on this one; the new tab is announced rather than
@@ -554,29 +668,20 @@ function ScholarshipRow({ match, onOpen }: { match: Match; onOpen: () => void })
             ) : (
               <Link className="btn primary" to={route.to}>{t('match.apply')}</Link>
             )}
+            {/* The off-site caveat, after the button rather than before it.
+                Above, it was a paragraph — with a ministry's full name in it —
+                between the student and the one action, saying what the button
+                and the facts column already say. It is kept whole, because the
+                part only it says is real: this application will not appear
+                under their applications here. Under the button it is the
+                small print on a press, which is what it is. */}
+            {note && <p className="match-note">{note}</p>}
           </>
         )}
       </div>
     </article>
   )
 }
-
-/* The sponsor's kind, in the words the directory uses.
- *
- * humanise() would give "Ngo" for NGO — it title-cases anything longer than
- * five characters — and an initialism rendered as a word is the kind of small
- * wrongness that makes a page look machine-written. The map is four entries and
- * exact; anything unrecognised falls through to humanise rather than to a
- * blank, because a new org type should show up as itself rather than vanish. */
-const ORG_KIND: Record<string, string> = {
-  NGO: 'NGO',
-  CORPORATE: 'Corporate',
-  GOVERNMENT: 'Government',
-  GOVT: 'Government',
-  PRIVATE: 'Private',
-}
-
-const orgKind = (value: string) => ORG_KIND[value] ?? humanise(value)
 
 /* The first reason the engine gave, whichever kind applies to this state.
  *

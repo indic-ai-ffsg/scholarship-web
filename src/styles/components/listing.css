@@ -1,0 +1,351 @@
+/* --- scheme rows ------------------------------------------------------------------
+ *
+ * The directory lays one scheme per row, full width.
+ *
+ * It was a `.card-grid` — auto-fit with a 20rem floor, one column on a phone,
+ * three on a desktop — and the grid was the problem rather than the cards in
+ * it. A third of a wide page fits a title, a figure and a date, which is a
+ * product tile: enough to recognise something you were already looking for and
+ * not enough to decide anything. Everything that answers "is this me?" lived
+ * on the scheme page, so choosing between forty schemes meant opening forty of
+ * them.
+ *
+ * A row spends the same pixels on one scheme instead of three, and buys the
+ * eligibility rules with them. Forty rows are also a list you can run your eye
+ * down a single edge of; forty tiles in a three-wide grid are a page you read
+ * in a boustrophedon.
+ *
+ * The `<ul role="list">` is unchanged and still load-bearing: WebKit drops the
+ * list role the moment `list-style` is none, and iOS Safari with VoiceOver is
+ * a first-class platform for this audience rather than an edge case.
+ */
+
+.listing-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; }
+
+/* Each row is its own container, and the layout below asks the row how wide it
+ * is rather than asking the window.
+ *
+ * The partner page (since removed) rendered this component in a narrow aside beside a
+ * column of prose — a wide window and a 24rem card. Under a media query that
+ * card would get the two-column body and a rail eleven characters across; under
+ * a container query it folds, which is what it should do at that width whatever
+ * the window is doing. */
+.listing {
+  container-type: inline-size;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  transition: box-shadow var(--dur) ease-out, border-color var(--dur) ease-out;
+}
+/* The row a pointer is over rises a step, by shadow alone. No translate: the
+   row is not itself a target — its title and its two buttons are — and moving it
+   would move those out from under a hand that is still aiming. */
+.listing:hover { box-shadow: var(--shadow-2); border-color: var(--border-strong); }
+
+/* A hue per kind of sponsor: government blue, corporate violet, NGO teal,
+ * private plum, and the accent for anything else. It colours the rule across
+ * the top of the row, the wash behind the name and the chip that names the
+ * kind — so down a list of forty the eye can find "the government ones" by
+ * colour, and anyone who cannot see colour reads the same thing on the chip.
+ * Decoration by the spectrum's own rule: it never says eligible or closing. */
+/* Shared by anything that carries data-kind — the row, and the scheme panel's
+   head (components/sheet.css) — so one sponsor is one colour wherever it
+   appears. The row adds its top rule; the default hue is set on each user. */
+.listing, .sheet-hero { --kind-hue: var(--hue-green); --kind-hue-weak: var(--hue-green-weak); }
+.listing { border-top: 3px solid var(--kind-hue); }
+[data-kind="government"] { --kind-hue: var(--hue-blue);   --kind-hue-weak: var(--hue-blue-weak); }
+[data-kind="corporate"]  { --kind-hue: var(--hue-violet); --kind-hue-weak: var(--hue-violet-weak); }
+[data-kind="ngo"]        { --kind-hue: var(--hue-teal);   --kind-hue-weak: var(--hue-teal-weak); }
+[data-kind="private"]    { --kind-hue: var(--hue-plum);   --kind-hue-weak: var(--hue-plum-weak); }
+.listing:hover { border-top-color: var(--kind-hue); }
+
+/* Who runs it, in words, on the row's hue. Each hue is measured on its own
+   tint by check-contrast, so the word is text rather than decoration. */
+.kind-chip {
+  flex: none; align-self: flex-start;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--kind-hue-weak);
+  color: var(--kind-hue);
+  font-size: var(--step--1);
+  font-weight: var(--w-medium);
+  white-space: nowrap;
+}
+
+/* The name band.
+ *
+ * A tinted strip rather than a heading floating on white, because forty rows
+ * of the same shape need something that says where each one starts. The tint
+ * is the row's kind hue (see data-kind above), from the spectrum rather than a
+ * colour invented for this.
+ *
+ * The radius is the card's less its border, so the tint sits inside the corner
+ * rather than squaring it off. Not `overflow: hidden` on the card — that clips
+ * the focus ring off the title link, and the focus ring is not decoration. */
+.listing-head {
+  display: flex; align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  /* The row's hue, fading out across the band rather than filling it.
+   *
+   * It was flat --accent-weak on every row, and forty solid green bands down a
+   * page read as one long green wall with the names printed on it. A wash that
+   * starts in the kind's tint and is gone by the middle still marks where each
+   * row begins — the job the band was for — and leaves the name on white. */
+  background: linear-gradient(90deg, var(--kind-hue-weak, var(--accent-weak)) 0%, var(--surface) 60%);
+  border-bottom: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+}
+/* The name and the sponsor together, so the mark sits beside the pair rather
+ * than beside the first line of it. min-width:0 because a flex item will not
+ * shrink below its content otherwise, and a long unbroken scheme title would
+ * push the band wider than the row. */
+.listing-head-text {
+  min-width: 0;
+  display: flex; flex-wrap: wrap;
+  align-items: baseline; justify-content: space-between;
+  gap: 0.25rem 1.25rem;
+  flex: 1;
+}
+/* On a phone the mark goes above the name, not beside it.
+ *
+ * Beside it, a government logo drawn at its stored width took a third of a
+ * 360px row, and the scheme's name and a ministry's full title wrapped down
+ * what was left — eleven lines for the first card in the directory, most of
+ * them three words long. Stacked, the name gets the whole width back and the
+ * mark still says whose scheme it is before the name does. */
+@media (max-width: 30rem) {
+  .listing-head { flex-direction: column; align-items: flex-start; gap: 0.625rem; }
+  .listing-head-text { width: 100%; }
+}
+.listing-title { font-size: var(--step-1); margin: 0; }
+/* No underline on the row's name, for the reason the deadline list gives at
+ * more length: 1.4.1 asks for a second signal on a link inside a block of text,
+ * because there the underline is all that separates it from the words around
+ * it. This is the card's heading — its own line, --step-1, at heading weight,
+ * with the sponsor underneath — and nothing about it can be read as prose.
+ *
+ * Down a list of forty rows the underlines were forty green rules, each two or
+ * three lines long under a wrapped title, which is the loudest thing on the
+ * page and none of it information. The rule returns on hover and on focus,
+ * where it is doing work again: it says which row is about to be followed. */
+.listing-title a {
+  text-decoration: none;
+  color: var(--text);
+}
+.listing-title a:hover,
+.listing-title a:focus-visible { text-decoration: underline; color: var(--accent); }
+.listing-org { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
+.listing-org strong { font-weight: var(--w-medium); color: var(--text); }
+
+/* A sponsor's mark, at whatever shape they uploaded.
+ *
+ * Height is fixed and width follows, so a wide wordmark and a square crest
+ * occupy the same band without either being squashed — object-fit: contain
+ * rather than a fixed box, because a logo distorted to fit is worse than one
+ * that takes an unexpected amount of room. width:auto overrides the intrinsic
+ * width attribute, which is there for the aspect ratio rather than for the
+ * rendered size.
+ *
+ * A white ground under it: most marks are drawn for white, and on the band's
+ * pale green a transparent PNG with dark text is fine while a white-knockout
+ * one disappears. The pad and the radius stop that ground reading as a border
+ * around every logo. */
+.sponsor-mark {
+  flex: none;
+  height: 2.25rem;
+  width: auto;
+  max-width: 8rem;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.25rem;
+}
+
+/* Folded by default: one column, the rail under the facts. The container query
+ * below is the only place the two-column row exists, so the narrow case needs
+ * no undoing anywhere. */
+.listing-body { display: grid; }
+
+.listing-facts {
+  padding: 1rem 1.25rem 1.125rem;
+  display: grid; gap: 1rem; align-content: start;
+}
+.listing-fact { min-width: 0; }
+
+/* "Eligibility" and "Benefits" — a heading in the markup, a label on the page.
+ *
+ * Not uppercase, which is the usual costume for a label this size. All-caps
+ * removes the word-shape a dyslexic reader tracks by, and this site has already
+ * chosen distinctness over tidiness once for the same reason (see
+ * nav.registerCta). Muted and 500 separate it from the sentences under it
+ * without touching the letters. */
+.listing-label {
+  margin: 0 0 0.375rem;
+  font-size: var(--step--1);
+  font-weight: var(--w-medium);
+  color: var(--text-muted);
+  /* A small glyph in the row's hue before each label, so the two facts are
+     told apart by shape before they are read. Decorative; see icons.tsx. */
+  display: flex; align-items: center; gap: 0.375rem;
+}
+.listing-label .icon { flex: none; color: var(--kind-hue, var(--accent)); width: 16px; height: 16px; }
+
+/* The label and the closing date on one line. Wraps rather than shrinks: at
+ * 200% text zoom "Benefits" and "Closes in 34 days" do not share a line at
+ * any width, and a squeezed date is worse than a second line. */
+.listing-fact-head {
+  display: flex; flex-wrap: wrap;
+  align-items: baseline; justify-content: space-between;
+  gap: 0 1rem;
+}
+.listing-fact-head .listing-label { margin-bottom: 0; }
+/* The award sits under the pair, not against it. */
+.listing-fact-head + .amount { margin-top: 0.375rem; }
+
+/* The rules as a paragraph, under the lead-in that starts them.
+ *
+ * Full colour rather than muted: this is the sentence the row exists to show,
+ * and it was the one thing on the card set in the same grey as the labels
+ * around it. The measure is what keeps it readable at the width a row now has
+ * — a rule set running the full span of a wide monitor is a line the eye loses
+ * its place in on the way back. */
+.listing-elig { margin: 0; max-width: var(--measure); }
+
+.listing-summary { margin: 0; color: var(--text-muted); max-width: var(--measure); }
+
+/* The scheme's own description, leading the row. Full ink, since it is now the
+   sentence the row exists to show; clamped to three lines so a long one does
+   not turn a row into a page — "Read more" under it opens the rest. */
+.listing-about {
+  margin: 0;
+  max-width: var(--measure);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  line-clamp: 3;
+  overflow: hidden;
+}
+/* The fold. A quiet button keeps the 48px target the rest of the site has —
+ * this is a control, not a word inside a sentence — and loses the box, which
+ * would otherwise compete with the two real buttons in the rail. */
+/* An anchor rather than a button, because it points at a real address — see
+ * ListingCard's `intercept`. Given the same 48px height the rest of the site's
+ * controls have: this is a control, not a word inside a sentence, and the
+ * inline-text exception to WCAG 2.2's target size does not cover it. */
+.listing-more {
+  display: inline-flex; align-items: center;
+  min-height: 48px;
+  font-weight: var(--w-medium);
+  /* Underline dropped with the title's, and the arrow is what replaces it.
+   *
+   * This one needs the replacement and the title does not: "Read more" sits
+   * directly under the paragraph it continues, at body size, so with no rule
+   * and no mark it would be a green phrase against grey text — a link
+   * distinguished by colour alone, which is the thing 1.4.1 forbids and this
+   * file does not do anywhere else. The arrow is the same marker .figure-link
+   * uses for the same reason. */
+  text-decoration: none;
+}
+.listing-more:hover, .listing-more:focus-visible { text-decoration: underline; }
+.listing-more .go {
+  display: inline-block;
+  margin-inline-start: 0.375rem;
+  font-weight: 700;
+  transition: transform 120ms ease-out;
+}
+.listing-more:hover .go { transform: translateX(2px); }
+
+.listing .amount {
+  margin: 0;
+  /* The 💰 beside the figure, as on the landing page's deadline list; flex so
+     a benefit written as a sentence wraps under itself, not under the mark. */
+  display: flex; align-items: baseline; gap: 0.375rem;
+}
+.listing .amount .mark { flex: none; }
+/* No 26ch cap on a row. That cap (components/eligibility.css) is sized for a
+   figure beside a date, and a benefit written as a sentence — "Maintenance
+   allowance + disability allowance + book allowance" — broke onto three short
+   lines while half the column sat empty beside it. Here it takes the column's
+   measure, so it is one line wherever the row is wide enough, and wraps only
+   where it has to: forcing one line at 320px would push the page sideways,
+   which the reflow rule forbids. */
+.listing .amount { max-width: var(--measure); }
+.listing-renew { margin: 0.25rem 0 0; font-size: var(--step--1); }
+
+/* The rail.
+ *
+ * Sunken rather than white, so the two controls read as a place to act rather
+ * than as buttons that happen to be at the end of the text. Buttons full width
+ * and stacked: down a list of forty they then land in the same place on every
+ * row, which is one target to aim at repeatedly rather than one that moves with
+ * the length of the rules above it. */
+.listing-actions {
+  display: grid; gap: 0.625rem; align-content: start;
+  padding: 1rem 1.25rem 1.125rem;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px);
+}
+/* Narrower side padding than a button gets elsewhere, because width is not
+ * what makes this one hittable — it is already the full width of the rail, and
+ * min-height keeps the 48px target. The default 1.25rem each side was enough to
+ * wrap "Register to apply" onto two lines while 50px of rail sat empty beside
+ * it, which made the rails ragged down a list of forty. */
+.listing-actions .btn { width: 100%; padding-inline: 0.75rem; }
+/* The deadline as a pill at the foot of the rail, so it reads as the condition
+   on the buttons above it rather than a stray line. Tinted red only in the
+   bands .deadline already colours red, and it keeps its mark and its words, so
+   nothing here is told by the tint alone. */
+.listing-actions .deadline {
+  justify-self: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.listing-actions .deadline:is(.closing, .soon, .today, .closed) {
+  background: var(--danger-weak);
+  border-color: transparent;
+}
+/* Said in words where the Apply button would have been, not as a disabled one.
+ * A greyed-out control invites the press that proves it is dead. */
+.listing-closed {
+  margin: 0; align-self: center;
+  font-size: var(--step--1); color: var(--text-muted);
+}
+
+/* Under the off-site Apply button: whose site it is, and that the application
+ * will not appear here.
+ *
+ * Muted and one step down, because it is the condition on a press rather than
+ * a warning about one — this is an ordinary way to apply, not a fault, and
+ * styling it as a caution would make every government scheme in the catalogue
+ * look like a problem with the catalogue.
+ *
+ * It does not carry the meaning on its own: the button's own label says the
+ * application happens on their site, so a reader who skips this line has still
+ * been told. That is the 1.4.1 rule applied to prose as well as to colour —
+ * nothing here is the only copy of something a student needs. */
+.listing-apply-note {
+  margin: 0.5rem 0 0;
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+/* Two columns, once the row itself is wide enough — not the window. 38rem is
+ * where the rail stops squeezing the rules into three-word lines. */
+@container (min-width: 38rem) {
+  .listing-body { grid-template-columns: minmax(0, 1fr) minmax(11rem, 14.5rem); }
+  .listing-actions {
+    border-top: 0;
+    border-inline-start: 1px solid var(--border);
+    /* Logical: this corner is the one away from the rule drawn above it, and
+       which side that is depends on the direction of the script. */
+    border-radius: 0;
+    border-end-end-radius: calc(var(--radius) - 1px);
+  }
+}

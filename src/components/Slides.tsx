@@ -75,7 +75,13 @@ import type { Slide } from '../lib/types'
  * Concatenating fragments is normally a localisation mistake; it is safe here
  * because the fragments are one phrase split for colour and the join is the
  * exact inverse of the split. A language that would not reassemble in this order
- * needs a whole string of its own, and this is where it would go. */
+ * needs a whole string of its own, and this is where it would go.
+ *
+ * Thirteen of the fourteen do reassemble, and do it with an empty first piece:
+ * the strike-through is an English pun that translates into an insult, so the
+ * other tables leave slides.lead.was blank and carry the phrase in the other
+ * two. See the note at that key in i18n-strings.ts. Nothing here changes for
+ * that — an empty fragment joins to nothing. */
 function leadName(t: (key: string) => string) {
   return `${t('slides.lead.was')}${t('slides.lead.able')} ${t('slides.lead.dist')}`
 }
@@ -88,7 +94,12 @@ function leadName(t: (key: string) => string) {
  * change if the reading time is ever revisited. */
 const DWELL_MS = 2000
 
-export default function Slides() {
+/* `withLead` is off on the landing page, which now draws the proposition in its
+ * own hero — see the note at the top of Home. The band there carries only what
+ * the operators published, and is absent when they have published nothing: a
+ * carousel with no panels is a strip of empty page. It defaults on, so any other
+ * page that renders the band still gets the panel that cannot fail to load. */
+export default function Slides({ withLead = true }: { withLead?: boolean }) {
   const { t } = useI18n()
   const reducedMotion = usePrefersReducedMotion()
 
@@ -101,7 +112,9 @@ export default function Slides() {
    * panel rather than a separate flag: the list is what the arrows, the counter
    * and the rotation all index into, and one list is what keeps them agreeing
    * about how many panels there are. */
-  const panels: (Slide | null)[] = [null, ...(query.data ?? [])]
+  const panels: (Slide | null)[] = withLead
+    ? [null, ...(query.data ?? [])]
+    : [...(query.data ?? [])]
 
   const [index, setIndex] = useState(0)
   const [stopped, setStopped] = useState(false)
@@ -149,6 +162,9 @@ export default function Slides() {
    * mean this file knowing how long the stylesheet takes. Moving off the panel
    * is the moment, and both movers already have a line here. */
   const reveal = !current && !moved
+
+  // After every hook, so the early return cannot change the order they run in.
+  if (panels.length === 0) return null
 
   function go(next: number) {
     setMoved(true)
@@ -275,11 +291,7 @@ function Lead() {
           * a real space in the markup the accessible name concatenates to
           * "Dis-Ability toDistinction". */}
         <h2 className="lead-headline">
-          <span className="hl-line">
-            <span className="hl-was">{t('slides.lead.was')}</span>
-            <span className="hl-able">{t('slides.lead.able')}</span>
-          </span>{' '}
-          <span className="hl-dist">{t('slides.lead.dist')}</span>
+          <LeadWords />
         </h2>
 
         <p className="lead-lede">{t('slides.lead.body')}</p>
@@ -296,6 +308,25 @@ function Lead() {
 
       <Illustration />
     </div>
+  )
+}
+
+/* The lockup's three pieces, without the element around them.
+ *
+ * Shared by the lead panel, where it is the h2, and the landing hero, where it
+ * is the eyebrow over the page's h1. One copy of the markup is what keeps the
+ * two from drifting — the {' '} in particular, which is what stops the
+ * accessible name reading "Ability toDistinction". */
+export function LeadWords() {
+  const { t } = useI18n()
+  return (
+    <>
+      <span className="hl-line">
+        <span className="hl-was">{t('slides.lead.was')}</span>
+        <span className="hl-able">{t('slides.lead.able')}</span>
+      </span>{' '}
+      <span className="hl-dist">{t('slides.lead.dist')}</span>
+    </>
   )
 }
 
@@ -411,7 +442,7 @@ function SlideLink({ url, label }: { url: string; label: string }) {
  * greens and ambers have no token to be. It is a light-ground drawing on a
  * light-ground page; there is no theme for it to follow.
  */
-function Illustration() {
+export function Illustration() {
   return (
     <svg
       className="lead-art"

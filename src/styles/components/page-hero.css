@@ -1,0 +1,42 @@
+/* --- the page hero ------------------------------------------------------------
+ *
+ * A page's title on a band of its own: full width, the landing hero's wash of
+ * three spectrum hues at a tenth of their strength, and a hairline under it.
+ * For the pages whose first line is a heading over a list or a tool — the
+ * directory first — which used to open on an h1 loose on the page's ground and
+ * read as a form with a caption.
+ *
+ * Smaller than the landing hero on purpose. That one is the site's front door
+ * and gets the one large headline; this is a page title, at the site's own
+ * --step-3, and its job is to say where you are.
+ *
+ * The negative margins are .page's own padding, the same arithmetic .slides
+ * and .hero use, so the band meets both window edges and the masthead.
+ */
+.page-hero {
+  position: relative;
+  isolation: isolate;
+  margin: -1.5rem calc(-1 * var(--page-pad)) 1.75rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem) var(--page-pad) clamp(1.5rem, 3.5vw, 2.25rem);
+  border-bottom: 1px solid var(--border);
+  background:
+    radial-gradient(40rem 18rem at 0% 0%, rgb(10 92 58 / 0.10), transparent 62%),
+    radial-gradient(36rem 18rem at 100% 0%, rgb(20 80 140 / 0.08), transparent 60%),
+    radial-gradient(30rem 16rem at 70% 100%, rgb(91 63 160 / 0.07), transparent 60%),
+    var(--bg);
+}
+/* The landing hero's dot grid, fading towards the reading side. */
+.page-hero::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background-image: radial-gradient(rgb(20 23 28 / 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to left, #000 0%, transparent 55%);
+  pointer-events: none;
+}
+.page-hero h1 {
+  font-size: clamp(var(--step-3), 1.1rem + 1.2vw, 2rem);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+.page-hero .lede { margin-bottom: 0; }

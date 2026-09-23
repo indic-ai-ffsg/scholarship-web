@@ -1,0 +1,290 @@
+/* --- controls -------------------------------------------------------------------
+ * Generous targets. WCAG 2.2 AA sets a 24x24 minimum (2.5.8); these are far
+ * larger, because the target user includes people with tremor and limited fine
+ * motor control operating a phone one-handed. */
+
+button, .btn {
+  /* 500. A button is already marked out by its box, its border and its
+     48px of height; 600 on top of all three was the single loudest thing on
+     the landing page after the headline. The target size is untouched — it
+     comes from the padding and min-height below, not from the type. */
+  font: var(--w-medium) var(--step-0)/1.2 var(--font);
+  padding: 0.75rem 1.25rem;
+  min-height: 48px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+/* :not(.primary) is load-bearing, and the specificity arithmetic is the reason.
+ *
+ * `button:hover:not(:disabled)` scores (0,2,1) — the element, the :hover, and
+ * the :disabled inside the :not(), which counts. `button.primary` below scores
+ * (0,1,1). This rule is the more specific of the two, so it took the primary
+ * button's background whatever order they sat in, and it took *only* the
+ * background: border-color stayed --accent and color stayed --accent-text.
+ *
+ * Every primary button in the product therefore became a green outline holding
+ * white text on a near-white ground the moment a pointer touched it — white on
+ * --surface-sunken is 1.04:1, which is not low contrast, it is an empty box.
+ * The label was gone. On the landing page's search button that is the first
+ * control anybody meets, and the same hover sat on "Check now", both OTP sends,
+ * "Verify", the register CTA and "Add document".
+ *
+ * It hid for so long because a.btn.primary is immune by accident: `.btn:hover`
+ * and `.btn.primary` are both (0,2,0), so source order decides and .primary,
+ * being later, keeps its ground. The hero has one of each side by side and only
+ * the <button> was wrong, which makes it look like a one-off rather than a rule.
+ *
+ * So this rule now claims only the ground it actually owns — the default
+ * button's — and .primary restates its own below instead of trusting the
+ * cascade to leave it alone. */
+button:hover:not(:disabled):not(.primary), .btn:hover:not(.primary) {
+  background: var(--surface-sunken);
+}
+button:disabled:not([aria-busy="true"]) { cursor: not-allowed; }
+
+/* What a control does when a pointer arrives.
+ *
+ * 120ms: long enough to read as a response, short enough that somebody tabbing
+ * through a form is never waiting for the page to catch up. The global
+ * reduced-motion rule at the top cuts all of it to nothing.
+ *
+ * The lift is one pixel, and that number is the whole decision. A target that
+ * moves under a hovering pointer is a target that has to be re-aimed, and this
+ * is a product whose users include people with a tremor and people driving the
+ * page with a head pointer. One pixel and a shadow say "this is live" without
+ * moving the hit area anywhere. Pressing puts it back down, so hover and active
+ * together read as a press rather than as a hover that stuck. */
+button, .btn, .chip-link, input, select, textarea {
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out,
+    box-shadow 120ms ease-out,
+    transform 120ms ease-out,
+    filter 120ms ease-out,
+    /* opacity and colour, so a control becoming available is something you see
+     * happen. Unavailable is a ground and a text colour now
+     * rather than an opacity (see button:disabled below), and background-color,
+     * border-color and color are all listed above — which is what makes
+     * "send it again" and the verify button fade in rather than snap from
+     * unavailable to available in one frame, at the two moments a student is
+     * watching them most closely: the resend timer running out and the sixth
+     * digit landing. */
+    opacity 120ms ease-out,
+    color 120ms ease-out;
+}
+/* Not .quiet: it has no border and no ground of its own, and a floating shadow
+ * under a bare word reads as a rendering fault rather than as a button. */
+button:hover:not(:disabled):not(.quiet):not(.dot), .btn:hover:not(.quiet), .chip-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.09);
+}
+button:active:not(:disabled), .btn:active, .chip-link:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+button.primary, .btn.primary {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-text);
+}
+button.primary:hover:not(:disabled), .btn.primary:hover {
+  /* Restated, not inherited — see the note on the generic hover rule above.
+   * The brightness is the whole hover signal; the ground must not move. */
+  background: var(--accent);
+  filter: brightness(1.12);
+}
+button.quiet { border-color: transparent; background: transparent; color: var(--accent); }
+button.quiet:hover:not(:disabled) { background: var(--accent-weak); }
+
+/* A quiet button that removes something.
+ *
+ * Green is this product's yes: it is the accent, it is the eligible state, and
+ * it is on every button that moves a student forward. "Remove" wearing it made
+ * deleting a disability certificate look like the same kind of act as sending
+ * an application. Danger red is the one colour here that already means "this
+ * takes something away", and it is 6.7:1 on the card, so it is legible as text
+ * rather than merely different.
+ *
+ * Still quiet: no border, no fill until it is hovered. The button is not
+ * shouting for attention, it is telling the truth about what it does. */
+button.quiet.destructive { color: var(--danger); }
+button.quiet.destructive:hover:not(:disabled) { background: var(--danger-weak); }
+button.wide { width: 100%; }
+
+/* --- a control you cannot press yet, and one that is working -------------------
+ *
+ * Two states, and they were a single declaration until now: `opacity: 0.55` on
+ * :disabled. Every action on this site holds its own button with `disabled`
+ * while the request is in flight, so that one rule was doing both jobs, and it
+ * is only defensible for one of them.
+ *
+ * Group opacity is why. It composites the whole button — ground, border and
+ * label together — against whatever is behind it, so it cannot dim a button
+ * without dimming the text on it by exactly as much. Measured on a card, at
+ * 0.55:
+ *
+ *   .primary   label 2.76:1, ground 2.76:1 against the card (8.06:1 at rest)
+ *   default    label 4.00:1, border 1.81:1
+ *   .quiet     label 2.76:1
+ *
+ * Every one is under the 4.5:1 that nothing else in this file goes under, and
+ * the borders are under the 3:1 that 1.4.11 sets for a control boundary — on a
+ * site whose entire audience has a disability. The primary is both the worst of
+ * them and the most exposed: its accent composites to a pale #78a593, and its
+ * border, being the same green, dissolves into it, so the button reads as
+ * having gone blank rather than as having been pressed. That is the whole of
+ * the report — "it blinks white" — and it was on search, the eligibility
+ * check, both OTP sends, verify, the registration save and a document upload,
+ * which is every action a student performs here.
+ *
+ * The .refetching block further down already refused this trade for the results
+ * list, in nearly these words: any opacity that reads as faded drops the text
+ * below the floor. This is the other half of that decision, and the two agree
+ * now.
+ *
+ * So the states are separated, and neither of them is an opacity:
+ *
+ *   unavailable   A ground of its own. "Check now" with nothing answered,
+ *                 "Verify" with four of six digits typed, "send it again" while
+ *                 the timer runs — nothing is happening, and the control should
+ *                 say so in a way that survives being read. --text-muted on
+ *                 --surface-sunken is 6.52:1, inside the 2px --border-strong
+ *                 that measures 3.31:1 against the card. The same treatment as
+ *                 .chip-choice.off, and for the same reason.
+ *
+ *   held          Rest, exactly. A button that is off for one second because a
+ *                 different button is working is not unavailable and must not
+ *                 be drawn as though it were — see :not([data-held]) below.
+ *
+ *   working       Rest, exactly, plus the label. Full accent ground, label at
+ *                 8.06:1, and nothing that appears, moves or changes colour.
+ *                 What is happening is said in the word on the button:
+ *                 "Sending…", "Checking…", "Uploading…", "Saving…".
+ *
+ * That last state took three attempts and the first two failed the same way,
+ * which is worth recording so it is not tried a third time.
+ *
+ * The opacity was attempt zero. Attempt one was this block: separate the
+ * grounds, keyed on aria-busy. It was written and never wired — every call site
+ * still held a plain `busy` boolean and set aria-busy on nothing, so the second
+ * selector matched nothing and every button in flight took the unavailable
+ * ground. The report was unchanged because the behaviour was unchanged.
+ *
+ * Attempt two wired it and put the signal on a 3px bar sweeping the bottom edge
+ * on a 900ms loop. That was reported in the same words as the opacity — a white
+ * shape appearing and disappearing at the bottom of the button, once a second,
+ * for the length of the request. Pinning a blink to a smaller area does not
+ * stop it being a blink, and the same bar on the results list meant the search
+ * flow carried it without pressing anything at all.
+ *
+ * So the working state paints nothing. Text is the one channel that cannot
+ * flicker, and it is the only one that was ever going to reach a screen reader
+ * anyway, which aria-busy on the same element announces. The four actions with
+ * no working label — MyData's export, erasure and withdraw, and a document's
+ * "Remove" — have one now, which is what a bar was standing in for.
+ *
+ * aria-busy stays as the hook, because it is the honest attribute for it, and
+ * both auth pages hold a tag naming the pressed action rather than a boolean:
+ * a boolean cannot say which of Verify and the three resend channels beside it
+ * was the one pressed. A new action needs the tag, the label and, if it can be
+ * off while a neighbour works, data-held. A bare `disabled` is this bug again.
+ */
+/* :not([data-held]) is the third state, and the last of the blink.
+ *
+ * "Unavailable" and "held" are not the same thing and were being drawn the
+ * same way. Unavailable is a reason the student can act on and will sit there
+ * until they do — nothing answered yet, four of six digits typed, the resend
+ * timer running. Held is a button that is merely not pressable for the second
+ * it takes some *other* button to finish, and it goes back exactly as it was.
+ *
+ * Drawn identically, the second one repaints twice per press. Pressing Verify
+ * turned the three resend channels grey and back; pressing a resend turned
+ * Verify from green to pale and back. That is the same flicker as the original
+ * report, one control over, and it is why the fix has to be a third state
+ * rather than a better-looking second one.
+ *
+ * Held renders as rest. The button is inert, says nothing about it, and is
+ * whole again before the eye has finished deciding something changed. */
+button:disabled:not([aria-busy="true"]):not([data-held]) {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  color: var(--text-muted);
+}
+/* A quiet button has no ground and no border at rest and must not grow either
+ * one by becoming unavailable — a word that gains a box reads as a new control
+ * appearing rather than as an old one closing. The muted text is the whole of
+ * the state, exactly as the accent colour is the whole of it at rest. */
+button.quiet:disabled:not([aria-busy="true"]):not([data-held]) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+/* Nothing. That is the rule, and it is the whole of the working state.
+ *
+ * There was a bar here — 3px, swept across the bottom edge on a 900ms loop,
+ * white on the accent ground. It was the second answer to "it blinks white",
+ * and it was the same answer: a white shape appearing and disappearing at the
+ * bottom of the button, once a second, for as long as the request took. Moving
+ * the blink from the whole button onto a strip along its edge makes it smaller,
+ * not different, and it was reported in the same words.
+ *
+ * So the working state changes no colour, grows no shape, and moves nothing.
+ * The button holds still and its label says what is happening — "Sending…",
+ * "Checking…", "Uploading…", "Saving…". Text is the one channel here that
+ * cannot flicker, and it is also the only one that was ever going to reach a
+ * screen reader, which is what aria-busy on the same element already announces.
+ *
+ * Four actions had no such label and were the reason a visual signal seemed
+ * necessary at all — MyData's export, erasure and withdraw, and a document's
+ * "Remove". They have one now (privacy.exporting, privacy.erasing,
+ * privacy.withdrawing, doc.removing), which is the honest fix: the button that
+ * said nothing while it worked now says something, rather than flashing.
+ *
+ * The cursor is the only thing left, and it neither paints nor animates. */
+button[aria-busy="true"] { cursor: progress; }
+
+input, select, textarea {
+  font: 400 var(--step-0)/1.5 var(--font);
+  padding: 0.75rem;
+  min-height: 48px;
+  width: 100%;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+textarea { min-height: 6rem; resize: vertical; }
+input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+/* Inputs are width:100%, which on an uncapped page would draw a 1900px-wide
+ * text box for a mobile number. The cap is on the field rather than the control
+ * so the label, hint and error stay the same width as the thing they describe;
+ * inside a filter track or a wizard column it is never reached. */
+.field { display: grid; gap: 0.375rem; margin-bottom: 1.25rem; max-width: var(--measure); }
+.field > label { font-weight: var(--w-medium); font-size: var(--step-0); }
+.field .hint { color: var(--text-muted); font-size: var(--step--1); max-width: var(--measure); }
+.field .error { color: var(--danger); font-weight: var(--w-strong); font-size: var(--step--1); }
+
+/* Radio and checkbox groups are the profile wizard's main input. Presented as
+ * large tappable rows rather than small controls beside labels. */
+.choices { display: grid; gap: 0.5rem; }
+.choice {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+}
+.choice:hover { background: var(--surface-sunken); }
+.choice input { width: 1.375rem; height: 1.375rem; min-height: 0; margin: 0.125rem 0 0; flex: none; accent-color: var(--accent); }
+.choice:has(input:checked) { border-color: var(--accent); background: var(--accent-weak); }
+.choice .label { font-weight: var(--w-medium); }
+.choice .sub { display: block; font-weight: 400; color: var(--text-muted); font-size: var(--step--1); }

@@ -36,26 +36,25 @@ import type { Application, TimelineEvent } from '../lib/types'
  * applicant nothing they can use.
  */
 
-const WHAT_NEXT: Record<string, string> = {
-  SUBMITTED: 'The provider has your application. A reviewer will read it next.',
-  UNDER_REVIEW: 'A reviewer is reading your application. This is usually the longest step.',
-  INFO_REQUESTED: 'They have asked you for something. Your application waits until you reply.',
-  /* The three stages migration 0057 retired. No application reaches them any
-     more; the ones that were already in them are why these lines stay. */
-  DOCUMENT_CHECK: 'Your application is with a reviewer. Nothing is needed from you.',
-  VERIFIED: 'Your application is with a reviewer. Nothing is needed from you.',
-  SHORTLISTED: 'Your application is with a reviewer. A decision comes next.',
-  APPROVED: 'Approved. The provider will record the sanction, then arrange payment.',
-  SANCTIONED: 'The money has been sanctioned. Payment is arranged through their bank.',
-  DISBURSED: 'Payment has been recorded. If it has not reached your account in a few working days, raise a grievance.',
-  REJECTED: 'This application was not successful. It does not affect your others.',
-  CLOSED: 'This application is complete.',
-  WITHDRAWN: 'You withdrew this application.',
-}
+/* Membership only; the sentences are appl.next.* in the string table.
+ *
+ * A Set rather than a lookup because the absence of an entry is meaningful —
+ * it is what decides whether the "what happens next" block is drawn at all.
+ * t() returns the key for anything it does not hold, so asking it first would
+ * draw "appl.next.SOMETHING" at a student instead of drawing nothing.
+ *
+ * The three stages migration 0057 retired are still in the set. No application
+ * reaches them any more; the ones that were already in them are why they stay. */
+const WHAT_NEXT = new Set([
+  'SUBMITTED', 'UNDER_REVIEW', 'INFO_REQUESTED',
+  'DOCUMENT_CHECK', 'VERIFIED', 'SHORTLISTED',
+  'APPROVED', 'SANCTIONED', 'DISBURSED',
+  'REJECTED', 'CLOSED', 'WITHDRAWN',
+])
 
 export default function ApplicationDetail() {
   const { applicationId } = useParams()
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
 
   const query = useQuery<{ application: Application; timeline: TimelineEvent[] }>(
     signal => api.get(`/applications/${applicationId}`, undefined, signal),
@@ -75,7 +74,7 @@ export default function ApplicationDetail() {
 
   const { application: a, timeline } = query.data
   const track = trackOf(a.current_state)
-  const next = WHAT_NEXT[a.current_state]
+  const next = WHAT_NEXT.has(a.current_state) ? t(`appl.next.${a.current_state}`) : undefined
 
   return (
     <div className="page">
@@ -137,13 +136,13 @@ export default function ApplicationDetail() {
         {a.submitted_at && (
           <div>
             <dt>{t('appl.applied')}</dt>
-            <dd>{dateTime(a.submitted_at)}</dd>
+            <dd>{dateTime(a.submitted_at, locale)}</dd>
           </div>
         )}
         {a.decided_at && (
           <div>
             <dt>{t('appl.decided')}</dt>
-            <dd>{dateTime(a.decided_at)}</dd>
+            <dd>{dateTime(a.decided_at, locale)}</dd>
           </div>
         )}
       </dl>
@@ -162,7 +161,7 @@ export default function ApplicationDetail() {
                 <div className="appd-entry">
                   <p className="appd-entry-head">
                     <strong>{sentenceCase(e.label)}</strong>
-                    <span className="appd-when">{dateTime(e.created_at)}</span>
+                    <span className="appd-when">{dateTime(e.created_at, locale)}</span>
                   </p>
 
                   {/* Who acted, when that is somebody other than the reader.

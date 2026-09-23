@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 
 import * as api from '../lib/api'
@@ -5,8 +6,11 @@ import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { useI18n } from '../lib/i18n-context'
 import { stepDestination } from '../lib/questions'
+import { trackOf } from '../lib/track'
 import { money, shortDate } from '../lib/format'
 import { Empty, ErrorState, Loading, Notice } from '../components/ui'
+import { IconForm, IconShield, IconYes } from '../components/icons'
+import OrgMark from '../components/OrgMark'
 import type { Application, Summary } from '../lib/types'
 
 /* The student's hub — the screen both branches of the sign-in flow converge on.
@@ -30,7 +34,7 @@ import type { Application, Summary } from '../lib/types'
  */
 
 export default function Dashboard() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { profile } = useAuth()
 
   /* Both endpoints are behind RequireStudent, which a student without a profile
@@ -66,9 +70,12 @@ export default function Dashboard() {
   const nextField = profile.next_steps?.[0]?.field ?? ''
 
   return (
-    <div className="page">
-      <h1>{t('dash.title')}</h1>
-      <p className="lede">{t('dash.lede')}</p>
+    <div className="page dash">
+      {/* The shared title band (components/page-hero), as on the directory. */}
+      <header className="page-hero">
+        <h1>{t('dash.title')}</h1>
+        <p className="lede">{t('dash.lede')}</p>
+      </header>
 
       {/* Completeness as a meter, not as a warning.
        *
@@ -119,20 +126,28 @@ export default function Dashboard() {
         </section>
       ) : null}
 
-      {s && s.applications.draft > 0 && (
+      {/* The two things that wait on the student, side by side where there is
+          room, as strips rather than two full-width amber boxes. They are the
+          only amber on the page, so they are still the first thing the eye
+          finds; they no longer push the figures a screen down to be found. */}
+      {s && (s.applications.draft > 0 || s.documents_expiring_soon > 0) && (
+      <div className="dash-alerts">
+      {s.applications.draft > 0 && (
         <Notice tone="warn" title={t('dash.draftsTitle', { n: s.applications.draft })}>
           <p>{t('dash.draftsBody')}</p>
           <Link className="btn" to="/applications">{t('dash.draftsAction')}</Link>
         </Notice>
       )}
 
-      {s && s.documents_expiring_soon > 0 && (
+      {s.documents_expiring_soon > 0 && (
         <Notice tone="warn" title={t('dash.expiringTitle', { n: s.documents_expiring_soon })}>
           {/* The count reaches the body as well as the title: it is the body
               that says "it" or "them". */}
           <p>{t('dash.expiringBody', { n: s.documents_expiring_soon })}</p>
           <Link className="btn" to="/documents">{t('dash.expiringAction')}</Link>
         </Notice>
+      )}
+      </div>
       )}
 
       {summary.loading && !s && <Loading />}
@@ -150,6 +165,7 @@ export default function Dashboard() {
                 : t('dash.matchesHint')
             }
             go={t('dash.matchesGo')}
+            icon={<IconYes />}
           />
           <Figure
             to="/applications"
@@ -165,6 +181,7 @@ export default function Dashboard() {
               })
               : t('dash.applicationsNone')}
             go={t('dash.applicationsGo')}
+            icon={<IconForm />}
           />
           <Figure
             to="/documents"
@@ -172,6 +189,7 @@ export default function Dashboard() {
             value={s.documents_verified}
             hint={t('dash.documentsHint')}
             go={t('dash.documentsGo')}
+            icon={<IconShield />}
           />
         </ul>
       )}
@@ -179,19 +197,23 @@ export default function Dashboard() {
       {/* Its own row rather than a fourth figure. This is the number a student
           cannot get anywhere else — their funding history across every provider
           — and it reads as a total, not as another count of things to do. */}
+      {/* The money and the recent applications side by side on a wide
+          window: the total is one number and a line, and on its own full-width
+          row it was a card of white space with a figure in the corner. The
+          classes replace inline styles that sized it by hand. */}
+      <div className={`dash-split${s && (s.total_received > 0 || s.total_sanctioned > 0) ? '' : ' one'}`}>
       {s && (s.total_received > 0 || s.total_sanctioned > 0) && (
-        <section className="card" style={{ marginTop: 'var(--gap)' }}>
-          <h2 style={{ fontSize: 'var(--step-1)', marginTop: 0 }}>{t('dash.funding')}</h2>
-          <p style={{ fontSize: 'var(--step-3)', fontVariantNumeric: 'tabular-nums', margin: 0 }}>
-            {money(s.total_received)}
-          </p>
-          <p className="muted" style={{ margin: 0 }}>
+        <section className="card dash-funding" aria-labelledby="dash-funding">
+          <span className="dash-funding-icon" aria-hidden="true">💰</span>
+          <h2 id="dash-funding">{t('dash.funding')}</h2>
+          <p className="dash-funding-amount">{money(s.total_received)}</p>
+          <p className="muted dash-funding-hint">
             {t('dash.fundingHint', { sanctioned: money(s.total_sanctioned) })}
           </p>
         </section>
       )}
 
-      <section>
+      <section className="dash-recent-section">
         <div className="dash-head">
           <h2>{t('dash.recent')}</h2>
           {applications.length > 0 && (
@@ -216,33 +238,31 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* One list in one card, a row per application: the sponsor's mark,
+            the scheme and when it went, and where it stands. Five separate
+            cards for five one-line facts was five borders round nothing. */}
         {applications.length > 0 && (
-          <ul role="list" className="stack plain">
+          <ul role="list" className="card dash-recent">
             {applications.map(a => (
               <li key={a.application_id}>
-                <article className="card">
-                  <h3 style={{ marginTop: 0 }}>
+                <OrgMark organisationID={a.organisation_id} name={a.organisation_name} />
+                <div className="dash-recent-text">
+                  <h3>
                     <Link to={`/applications/${a.application_id}`}>
                       {a.scholarship_title ?? a.reference_code}
                     </Link>
                   </h3>
-                  <div className="row">
-                    {/* Same rule as the applications list: only INFO_REQUESTED
-                        is the student's move, and it is the one state that must
-                        not look like routine progress. */}
-                    <span className={`state-badge ${
-                      a.current_state === 'INFO_REQUESTED' ? 'blocked' : 'likely'
-                    }`}>{a.state_label}</span>
-                    {a.submitted_at && (
-                      <span className="muted">{shortDate(a.submitted_at)}</span>
-                    )}
-                  </div>
-                </article>
+                  {a.submitted_at && (
+                    <span className="muted">{shortDate(a.submitted_at, locale)}</span>
+                  )}
+                </div>
+                <RecentBadge application={a} />
               </li>
             ))}
           </ul>
         )}
       </section>
+      </div>
 
     </div>
   )
@@ -250,16 +270,24 @@ export default function Dashboard() {
 
 /* A stat card that is also a doorway.
  *
- * Reuses the .figure pattern the impact page already uses, so the dashboard
+ * Reuses the .figure pattern in components/figure.css, so the dashboard
  * inherits its spacing, its accent rule and its dark-mode handling rather than
  * growing a parallel set of tile styles that drift apart later. */
-function Figure({ to, label, value, hint, go }: {
+function Figure({ to, label, value, hint, go, icon }: {
   to: string; label: string; value: number; hint: string; go: string
+  /* A glyph beside the label, decorative: the label says what is counted. */
+  icon?: ReactNode
 }) {
   return (
     <li>
       <Link className="figure figure-link" to={to}>
-        <span className="figure-label">{label}</span>
+        {/* The icon inside the label's row, not a row of its own: the tile is
+            a three-row subgrid (label, value, hint), and a fourth child would
+            break the alignment the row of tiles shares. */}
+        <span className="figure-label">
+          {icon && <span className="figure-icon" aria-hidden="true">{icon}</span>}
+          {label}
+        </span>
         <strong>{value}</strong>
         <span className="figure-tail">
           <span className="muted">{hint}</span>
@@ -273,5 +301,29 @@ function Figure({ to, label, value, hint, go }: {
         </span>
       </Link>
     </li>
+  )
+}
+
+/* The status on a recent application, by the applications page's rule: the
+ * provider's word while it is moving, the outcome once it is decided. "closed"
+ * on an application that was awarded read as a refusal, and the two pages
+ * must not disagree about the same application. Only INFO_REQUESTED is the
+ * student's move, and it keeps the amber that says so. */
+const OUTCOME_KEY: Record<string, string> = {
+  approved: 'appl.outcomeApproved',
+  rejected: 'appl.outcomeRejected',
+  withdrawn: 'appl.outcomeWithdrawn',
+}
+function RecentBadge({ application: a }: { application: Application }) {
+  const { t } = useI18n()
+  const track = trackOf(a.current_state)
+  const tone = track.waitingOnYou ? 'blocked'
+    : track.outcome === 'approved' ? 'eligible'
+      : track.outcome === 'rejected' ? 'ineligible'
+        : 'likely'
+  return (
+    <span className={`state-badge ${tone}`}>
+      {track.finished ? t(OUTCOME_KEY[track.outcome]) : a.state_label}
+    </span>
   )
 }

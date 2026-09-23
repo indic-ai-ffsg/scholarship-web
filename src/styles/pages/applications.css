@@ -1,0 +1,469 @@
+/* --- the application list ----------------------------------------------------
+ *
+ * A row answers three questions and is laid out in that order, top to bottom:
+ * what did I apply for, how far has it got, and when. The old row answered only
+ * the first, and a student checking on a scheme in review saw the same words
+ * every week.
+ */
+
+.appl-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+  display: grid;
+  gap: var(--gap);
+}
+
+/* The identity row: mark, name, stage. Grid rather than flex so the mark and
+   the badge hold their columns while the title takes whatever is left — with
+   flex the badge's width would change as the stage's wording did, and the
+   titles below it would no longer line up. */
+.appl-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.875rem;
+  margin-bottom: 1.125rem;
+}
+
+.appl-title h2 {
+  font-size: var(--step-1);
+  margin: 0 0 0.15rem;
+  /* The long ones wrap rather than pushing the badge off the row. */
+  overflow-wrap: anywhere;
+}
+.appl-meta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--step--1);
+}
+/* Tabular figures so a column of references reads as a column, and the digits
+   do not shuffle between rows. */
+.appl-ref { font-variant-numeric: tabular-nums; }
+
+/* The sponsor's mark, over its own monogram. A fixed square so the row reserves
+   the space before the bytes land — without it a list of applications reflows
+   once per image, which is the layout shift 0028 stores dimensions to prevent. */
+.org-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+.org-mark-initials {
+  font-weight: var(--w-strong);
+  font-size: var(--step--1);
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+/* Over the monogram, covering it once it loads. `contain` rather than `cover`:
+   a sponsor's mark is usually wider than it is tall, and cropping one to fill a
+   square is how a logo ends up showing half a word. */
+.org-mark img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--surface);
+  padding: 0.2rem;
+}
+
+/* --- the track --------------------------------------------------------------
+ *
+ * Four steps across the card. Equal columns so the dots sit at predictable
+ * places rather than bunching under the longest word, and the connecting rule
+ * is drawn per step as a line reaching back to the previous one — which means
+ * no separate track element to keep in step with the dots. */
+.track {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: grid;
+  /* One column per step, whatever the count — lib/track has three (Sent,
+     Review, Decision) since the document check was retired, and a hard-coded
+     four left the last quarter of every track empty. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+
+.track-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  /* --step--1, the floor this stylesheet sets for any text. It was 13px, which
+     was below it, and smaller than the dates now drawn under the names. */
+  font-size: var(--step--1);
+  color: var(--text-muted);
+}
+
+/* Back to the previous dot. Left of centre by half a column, and nothing on the
+   first step, which has nothing behind it. */
+.track-rule {
+  position: absolute;
+  top: 0.6875rem;
+  inset-inline-end: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--border);
+}
+.track-step:first-child .track-rule { display: none; }
+
+.track-dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--accent-text);
+}
+
+.track-name { text-align: center; line-height: 1.25; }
+
+/* Done: filled and ticked. The tick is the signal that survives greyscale. */
+.track-step.is-done .track-dot { background: var(--accent); border-color: var(--accent); }
+.track-step.is-done .track-rule { background: var(--accent); }
+.track-step.is-done .track-name { color: var(--text); }
+
+/* Current: a ring rather than a fill, so it is plainly not finished, and the
+   name carries the weight — the one step a reader should land on. */
+.track-step.is-current .track-dot {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+/* The segment INTO the current step is travelled, so it is filled. Left grey it
+   read as a gap between a finished step and the one in progress — as though
+   something in between had been skipped. */
+.track-step.is-current .track-rule { background: var(--accent); }
+.track-step.is-current .track-name {
+  color: var(--text);
+  font-weight: var(--w-strong);
+}
+
+/* An ended track is drawn quietly whatever the outcome: the card says what
+   happened in words beside it, and four bright ticks on a refusal is a glance
+   that says the opposite. */
+.track-ended .track-step.is-done .track-dot,
+.track-ended .track-step.is-done .track-rule {
+  background: var(--ineligible);
+  border-color: var(--ineligible);
+}
+.track-ended .track-name { color: var(--text-muted); }
+
+.appl-when {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--step--1);
+}
+.appl-when strong { color: var(--text); }
+
+/* The provider's words on a refusal. Set apart, because it is the sentence the
+   application comes down to and it should not read as another line of metadata. */
+.appl-reason {
+  margin: 0.75rem 0 0;
+  padding-inline-start: 0.875rem;
+  border-inline-start: 3px solid var(--border);
+  color: var(--text-muted);
+}
+
+/* The one card asking for something. A left edge rather than a fill: the row
+   already carries a badge and a callout in this colour, and a third would make
+   the card louder than the sentence inside it. */
+.appl-card.needs-you { border-inline-start: 6px solid var(--blocked); }
+
+/* Under about 26rem the four steps stop fitting across, and squeezing them
+   breaks the words rather than the layout. Two rows of two keeps every label
+   whole and the order still reads left to right, top to bottom. */
+/* A media query and not @container: this stylesheet declares no containment
+   anywhere, so a container query would match nothing and the four steps would
+   go on being squeezed. 34rem is the viewport at which the labels start
+   breaking, measured rather than guessed. */
+@media (max-width: 34rem) {
+  /* The badge drops to its own row rather than competing with the title.
+     Holding its column costs the title about eight characters a line, which
+     turned "National Scholarship for Students with Disabilities" into five
+     lines and buried the sponsor underneath it. */
+  .appl-head { grid-template-columns: auto minmax(0, 1fr); }
+  .appl-head .state-badge {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  /* Three steps stay on one row even at 320px — about 90px a step, which fits
+     each name — so the two-by-two wrap written for four steps is gone, and
+     with it the rule that hid the connector across the wrap. */
+}
+
+/* --- one application ---------------------------------------------------------
+ *
+ * The page answers three questions in order: what is this, where has it got to,
+ * and what has happened. It used to answer them as a heading, a notice and a
+ * flat list — and the list was the weak part, nine lower-case stage names all
+ * stamped with the same date.
+ */
+
+.appd-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.875rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.appd-head h1 { margin: 0 0 0.1rem; }
+.appd-org { margin: 0; color: var(--text-muted); }
+
+/* The status panel. Track and sentence in one block, because they are two
+   halves of one answer — the reader who has just counted the dots is already
+   asking what they mean. */
+.appd-status {
+  border: 1px solid var(--border);
+  border-inline-start-width: 6px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 1.25rem;
+  margin-bottom: var(--gap);
+}
+.appd-status .track { margin-bottom: 1.25rem; }
+.appd-status-body h2 {
+  font-size: var(--step-0);
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.appd-status-body p { margin: 0 0 0.5rem; }
+.appd-status-body > :last-child { margin-bottom: 0; }
+
+/* The left edge carries the tone, and the heading carries it in words. Nothing
+   is said by colour alone: "Awarded", "Not awarded this time" and "What happens
+   next" are different sentences before they are different colours. */
+.appd-status.tone-wait { border-inline-start-color: var(--likely); }
+.appd-status.tone-wait .appd-status-body h2 { color: var(--likely); }
+.appd-status.tone-yes  { border-inline-start-color: var(--eligible); }
+.appd-status.tone-yes  .appd-status-body h2 { color: var(--eligible); }
+.appd-status.tone-ask  { border-inline-start-color: var(--blocked); }
+.appd-status.tone-ask  .appd-status-body h2 { color: var(--blocked); }
+.appd-status.tone-no   { border-inline-start-color: var(--ineligible); }
+.appd-status.tone-no   .appd-status-body h2 { color: var(--ineligible); }
+
+.appd-ask { padding: 0.75rem; border-radius: var(--radius); background: var(--blocked-weak); }
+.appd-reason { padding-inline-start: 0.875rem; border-inline-start: 3px solid var(--border); color: var(--text-muted); }
+
+/* The facts. Pairs on a wrapping row rather than a run-on line: the reference
+   is what somebody reads out on a helpline, and it has to be findable without
+   parsing a sentence. */
+.appd-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 2.5rem;
+  margin: 0 0 2rem;
+  padding: 0 0 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.appd-facts > div { display: grid; gap: 0.15rem; }
+.appd-facts dt {
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.appd-facts dd { margin: 0; font-weight: var(--w-medium); }
+/* Tabular, because a reference is read aloud a character at a time. */
+.appd-ref { font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+
+.appd-history-head { font-size: var(--step-1); margin: 0 0 1rem; }
+
+/* The history. A rail down the left with a dot per entry — the rail is drawn
+   per item and reaches from the dot to the next one, so no separate element
+   has to be kept the right height. */
+.appd-timeline { list-style: none; margin: 0; padding: 0; }
+.appd-timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 0.875rem;
+  padding-bottom: 1.5rem;
+}
+.appd-timeline li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.3125rem;
+  top: 1.1rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.appd-timeline li:last-child { padding-bottom: 0; }
+.appd-timeline li:last-child::before { display: none; }
+
+.appd-dot {
+  position: relative;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: 0.35rem;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+/* The most recent entry is where the application actually is, so it is the one
+   the eye should land on — filled in the accent and ringed to lift it off the
+   rail the others sit on. */
+.appd-timeline li.is-latest .appd-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-weak);
+}
+
+.appd-entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+}
+.appd-when {
+  color: var(--text-muted);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+.appd-actor { margin: 0.1rem 0 0; color: var(--text-muted); font-size: var(--step--1); }
+
+/* A remark somebody typed while moving the application. Often two words, which
+   inline read as part of the stage's name — "document check Ok". Quoted and
+   indented, it reads as what it is: an aside from the person who acted. */
+.appd-note {
+  margin: 0.4rem 0 0;
+  padding-inline-start: 0.75rem;
+  border-inline-start: 2px solid var(--border);
+  color: var(--text-muted);
+}
+.appd-note::before { content: "\201C"; }
+.appd-note::after  { content: "\201D"; }
+
+/* --- schemes we sent a student to --------------------------------------------
+ *
+ * Below the applications and visibly a different kind of thing. They share the
+ * card shape because the student thinks of both as "what I applied for", and
+ * they must not share the track: an application's progress is observed at every
+ * stage, and about these the platform knows one fact and whatever the student
+ * chose to tell it.
+ */
+.ref-section { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.ref-section h2 { font-size: var(--step-1); margin: 0 0 0.25rem; }
+.ref-blurb { margin: 0 0 1rem; max-width: var(--measure); }
+
+/* Not a link and so not an h2 — the card names a scheme this platform does not
+   hold, and there is no page of ours to open. Same size as an application's
+   title, because it is the same kind of thing to the person reading it. */
+.ref-section h3 {
+  font-size: var(--step-1);
+  margin: 0 0 0.15rem;
+  overflow-wrap: anywhere;
+}
+
+/* The link out, on its own row once the head goes two-column.
+ *
+ * Without this it lands in the first column, which is `auto` — so a 190px
+ * button sizes the column the 40px monogram is in, and the title is squeezed
+ * into what is left and breaks mid-word. The state badge on an application card
+ * is moved for the same reason, a few rules down; this is that rule's twin for
+ * the one element referral cards have instead. */
+@media (max-width: 34rem) {
+  .appl-head .ref-open {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+  }
+}
+
+/* The question, and the four answers. Buttons rather than a select: there are
+   four, they are short, and a select would hide three of them behind a press on
+   a question the student is being asked once. */
+.ref-ask { margin-top: 0.75rem; }
+.ref-ask > p { margin: 0 0 0.5rem; font-weight: var(--w-medium); }
+.ref-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* What they told us, attributed. The attribution is the point and is never
+   dropped: this is the one thing on the page the platform did not observe. */
+.ref-said {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+/* A button that reads as a link, for the one action that is a change of mind
+   rather than a step. */
+.btn-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* --- the card, composed --------------------------------------------------------
+ *
+ * Name and status on top, the track as the card's body on its own sunken
+ * panel, so the three steps read as one object — the story of this application
+ * — rather than as a row of dots loose under the title.
+ */
+.appl-card { border-radius: var(--radius-lg); padding: 1.25rem 1.375rem; }
+.appl-card .track {
+  margin: 0;
+  padding: 1rem 0.75rem 0.875rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* The date under a step's name, where the application knows it: when it went,
+   and when it was decided. Tabular, so two dates in a column of cards line up. */
+.track-when {
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+/* Awarded: the last step is the result, so it is drawn as one — a larger dot in
+   the eligible green with a ring, and its name in that green at heading weight.
+   The word "Awarded" is the signal; the ring is what makes the eye land on it. */
+.track-won .track-step:last-child .track-dot {
+  width: 1.75rem; height: 1.75rem; margin-top: -0.1875rem;
+  background: var(--eligible); border-color: var(--eligible);
+  box-shadow: 0 0 0 4px var(--eligible-weak);
+}
+.track-won .track-step:last-child .track-name {
+  color: var(--eligible);
+  font-weight: var(--w-strong);
+}
+
+/* The page's title on the shared band, as on the dashboard and the directory. */
+.appl-list { margin-top: 0; }
+
+/* The scheme's name as the card's heading, no underline at rest: it is the
+   whole of its own line at heading weight, as on the dashboard's list. */
+.appl-title h2 a { color: var(--text); text-decoration: none; }
+.appl-title h2 a:hover, .appl-title h2 a:focus-visible { color: var(--accent); text-decoration: underline; }
+/* Name over date, the name the stronger of the two. */
+/* Rows from the top. The steps are stretched to the tallest one's height, and
+   a step with no date under it — Review — spread its two rows over that height,
+   so its name sat lower than its neighbours'. */
+.track-step { align-content: start; }
+.track-name { font-weight: var(--w-medium); color: var(--text); }
+.track-step.is-todo .track-name { color: var(--text-muted); font-weight: var(--w-body); }

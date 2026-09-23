@@ -7,7 +7,9 @@ import { useQuery } from '../../lib/hooks'
 import { useI18n } from '../../lib/i18n-context'
 import { awardLabel, count } from '../../lib/format'
 import { Deadline, Field } from '../../components/ui'
-import Slides from '../../components/Slides'
+import Slides, { Illustration, LeadWords } from '../../components/Slides'
+import OrgMark from '../../components/OrgMark'
+import { IconAward, IconCalendar, IconProvider } from '../../components/icons'
 import type { Facet, Listing } from '../../lib/types'
 
 /* The landing page.
@@ -18,7 +20,17 @@ import type { Facet, Listing } from '../../lib/types'
  * gives the public site one job — "determine whether help exists" — so the
  * page answers that before it asks for anything.
  *
- * Which decides the order. The band leads: its first panel is the proposition —
+ * One hero, not two. The page used to open with the announcement band's lead
+ * panel — a headline, a sentence and three claims — and then a second hero
+ * under it with its own h1, lede and buttons. Two openings in a row is a page
+ * that has not decided what it is saying, and every rule of hierarchy below it
+ * was spent separating them. The lockup is now the hero's eyebrow, the
+ * proposition's sentence is its lede, and the band above shows only what the
+ * operators published — so on most days it is not there at all.
+ *
+ * What follows is the reasoning the page was built on, and it still holds:
+ *
+ * The band leads: its first panel is the proposition —
  * what this is, what it costs — and it is the one thing here that does not
  * depend on a request having succeeded. The hero follows, with the search box
  * above the explanation, because a visitor who already knows what they are
@@ -50,7 +62,7 @@ const STEPS = [1, 2, 3, 4, 5, 6, 7]
  *
  * If this number starts changing per deployment, it belongs in runtime-config
  * alongside the widget id rather than in a rebuild. It has not, so it does not. */
-const HELPLINE = { dial: '+917628953752', label: '76289 53752' }
+const HELPLINE = { dial: '+917628953752', label: '+91-76289-53752' }
 
 export default function Home() {
   const { t } = useI18n()
@@ -95,7 +107,7 @@ export default function Home() {
           a helpline shut for Diwali — which is no use to anybody four screens
           down. The page's h1 is the hero below; see the note on Lead() for why
           this band's heading stays at h2 despite coming first. */}
-      <Slides />
+      <Slides withLead={false} />
 
       {/* Two columns where there is room for them.
         *
@@ -104,109 +116,140 @@ export default function Home() {
         * further down — past the explanation, which is the part a returning
         * visitor does not need. The deadline is the perishable thing on this
         * page, so it sits next to the pitch rather than under it. */}
-      <section className="hero">
+      <section className="hero" aria-labelledby="home-title">
         <div className="hero-main">
-        <h1>{t('home.title')}</h1>
-        <p className="lede">{t('home.lede')}</p>
+          {/* The lockup, as the eyebrow over the title rather than a headline of
+              its own. It is the site's argument and it stays in its three
+              colours; it is not the page's name, which is what an h1 is for.
+              A paragraph, so the outline goes straight to the h1. */}
+          <p className="hero-eyebrow"><LeadWords /></p>
 
-        {/* The two ways in, before the search rather than after it.
-          *
-          * They were below it, on the reasoning that a visitor who already
-          * knows what they want should not have to read a pitch first. The
-          * reasoning is sound and the position was still wrong, because of
-          * where the fold falls: measured at 1280x800, the search box ended at
-          * 775 and this row ran 834 to 883 — entirely off screen. So the
-          * minority who arrive knowing what to search for were served above the
-          * fold, and everybody else, who is here to find out whether any of
-          * this applies to them, had no visible way forward at all.
-          *
-          * The search box is also labelled "(optional)", which settles it: an
-          * optional control should not outrank the two primary ones. It is one
-          * scroll-free glance away, directly underneath.
-          *
-          * This is the same test the band above was already shortened to pass —
-          * see the note on .slides, which cut a full-screen hero for putting
-          * "the search box, the live count and the schemes closing this week
-          * below the fold". */}
-        <div className="row">
-          {/* The full sentence here, where there is room for it. The masthead
-              and the footer use the shorter nav label. */}
-          <Link className="btn primary" to="/register">{t('public.cta')}</Link>
-          <Link className="btn" to="/scholarships">{t('home.browseAll')}</Link>
-        </div>
+          <h1 id="home-title">{t('home.title')}</h1>
+          <p className="hero-lede">{t('slides.lead.body')}</p>
 
-        <form onSubmit={search} className="hero-search" role="search">
-          <Field label={t('home.search')}>
-            {props => (
-              <input
-                {...props}
-                type="search"
-                value={term}
-                onChange={e => setTerm(e.target.value)}
-                placeholder={t('home.searchPlaceholder')}
-                autoComplete="off"
-              />
-            )}
-          </Field>
-          <button type="submit" className="primary">{t('home.searchGo')}</button>
-        </form>
-
-        {/* Rendered only once the number is known. A count that appears as
-            "0 scholarships open right now" for half a second while the request
-            is in flight is worse than nothing at all.
+          {/* The two ways in, before the search rather than after it.
             *
-            * Zero is not a small count, it is a different situation, and it
-            * needs different words. "0 scholarships open right now" sat
-            * directly under a headline promising every scholarship you are
-            * eligible for, and under two buttons leading into an empty list —
-            * the page contradicting itself in three places at once. This is
-            * what production has actually been serving. */}
-        {total === 0 ? (
-          <p className="hero-meta hero-meta-empty">
-            <strong>{t('home.openNone')}</strong>{' '}
-            <span className="muted">{t('home.openNoneBody')}</span>
-          </p>
-        ) : (
-          <p className="hero-meta">
-            {typeof total === 'number' && (
-              <strong>{count(total)} {t('home.openNow')}</strong>
-            )}
-            {' '}
-            <span className="muted">{t('home.noAccount')}</span>
-          </p>
-        )}
+            * Measured at 1280x800 when they sat under the search, this row ran
+            * 834 to 883 — entirely off screen — so the visitor who is here to
+            * find out whether any of this applies to them had no visible way
+            * forward. The search is labelled "(optional)", and an optional
+            * control should not outrank the two primary ones. */}
+          <div className="hero-actions">
+            {/* The full sentence here, where there is room for it. The masthead
+                and the footer use the shorter nav label. */}
+            <Link className="btn primary" to="/register">{t('public.cta')}</Link>
+            <Link className="btn" to="/scholarships">{t('home.browseAll')}</Link>
+          </div>
+
+          {/* On a panel of its own, so it reads as the second way in rather than
+              as a form field loose on the hero's wash. */}
+          <form onSubmit={search} className="hero-search" role="search">
+            <Field label={t('home.search')}>
+              {props => (
+                <input
+                  {...props}
+                  type="search"
+                  value={term}
+                  onChange={e => setTerm(e.target.value)}
+                  placeholder={t('home.searchPlaceholder')}
+                  autoComplete="off"
+                />
+              )}
+            </Field>
+            <button type="submit" className="primary">{t('home.searchGo')}</button>
+          </form>
+
+          {/* Rendered only once the number is known: "0 scholarships open"
+              for half a second while the request is in flight is worse than
+              nothing. And zero is not a small count but a different situation,
+              which needs different words — see home.openNone. */}
+          {total === 0 ? (
+            <p className="hero-meta hero-meta-empty">
+              <strong>{t('home.openNone')}</strong>{' '}
+              <span className="muted">{t('home.openNoneBody')}</span>
+            </p>
+          ) : (
+            <p className="hero-meta">
+              {typeof total === 'number' && (
+                <strong>{count(total)} {t('home.openNow')}</strong>
+              )}
+              {' '}
+              <span className="muted">{t('home.noAccount')}</span>
+            </p>
+          )}
+
+          {/* The three claims. A list, so a screen reader counts them; the
+              ticks are decoration and the sentences carry the meaning. */}
+          <ul role="list" className="hero-points">
+            {[t('slides.lead.free'), t('slides.lead.languages'), t('slides.lead.support')].map(point => (
+              <li key={point}>
+                <span className="tick" aria-hidden="true">✓</span>
+                {point}
+              </li>
+            ))}
+          </ul>
         </div>
 
+        {/* The drawing, in the middle column: between the words and the
+            deadlines, so it separates the two rather than competing with either.
+            Decoration only — hidden from assistive technology inside the
+            component — and dropped wherever the window has no third column to
+            give it. slide-lead-reveal is the lead panel's one-off entrance: the
+            branches draw out from the trunk and the cards arrive after them. */}
+        <div className="hero-art slide-lead-reveal"><Illustration /></div>
+
+        {/* The perishable thing on the page, beside the pitch rather than under
+            it. */}
         {listings.length > 0 && (
           <aside className="hero-side" aria-labelledby="closing-soon">
             <div className="card">
-              {/* The heading follows the data. `urgent` is the same seven days
-                  the deadline mark uses, so the panel's title and the rows
-                  under it can no longer disagree. */}
-              <h2 id="closing-soon">{t(urgent ? 'home.closing' : 'home.closingNext')}</h2>
-              <p className="muted small">
-                {t(urgent ? 'home.closingLede' : 'home.closingNextLede')}
-              </p>
+              <div className="hero-side-head">
+                <span className="hero-side-icon" aria-hidden="true"><IconCalendar /></span>
+                <div>
+                  {/* The heading follows the data: `urgent` is the same seven
+                      days the deadline mark uses, so title and rows agree. */}
+                  <h2 id="closing-soon">{t(urgent ? 'home.closing' : 'home.closingNext')}</h2>
+                  <p className="muted small">
+                    {t(urgent ? 'home.closingLede' : 'home.closingNextLede')}
+                  </p>
+                </div>
+              </div>
 
-              {/* A compact list, not the full cards used in the directory: the
-                  job here is "there is a deadline this week", and the summary
-                  that helps somebody choose is one tap away on the scheme's own
-                  page. */}
+              {/* A compact list, not the directory's cards: the job here is
+                  "there is a deadline this week". */}
               <ul role="list" className="deadline-list">
                 {soonest.map(l => (
                   <li key={l.scholarship_id}>
-                    <Link to={`/scholarships/${l.slug}`}>{l.title}</Link>
-                    <p>
-                      <span className="amount">
-                        {awardLabel(t, l.award_amount, l.benefit_summary)}
-                      </span>
-                      <Deadline days={l.days_remaining} />
-                    </p>
+                    {/* Whose scheme it is, before its name — the same mark the
+                        matched list and the applications carry, so a sponsor
+                        is recognisable by shape across the site. The monogram
+                        underneath means a sponsor with no logo still gets a
+                        mark, and nothing moves when one arrives. */}
+                    {/* By scholarship: a directory listing carries no
+                        organisation id, and the scholarship's own logo route is
+                        the one that answers for a curated scheme and a tenant's
+                        alike. */}
+                    <OrgMark scholarshipID={l.scholarship_id} name={l.organisation_name} />
+                    <div className="deadline-body">
+                      <Link to={`/scholarships/${l.slug}`}>{l.title}</Link>
+                      <p>
+                        {/* The award's mark, the same lockup as the deadline's
+                            clock beside it: a glyph hidden from assistive
+                            technology, and the words carrying the meaning. */}
+                        <span className="amount">
+                          <span className="mark" aria-hidden="true">💰</span>
+                          {awardLabel(t, l.award_amount, l.benefit_summary)}
+                        </span>
+                        <Deadline days={l.days_remaining} />
+                      </p>
+                    </div>
                   </li>
                 ))}
               </ul>
 
-              <Link className="btn quiet" to="/scholarships">{t('home.allDeadlines')}</Link>
+              <Link className="btn quiet" to="/scholarships">
+                {t('home.allDeadlines')} <span className="go" aria-hidden="true">→</span>
+              </Link>
             </div>
           </aside>
         )}
@@ -232,8 +275,12 @@ export default function Home() {
           <ol role="list" className="steps">
             {STEPS.map(n => (
               <li key={n}>
-                <h3>{t(`home.step${n}`)}</h3>
-                <p>{t(`home.step${n}Body`)}</p>
+                {/* A card per step, on the rail. The li keeps the rail and the
+                    numeral; the card is what the eye lands on. */}
+                <div className="step-card">
+                  <h3>{t(`home.step${n}`)}</h3>
+                  <p>{t(`home.step${n}Body`)}</p>
+                </div>
               </li>
             ))}
           </ol>
@@ -286,26 +333,44 @@ export default function Home() {
           {!!facets.org_type?.length && (
             <>
               <h3>{t('home.browseWho')}</h3>
-              <div className="chips">
+              <ul role="list" className="browse-grid">
                 {facets.org_type.map(f => (
-                  <Link key={f.value} className="chip-link" to={`/scholarships?org_type=${f.value}`}>
-                    {f.label} <span className="muted">({f.count})</span>
-                  </Link>
+                  <li key={f.value}>
+                    <Link className="browse-tile" to={`/scholarships?org_type=${f.value}`}>
+                      <span className="browse-icon" aria-hidden="true"><IconProvider /></span>
+                      <span className="browse-label">{f.label}</span>
+                      {/* The count in brackets, as it always was, so a screen
+                          reader still hears "Corporate (3)"; the badge is
+                          only the drawing around the number. */}
+                      <span className="browse-count">
+                        <span className="sr-only">(</span>{f.count}<span className="sr-only">)</span>
+                      </span>
+                    </Link>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </>
           )}
 
           {!!facets.course_level?.length && (
             <>
               <h3>{t('home.browseLevel')}</h3>
-              <div className="chips">
+              <ul role="list" className="browse-grid">
                 {facets.course_level.map(f => (
-                  <Link key={f.value} className="chip-link" to={`/scholarships?course_level=${f.value}`}>
-                    {f.label} <span className="muted">({f.count})</span>
-                  </Link>
+                  <li key={f.value}>
+                    <Link className="browse-tile" to={`/scholarships?course_level=${f.value}`}>
+                      <span className="browse-icon" aria-hidden="true"><IconAward /></span>
+                      <span className="browse-label">{f.label}</span>
+                      {/* The count in brackets, as it always was, so a screen
+                          reader still hears "Corporate (3)"; the badge is
+                          only the drawing around the number. */}
+                      <span className="browse-count">
+                        <span className="sr-only">(</span>{f.count}<span className="sr-only">)</span>
+                      </span>
+                    </Link>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </>
           )}
         </section>
@@ -314,12 +379,14 @@ export default function Home() {
       {/* The words and the button side by side, so a band the width of a
           monitor reads as one statement rather than three lines in the corner
           of it. */}
-      <section className="home-cta">
+      <section className="cta-band">
         <div>
           <h2>{signedIn ? t('home.signedInCta') : t('home.cta')}</h2>
           {!signedIn && <p>{t('home.ctaBody')}</p>}
         </div>
-        <Link className="btn primary" to={signedIn ? '/matches' : '/register'}>
+        {/* Inverse, not .primary: a green button on a band that starts in the
+            same green would vanish into it. */}
+        <Link className="btn cta-inverse" to={signedIn ? '/matches' : '/register'}>
           {signedIn ? t('nav.matches') : t('home.ctaButton')}
         </Link>
       </section>

@@ -1,0 +1,67 @@
+/* --- confirmations -------------------------------------------------------------
+ *
+ * The visible half of an announcement; the spoken half is the live region in
+ * Announcer.tsx, which is why this stack is aria-hidden — without that, every
+ * confirmation would be read out twice.
+ *
+ * Bottom of the screen rather than top. On a phone held one-handed the bottom
+ * third is the part a thumb reaches, and a message that appears above the fold
+ * on a page already scrolled halfway down is a message nobody sees. */
+
+.toasts {
+  position: fixed;
+  inset-inline-start: 1rem; inset-inline-end: 1rem; bottom: 1rem;
+  z-index: 60;
+  display: grid; gap: 0.5rem;
+  justify-items: center;
+}
+
+.toast {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  width: min(32rem, 100%);
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius);
+  border: 2px solid currentColor;
+  background: var(--surface);
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  animation: toast-in 140ms ease-out;
+}
+.toast > span { flex: 1; }
+.toast > button { flex: none; padding: 0.4rem 0.875rem; }
+
+/* Tone is never the only signal — the sentence says what happened. */
+.toast.ok     { background: var(--eligible-weak); color: var(--eligible); }
+.toast.warn   { background: var(--blocked-weak);  color: var(--blocked); }
+.toast.danger { background: var(--danger-weak);   color: var(--danger); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* --- results being refetched ------------------------------------------------------
+ *
+ * The previous answer, held on screen while the next one is fetched.
+ *
+ * Not dimmed. Fading is the usual way to say "this is not current", and it
+ * cannot be used here: the text is tuned to sit just above 4.5:1, and any
+ * opacity that reads as faded drops it below the floor. On a site whose entire
+ * audience has a disability that is not a trade worth making, so the signal
+ * moves onto a progress bar and the region is made inert instead — a tap
+ * cannot land on a result that is about to be replaced by a different one. */
+
+/* Inert, and nothing else — the same decision as the button above.
+ *
+ * This had the bar the buttons borrowed: a 30% sweep looping across the top of
+ * the results on a 900ms cycle, for as long as a keystroke took to answer. On
+ * the directory that is every keystroke, so the search flow carried the blink
+ * even though no button there ever changed. It is gone for the reason the
+ * button's is: a shape that appears and disappears once a second is a flicker
+ * whichever edge it is pinned to.
+ *
+ * The signal moved into the count line, which was blanked to a non-breaking
+ * space while a search ran and now says "Searching…" instead. Same place, same
+ * size, no reflow, and it is the one signal that also survives being read
+ * aloud. The list stays up and stays inert; that part was always right. */
+.refetching { pointer-events: none; }

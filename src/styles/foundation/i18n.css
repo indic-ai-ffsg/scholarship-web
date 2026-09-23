@@ -1,0 +1,164 @@
+/* --- language ---------------------------------------------------------------------
+ *
+ * The control in the masthead, the two right-to-left scripts, and the fonts the
+ * other twelve are drawn in.
+ */
+
+/* One control, drawn as one: the globe, the language's own name and a chevron
+   inside a single rounded box, where they used to be a loose icon beside a
+   browser-default select. The select is still the real control and still
+   fills the box — the globe and the chevron are drawn around it and take no
+   presses — so everything a native select gives a keyboard, a screen reader
+   and a phone's picker is untouched. */
+.lang-switch {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  min-height: 48px;
+  padding-inline-start: 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color var(--dur-fast) ease-out, box-shadow var(--dur-fast) ease-out;
+}
+.lang-switch:hover { border-color: var(--accent); box-shadow: var(--shadow-1); }
+/* The chevron. A border-drawn caret rather than a glyph, so it cannot fall back
+   to a missing character in any of the fourteen scripts. */
+.lang-switch::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: 0.875rem; top: 50%;
+  width: 0.45rem; height: 0.45rem;
+  border-inline-end: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+/* The ring on the box, since the select inside it has no border of its own to
+   draw one around — the same move as .input-group. */
+.lang-switch:has(select:focus-visible) { outline: 3px solid var(--accent); outline-offset: 3px; }
+.lang-switch select:focus-visible { outline: none; }
+/* The globe takes the muted weight so the language's own name is the thing the
+   eye lands on. It is decorative — see icons.tsx — and is here to be found by
+   somebody who cannot read the words beside it. */
+.lang-switch .icon { color: var(--text-muted); flex: none; }
+
+.lang-select {
+  /* 46 inside the box's 1px border either side: the target is the box, and the
+     box is 48px. Every other control in this bar is 48px, and this is the one
+     that must not be the exception — WCAG 2.2 2.5.8 sets 24px as the floor and
+     this product sets 48, because a target that a student with a tremor misses
+     twice is a target that has failed however well it measures. */
+  min-height: 46px;
+  /* The browser's own arrow off, since .lang-switch draws one; border and
+     ground off, since the box around it is the control's edge now. */
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0 2rem 0 0;
+  padding-inline: 0 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: var(--w-medium) var(--step--1)/1.2 var(--font);
+  cursor: pointer;
+  /* Room for the longest native name — മലയാളം — without the bar reflowing when
+     the language changes. A control that changes width as you use it drags
+     everything beside it across the screen, which is the one thing a switcher
+     in a navigation bar must not do. */
+  min-width: 7.5rem;
+}
+
+/* On a phone the bar's controls drop to their own row, and the select takes the
+   width it needs rather than the width of the widest name. */
+@media (max-width: 40rem) {
+  .lang-select { min-width: 0; }
+}
+
+/* --- right to left ---------------------------------------------------------------
+ *
+ * Urdu and Kashmiri. Almost nothing is needed here, and that is the point of
+ * the logical properties everywhere above: the layout mirrors from the dir
+ * attribute that i18n.tsx puts on <html>, without a mirrored copy of the
+ * stylesheet. What is left is the handful of things that are drawings rather
+ * than boxes.
+ */
+
+/* An arrow is a direction, not a shape. "Read more →" points at the next thing,
+   which in Urdu is to the left; rotating rather than replacing the glyph keeps
+   one character in the markup and also flips the hover nudge, because the
+   translate that follows it is applied in the rotated element's own axes. */
+[dir="rtl"] .go { display: inline-block; rotate: 180deg; }
+
+/* --- scripts ----------------------------------------------------------------------
+ *
+ * A font stack per script, naming the fonts that ship with Android, iOS,
+ * Windows and the common Linux distributions — and downloading none of them.
+ *
+ * That is a deliberate trade against a webfont. A Noto family covering these
+ * eleven scripts is a megabyte or more per script, on a connection where the
+ * whole bundle is 137 KB and the reason it is 137 KB is that this audience is
+ * on a handset in a district town. Every device that can set its system
+ * language to Tamil already has a Tamil font on it; naming it here only spares
+ * the browser the fallback search, and a device that has none falls through to
+ * system-ui exactly as it did before.
+ *
+ * Each rule redefines --font rather than setting font-family, so every rule in
+ * this stylesheet that reads var(--font) follows without being touched.
+ */
+
+:root:lang(hi), :root:lang(mai) {
+  --font: "Noto Sans Devanagari", "Nirmala UI", "Kohinoor Devanagari", ui-sans-serif, system-ui, sans-serif;
+}
+/* Assamese is written in the Bengali script — the two differ by a handful of
+   letters, not a font — so both take the same stack. */
+:root:lang(bn), :root:lang(as) {
+  --font: "Noto Sans Bengali", "Nirmala UI", "Kohinoor Bangla", ui-sans-serif, system-ui, sans-serif;
+}
+:root:lang(gu) {
+  --font: "Noto Sans Gujarati", "Nirmala UI", "Gujarati Sangam MN", ui-sans-serif, system-ui, sans-serif;
+}
+:root:lang(kn) {
+  --font: "Noto Sans Kannada", "Nirmala UI", "Kannada Sangam MN", ui-sans-serif, system-ui, sans-serif;
+}
+:root:lang(ml) {
+  --font: "Noto Sans Malayalam", "Nirmala UI", "Malayalam Sangam MN", ui-sans-serif, system-ui, sans-serif;
+}
+/* Kalinga is the Windows one and is named first there by necessity: Nirmala UI
+   does not carry Odia on older builds. */
+:root:lang(or) {
+  --font: "Noto Sans Oriya", "Noto Sans Odia", "Kalinga", "Nirmala UI", ui-sans-serif, system-ui, sans-serif;
+}
+:root:lang(pa) {
+  --font: "Noto Sans Gurmukhi", "Nirmala UI", "Gurmukhi MN", ui-sans-serif, system-ui, sans-serif;
+}
+:root:lang(ta) {
+  --font: "Noto Sans Tamil", "Nirmala UI", "Tamil Sangam MN", ui-sans-serif, system-ui, sans-serif;
+}
+:root:lang(te) {
+  --font: "Noto Sans Telugu", "Nirmala UI", "Telugu Sangam MN", ui-sans-serif, system-ui, sans-serif;
+}
+/* Urdu and Kashmiri, and the one place the type scale has to give.
+ *
+ * Nasta'liq hangs each word on a descending diagonal, so a line of it is about
+ * twice as tall as a line of Latin at the same font-size and collides with the
+ * line below at the 1.6 the rest of the site uses. The naskh fallbacks do not
+ * need the extra leading and are not harmed by it, which is why one rule covers
+ * both rather than sniffing which font won.
+ *
+ * Noto Sans Arabic is last on purpose: it is legible and it is not how Urdu is
+ * read. Nasta'liq first, every time it exists on the device. */
+:root:lang(ur), :root:lang(ks) {
+  --font: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", "Awami Nastaliq", "Geeza Pro", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  line-height: 2;
+}
+:root:lang(ur) body, :root:lang(ks) body { line-height: 2; }
+
+/* Headings, which the shared rule sets at 1.25.
+ *
+ * That is right for Latin and for the Indic scripts above, and in Nasta'liq it
+ * runs the descenders of one line through the ascenders of the next — visible
+ * the moment a heading wraps, which at h1 and h2 it almost always does. Looser
+ * than the Latin figure and tighter than the body's: a heading is a few words,
+ * and giving it the body's leading would push the paragraph under it off a
+ * phone screen. */
+:root:lang(ur) :is(h1, h2, h3, h4),
+:root:lang(ks) :is(h1, h2, h3, h4) { line-height: 1.75; }

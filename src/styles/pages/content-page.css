@@ -1,0 +1,44 @@
+/* --- pages written in the admin panel ------------------------------------------
+ *
+ * Two blocks need styles of their own; the rest — headings, paragraphs, the
+ * button — use the same rules as every coded page, which is the whole point of
+ * a closed set of block types. See pages/public/Page.tsx.
+ */
+
+/* A set-apart paragraph: a deadline, a caveat.
+ *
+ * A left rule and a tinted ground, and a border on all four sides so it reads
+ * as a distinct block on a monochrome screen and at any zoom. No colour choice
+ * is offered to the operator — a palette here would let a routine note be
+ * marked in the danger colour, and colour is the one signal this site will not
+ * let carry meaning by itself. */
+.page-notice {
+  border: 1px solid var(--border);
+  border-inline-start: 4px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0.875rem 1rem;
+  margin: 0 0 1rem;
+  max-width: var(--measure);
+}
+.page-notice p { margin: 0; }
+
+/* Questions and answers as a description list rather than as collapsible
+   panels: content behind a disclosure does not appear in the browser's own
+   find-on-page, and this audience includes people who rely on one. */
+.page-faq { margin: 0 0 1.5rem; max-width: var(--measure); }
+.page-faq > div { padding: 0.875rem 0; border-top: 1px solid var(--border); }
+.page-faq > div:first-child { border-top: 0; }
+.page-faq dt { font-weight: var(--w-strong); margin-bottom: 0.25rem; }
+.page-faq dd { margin: 0; color: var(--text-muted); }
+
+/* An anchored heading clears the sticky bar.
+ *
+ * "How it works" in the masthead scrolls to a section on the landing page, and
+ * scrollIntoView puts its top at the top of the viewport — which is behind the
+ * bar that is stuck there. The reader arrives at a heading they cannot see.
+ *
+ * Generous rather than exact: the bar's height varies with the offline banner
+ * above it and with the row wrapping on a narrow window, so this clears the
+ * tallest case rather than tracking a number that changes. */
+[id] { scroll-margin-top: 6rem; }

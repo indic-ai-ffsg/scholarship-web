@@ -1,0 +1,94 @@
+/* --- eligibility states (Table 4.2) ----------------------------------------------
+ * Colour is never the only signal. Each state carries a word and a distinct
+ * leading mark, so the four remain distinguishable in monochrome, to a
+ * colour-blind reader, and through a screen reader. */
+
+.state-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-weight: 700; font-size: var(--step--1);
+  border: 2px solid currentColor;
+}
+.state-badge.eligible   { color: var(--eligible);   background: var(--eligible-weak); }
+.state-badge.likely     { color: var(--likely);     background: var(--likely-weak); }
+.state-badge.blocked    { color: var(--blocked);    background: var(--blocked-weak); }
+.state-badge.ineligible { color: var(--ineligible); background: var(--ineligible-weak); }
+
+.match {
+  border-inline-start: 6px solid var(--border);
+}
+.match.eligible   { border-inline-start-color: var(--eligible); }
+.match.likely     { border-inline-start-color: var(--likely); }
+.match.blocked    { border-inline-start-color: var(--blocked); }
+.match.ineligible { border-inline-start-color: var(--ineligible); opacity: 0.85; }
+
+/* The next action. This is the BLOCKED state's whole value — it converts an
+ * apparent dead end into a specific task — so it is given the visual weight of
+ * an instruction rather than of a footnote. */
+.next-action {
+  display: flex; gap: 0.625rem; align-items: flex-start;
+  margin-top: 0.75rem; padding: 0.75rem 0.875rem;
+  background: var(--surface-sunken);
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+.next-action .mark { flex: none; font-size: 1.1em; line-height: 1.4; }
+
+/* The award. A figure most of the time, and sometimes a sentence.
+ *
+ * "₹12,000" and "Laptop / Laptop for educational and career preparation" go
+ * in the same slot — see format.awardLabel — so this cannot assume a short
+ * string. Left at --step-1 for the figure, which is what a student scans for,
+ * with a measure and normal wrapping so the sentence case does not push the
+ * deadline off the card. */
+.amount {
+  font-weight: var(--w-strong);
+  font-size: var(--step-1);
+  max-width: 26ch;
+  overflow-wrap: break-word;
+}
+/* A closing date, in four states, each a colour and a mark together.
+ *
+ * The mark is the point. This was one rule — `.soon { color: var(--danger) }` —
+ * so "closing soon" was red text and nothing else, and red text alone is
+ * exactly what every other status on this site avoids: .state-badge carries a
+ * glyph, .chip-choice carries one, and this did not. Somebody who cannot
+ * separate the red from the near-black beside it had no way to tell an urgent
+ * deadline from a comfortable one.
+ *
+ * Nothing here animates. A deadline is read, not noticed, and a date that
+ * flashes is a date nobody can finish reading.
+ *
+ * Colours are the status tokens rather than new ones: green for a scheme with
+ * room, amber for the last week, red for today and for shut. Amber is --blocked
+ * because that is this palette's "needs attention now" and it measures 6.8:1;
+ * --ineligible grey is the open-ended case, which is not a warning at all. */
+.deadline {
+  font-weight: var(--w-medium);
+  display: inline-flex; align-items: baseline; gap: 0.3rem;
+}
+/* Not a circle or a pill: the deadline sits inline in a row of card meta, and a
+ * badge here would compete with the eligibility badge already on the card. */
+.deadline .mark { font-weight: var(--w-strong); }
+
+/* Graded, and the grading is the point: if every deadline were red none of
+   them would be. See deadlineLabel for where the bands come from. */
+.deadline.open    { color: var(--text-muted); }
+.deadline.closing { color: var(--danger); }
+.deadline.soon    { color: var(--danger); }
+.deadline.today   { color: var(--danger); }
+.deadline.closed  { color: var(--danger); }
+.deadline.none    { color: var(--text-muted); }
+
+/* In the action column the deadline is on its own line rather than inline in a
+   row of meta, so it gets the space a line needs and sits under the buttons it
+   qualifies. */
+.listing-actions .deadline {
+  /* flex, not block: .deadline is inline-flex with a gap that separates the
+     mark from the words, and block threw that away — "!Closes in 12 days". */
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+  font-size: var(--step--1);
+}

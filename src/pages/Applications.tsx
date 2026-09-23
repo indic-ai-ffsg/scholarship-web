@@ -55,7 +55,10 @@ export default function Applications() {
 
   return (
     <div className="page">
-      <h1>{t('appl.title')}</h1>
+      {/* The shared title band (components/page-hero), as on the dashboard. */}
+      <header className="page-hero">
+        <h1>{t('appl.title')}</h1>
+      </header>
 
       {query.loading && !query.data && <Loading />}
       {query.error ? <ErrorState error={query.error} onRetry={query.reload} /> : null}
@@ -92,35 +95,34 @@ export default function Applications() {
                       <p className="appl-meta">
                         {a.organisation_name}
                         {' · '}
-                        <span className="sr-only">{t('appl.reference')} </span>
+                        {/* The space outside the hidden span: inside it, the
+                            label ran into the code — "ReferenceAPP-2026-…" — for
+                            a screen reader and in anything copied off the page. */}
+                        <span className="sr-only">{t('appl.reference')}</span>{' '}
                         <span className="appl-ref">{a.reference_code}</span>
                       </p>
                     </div>
 
-                    {/* The provider's own word for the stage, which the track
-                        deliberately does not replace: a scheme that renames a
-                        transition keeps its wording, and this is the only place
-                        the student sees it. */}
+                    {/* The provider's own word for the stage while it is moving —
+                        a scheme that renames a transition keeps its wording, and
+                        this is the only place the student sees it.
+                        *
+                        * Once it is decided, the outcome instead. The provider's
+                        * word for a finished application is often the workflow's
+                        * last state rather than its result, and "closed" on an
+                        * application that was awarded read as a refusal beside the
+                        * "Awarded" underneath it — the card contradicting itself
+                        * on the one question it exists to answer. */}
                     <span className={`state-badge ${badgeTone(track.outcome, track.waitingOnYou)}`}>
-                      {a.state_label}
+                      {track.finished ? t(`appl.outcome${cap(track.outcome)}`) : a.state_label}
                     </span>
                   </div>
 
-                  <ApplicationTrack track={track} />
-
-                  <p className="appl-when">
-                    {track.finished && a.decided_at
-                      ? t('appl.decidedOn', { when: dateTime(a.decided_at) })
-                      : a.submitted_at
-                        ? t('appl.sentOn', { when: dateTime(a.submitted_at) })
-                        : ''}
-                    {track.outcome !== 'none' && (
-                      <>
-                        {' · '}
-                        <strong>{t(`appl.outcome${cap(track.outcome)}`)}</strong>
-                      </>
-                    )}
-                  </p>
+                  {/* The dates live on the track's steps now, and the outcome
+                      names its last step — the line that said "Decided 11 Sept,
+                      11:24 pm · Awarded" underneath was the same two facts a
+                      second time. */}
+                  <ApplicationTrack track={track} submittedAt={a.submitted_at} decidedAt={a.decided_at} />
 
                   {/* The one state where the student has to do something. It
                       would be lost among the others without this. */}
@@ -175,7 +177,7 @@ function ReferralCard({ referral: r, onChanged }: {
   referral: Referral
   onChanged: () => void
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [busy, setBusy] = useState(false)
   const [asking, setAsking] = useState(false)
 
@@ -218,7 +220,7 @@ function ReferralCard({ referral: r, onChanged }: {
       </div>
 
       <p className="appl-when">
-        {t('ref.sentOn', { when: dateTime(r.referred_at) })}
+        {t('ref.sentOn', { when: dateTime(r.referred_at, locale) })}
         {r.times > 1 && ` · ${t('ref.again', { times: String(r.times) })}`}
       </p>
 

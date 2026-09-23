@@ -28,6 +28,7 @@ import {
 import * as api from './api'
 import { AuthContext, type AuthApi, type AuthState } from './auth-context'
 import { clearAllDrafts } from './draft'
+import { rememberSession } from './session-hint'
 import * as otp from './otp'
 import type { Envelope, LoginResult, Profile } from './types'
 
@@ -74,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     pendingPhone.current = null
 
     const profile = await loadProfile()
+    // The masthead's hint for the next page load — see lib/session-hint.
+    rememberSession(true)
     setState({
       status: 'authenticated',
       context: result.active_context,
@@ -99,7 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!res) throw new Error('no session')
         if (!cancelled) await applySession(res.data)
       } catch {
-        if (!cancelled) setState(s => ({ ...s, status: 'anonymous' }))
+        if (!cancelled) {
+          rememberSession(false)
+          setState(s => ({ ...s, status: 'anonymous' }))
+        }
       }
     })()
 
@@ -109,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     api.setAuthLostHandler(() => {
       api.setAccessToken(null)
+      rememberSession(false)
       setState({
         status: 'anonymous', context: null, profile: null,
         pendingCode: null, justRegistered: false, error: null, errorReason: null,
@@ -222,6 +229,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // student's choice of how it should reach them.
       await otp.resendCode(channel)
     } catch (err) {
+      // "Wait N seconds" is not a failure to show: it goes back to the screen,
+      // which turns it into the countdown. Anything else is an error as before.
+      if (otp.waitSecondsOf(err) !== null) throw err
       fail(err, 'We could not send another code just now.')
     }
   }, [fail])
@@ -254,6 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     pending.current = null
     pendingPhone.current = null
+    rememberSession(false)
     setState({
       status: 'anonymous', context: null, profile: null,
       pendingCode: null, justRegistered: false, error: null, errorReason: null,

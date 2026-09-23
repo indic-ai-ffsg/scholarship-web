@@ -1,0 +1,481 @@
+/* --- announcement band ------------------------------------------------------
+ *
+ * A full-width band rather than a panel on the page.
+ *
+ * It was a bordered, rounded card with an accent stripe down its leading edge,
+ * which is what everything else on this site is — and that was the problem at
+ * the top of the page. A card announces "here is a component"; the first thing
+ * a visitor meets should read as the top of the site. So: no border, no corner
+ * radius, no stripe, and the box breaks out through the page's gutter to meet
+ * both window edges and the masthead above it.
+ *
+ * The negative margins are exactly .page's own padding — the same clamp, and
+ * the 1.5rem it sets on top — so the band is the width of the window at every
+ * size without a single hard-coded number, and the padding puts the content
+ * back on the page's own reading line. A hairline under it is what separates it
+ * from the section below, in place of the four borders it used to have.
+ */
+.slides {
+  margin-inline: calc(-1 * clamp(1.25rem, 2.5vw, 3rem));
+  margin-top: -1.5rem;
+  margin-bottom: 3rem;
+  padding: 1.5rem clamp(1.25rem, 2.5vw, 3rem);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+
+  /* Sized by its content, with a floor.
+   *
+   * This was the window's height less the bar — a full-screen hero. It went
+   * back for two reasons that turned out to be one reason.
+   *
+   * A screen-tall band only looks deliberate if something fills it, and the only
+   * thing available to fill it was type: the headline went to 44px to stop the
+   * band reading as empty. That is the wrong way round. The type should be the
+   * size a public service needs, and the band should be the size the type makes
+   * it.
+   *
+   * And it cost the page its job. Table 4.1 gives the public site one task —
+   * "determine whether help exists" — and a full screen of proposition put the
+   * search box, the live count and the schemes closing this week below the fold,
+   * behind a scroll a visitor has no reason to believe is worth taking. This is
+   * the one thing the big aggregators get right: a student lands on scholarships,
+   * not on a pitch.
+   *
+   * The floor is what keeps the rotation from moving the page. The panels no
+   * longer need to measure identically by accident — see .slide-notice, where
+   * the picture moved beside the words — but a two-line notice with no picture
+   * is still shorter than the lead panel, and 15rem absorbs the difference. */
+  min-height: 15rem;
+
+  /* A column, so the panel takes the free height inside that floor and the dots
+   * sit at the foot of the band rather than tight under the text. */
+  display: flex;
+  flex-direction: column;
+}
+
+/* The panel takes the band's free height and centres in it.
+ *
+ * Which also settles what the two-second cadence made urgent: every panel is
+ * now the height of the band, so nothing below the band moves when they swap.
+ * That used to depend on the panels happening to measure the same, and a notice
+ * carrying a picture did not. */
+.slide-region {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* The dots.
+ *
+ * The drawn dot is 9px and the button around it is 40px, which is the whole
+ * point of the two elements: a row of small circles is the hardest target on
+ * any page for somebody with a tremor, and this is a site for people who may
+ * have one. 40px clears SC 2.5.8's 24px floor with room and sits just under the
+ * 44px the AAA criterion asks for.
+ *
+ * The current one is filled with the accent and scaled up rather than only
+ * recoloured. Colour alone would leave the position invisible to a reader who
+ * cannot tell the two greys apart from the accent, and this is the one control
+ * in the band that no longer has a text equivalent beside it now that the
+ * counter is gone. */
+.slides-dots {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  margin-top: 1rem;
+}
+.slides-dots button.dot {
+  min-height: 0;
+  width: 40px; height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+}
+.slides-dots .dot-mark {
+  display: block;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  transition: background-color 120ms ease-out, transform 120ms ease-out;
+}
+.slides-dots button.dot:hover .dot-mark { background: var(--accent); }
+.slides-dots .dot.on .dot-mark {
+  background: var(--accent);
+  transform: scale(1.5);
+}
+
+/* An announcement: the words, and the picture beside them.
+ *
+ * The same wrapping flex line as the lead panel, and the same reasoning — see
+ * the note on Announcement() for why the picture moved out of the stack.
+ *
+ * Named .slide-notice and not .notice, which is already the site's alert box
+ * forty lines up. The first name collided with it and every announcement in the
+ * band came out wearing a 2px --text border. */
+.slide-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+/* Fills the line, for the reason .lead-main does: a column sized to its content
+ * leaves the panel a narrow strip in a wide band. */
+.slide-notice-main { flex: 1 1 auto; min-width: 0; }
+
+/* The picture, in a column the width of the lead panel's drawing.
+ *
+ * height:auto against the width and height attributes on the element is what
+ * reserves the space: the browser derives the aspect ratio from the two and
+ * holds it, so nothing moves when the file lands. The height cap is no longer
+ * holding the band to one height — the band's own min-height does that now — so
+ * it is only stopping one portrait upload from filling a screen on its own. */
+.slide-image {
+  display: block;
+  flex: 0 1 16rem;
+  width: auto; height: auto;
+  /* Both of these, and neither is decoration.
+   *
+   * A replaced element's automatic minimum size in a flex line is its own
+   * intrinsic width, so flex-shrink cannot get underneath it: a 1600px upload
+   * capped to 13rem tall still claimed 370px of a 320px screen and the whole
+   * document scrolled sideways. min-width lets the line shrink it and max-width
+   * stops it at the width of the line. tools/check-responsive.py cannot see this
+   * class of overflow — it reads declarations, and the offending number came
+   * from the file rather than the stylesheet. */
+  min-width: 0; max-width: 100%;
+  max-height: 13rem;
+  /* Room to be legible, now the band is a screen tall. An operator's diagram at
+   * 208px was a thumbnail nobody could read. */
+  /* contain, not cover.
+   *
+   * What operators actually upload is not always a photograph: a diagram, a
+   * poster, a screenshot of a notice. cover crops to fill the box, which on any
+   * of those cuts the words off at both edges — and a banner with half a
+   * sentence on it is worse than a letterboxed one. contain never crops; the
+   * sunken ground is what the spare space becomes. */
+  object-fit: contain;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+@media (min-width: 52rem) {
+  .slide-image { flex-basis: 20rem; max-height: 15rem; }
+}
+
+@media (max-width: 52rem) {
+  /* Wrapped, and centred on its own line for the reason the drawing is. */
+  .slide-notice { gap: 1.25rem; }
+  .slide-image { flex-basis: 18rem; margin-inline: auto; }
+}
+
+/* Sized per panel, not on `.slide h2`.
+ *
+ * There used to be a `.slide h2` base here, and it quietly beat both of the
+ * rules that were supposed to override it — a descendant selector scores
+ * (0,1,1), and a single class like .lead-headline only (0,1,0), so the base won
+ * no matter what order the file was in. It cost two rounds of "why is this the
+ * wrong size". The two panels each name their own heading now, so neither can
+ * outrank the other by accident:
+ *
+ *   .lead-headline    --step-2, the lead panel's lockup
+ *   .slide-notice h2  --step-1, an announcement — one step under it, which is
+ *                     the whole hierarchy this band needs
+ */
+.slide-notice h2 { font-size: var(--step-1); margin-bottom: 0.25rem; }
+.slide p { margin-bottom: 0.875rem; }
+.slide > :last-child { margin-bottom: 0; }
+
+/* --- the lead panel ---------------------------------------------------------
+ *
+ * The words on the reading side and the drawing beside them, which is the one
+ * place on this site where a picture earns its space: a visitor arriving from a
+ * forwarded message decides in about a second whether this is a real thing, and
+ * a bare wall of text on a wide screen does not help them decide.
+ *
+ * Flex rather than a grid: a grid needs a breakpoint to tell it when to become
+ * one column, and a flex line works it out from the space it actually has. The
+ * drawing drops below the words when the two no longer fit, at whatever width
+ * that turns out to be — which is also why there is no column floor here for
+ * tools/check-responsive.py to check. Both items may shrink and either may
+ * wrap, so neither can force the page sideways. The drawing is second in the
+ * source, so the words come first to a screen reader and first on a phone. */
+.lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+/* The words take the block, not the width they happen to need.
+ *
+ * Sizing this column to its content (`flex: 0 1 auto` with a max-width) made the
+ * panel narrow: the text ended up in a 600px strip at the left of a 1400px band
+ * and the whole thing read as a small thing in a big empty box. It grows to fill
+ * the line instead, and the paragraphs inside it carry their own reading measure
+ * the way every other paragraph on the site does.
+ *
+ * min-width: 0 against the flex default of min-content: without it a long
+ * unbroken word in the headline sets the floor for the whole line. */
+.lead-main { flex: 1 1 auto; min-width: 0; }
+/* --- the headline lockup ----------------------------------------------------
+ *
+ * Two lines, three colours, one argument:
+ *
+ *     Dis-Ability to        <- grey, struck through in red; then blue
+ *     Distinction           <- green
+ *
+ * Set at the site's own heading size and weight, and no display treatment on top
+ * of it. It went to 44px at weight 800 with the tracking pulled in, on the
+ * reasoning that a headline making an argument should look like one — and it just
+ * read as shouting. The argument is carried by the three colours and the line
+ * through "Dis-", which work at any size; the type does not have to shout as
+ * well. --step-2 is what every other h2 on the site is, so this is one size for
+ * one job rather than a special case with its own scale.
+ *
+ * max-width is off, and that is the one thing here that is not the default. The
+ * global h1/h2/h3 rule caps headings at 40ch to stop a hundred-character line,
+ * which is right for a sentence and wrong for this: the break between "Ability
+ * to" and "Distinction" is the composition, not something to leave to whatever
+ * width the window happens to be. */
+.lead-headline {
+  font-size: var(--step-2);
+  max-width: none;
+  margin-bottom: 0.75rem;
+}
+
+/* Each half owns its line, so the break is the design's rather than the
+ * window's. inline-block on the first: it has to be a line of its own without
+ * becoming a full-width block, or the struck span's underline logic and the
+ * baseline of the two spans inside it come apart. */
+.lead-headline .hl-line { display: inline-block; }
+.lead-headline .hl-dist { display: block; }
+
+/* "Dis-", struck.
+ *
+ * text-decoration rather than a pseudo-element or a border: it follows the
+ * glyphs, it survives a line break, it scales with the font, and
+ * text-decoration-color lets the rule be red while the letters stay grey —
+ * which is the whole point, since the colour of the line and the colour of the
+ * text are saying two different things.
+ *
+ * The line is a graphical object carrying meaning, so WCAG 2.2 1.4.11 wants 3:1
+ * against what is behind it; --danger measures 7.5:1 on white and 6.5:1 on the
+ * hero's wash. It is the site's error red, used here for its other meaning —
+ * struck out, removed — which is close enough to share the token rather than
+ * introduce a second red that has to be kept in step with it. Both figures are
+ * asserted by tools/check-contrast.py rather than only written down here. */
+:is(.lead-headline, .hero-eyebrow) .hl-was {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--danger);
+  /* From the font rather than a fixed px, so it thickens with the headline
+   * instead of thinning to a hair at 200% zoom. */
+  text-decoration-thickness: 0.075em;
+}
+
+:is(.lead-headline, .hero-eyebrow) .hl-able { color: var(--ability); }
+:is(.lead-headline, .hero-eyebrow) .hl-dist { color: var(--accent); }
+
+/* What the site actually does, under the headline that argues for it.
+ *
+ * No max-width of its own: the global `p` rule already caps every paragraph on
+ * the site at --measure, and squeezing this one to 30rem to force it into three
+ * tidy lines was setting a measure for composition rather than for reading. The
+ * site's own measure is the right answer here as everywhere else. */
+.lead-lede {
+  font-size: var(--step-1);
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+/* The three claims. A list, so they are counted; a row where there is room and
+ * a column where there is not, so nothing is ever half a claim per line. */
+.lead-points {
+  list-style: none;
+  margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  /* 400. These are three short sentences — "Completely free", "6
+     languages" — and they were set at the same weight as the buttons below
+     them. The tick already marks each one; the words are for reading. */
+  font-weight: var(--w-body);
+}
+.lead-points li { display: flex; align-items: center; gap: 0.5rem; }
+/* A filled disc rather than a bare character. Three loose ticks in a row read as
+ * punctuation that got away; three discs read as a set, and the shape gives the
+ * eye something to scan down when the row stacks on a phone.
+ *
+ * The green is the accent, which is also what this site marks "you qualify"
+ * with — the association is the point. Decorative, and hidden from assistive
+ * technology in the component, so it carries none of the meaning. */
+/* Shared with the how-it-works panel's assurances, which are the same
+   lockup doing the same job one section further down. */
+.lead-points .tick,
+.assurances .tick {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.375rem; height: 1.375rem;
+  border-radius: 50%;
+  background: var(--accent); color: var(--accent-text);
+  font-size: 0.8125rem; font-weight: 700; line-height: 1;
+}
+
+/* Sized by its column, and its own aspect ratio holds the height.
+ *
+ * The column is what bounds it, and there is deliberately no max-height. A cap
+ * on the height does not shrink an SVG — it shrinks the drawing inside a box
+ * that stays the full width of the column, so the artwork letterboxes and ends
+ * up a stamp with fifty pixels of nothing either side of it. Narrowing the
+ * column instead keeps the box and the drawing the same size.
+ *
+ * 16rem is chosen against the words: the text block stands about 150px on a
+ * monitor and 215px once it wraps, this stands about 243px, and the panel is
+ * close enough to the height of an announcement that the band does not lurch
+ * when it rotates. */
+.lead-art {
+  display: block;
+  flex: 0 1 16rem;
+  height: auto;
+  max-width: 100%;
+}
+@media (min-width: 52rem) {
+  /* Room to read as a drawing rather than a thumbnail, and no more. 26rem made
+   * it the loudest thing in the band, which for a decorative picture beside the
+   * site's actual proposition is the wrong way round. */
+  .lead-art { flex-basis: 20rem; }
+}
+
+/* The band's own ground, only while the lead panel is the one showing.
+ *
+ * A wash rather than a block of colour: strongest at the leading edge and gone
+ * by the time it reaches the far side. A flat panel of --accent-weak behind the
+ * whole hero was the first attempt and it read as an alert — this reads as the
+ * top of a page. The text sits on the pale end of it, which measures 15.7:1.
+ *
+ * Deeper padding than an announcement gets, because this one is a hero and the
+ * band is now the full width of the window: at the page's own 1.5rem the words
+ * sat in a letterbox. */
+.slides.slides-lead {
+  background:
+    linear-gradient(152deg, var(--accent-weak) 0%, var(--surface) 66%);
+  padding-block: 2.5rem;
+}
+@media (max-width: 34rem) {
+  .slides.slides-lead { padding-block: 1.75rem; }
+}
+
+/* --- the lead panel's entrance ----------------------------------------------
+ *
+ * One pass, on arrival, and never again — the component drops the reveal class
+ * after the first showing, so rotating back to this panel does not replay it.
+ *
+ * The words go first and fast: the headline is readable at 40ms and the whole
+ * text block has landed inside a third of a second, which is what stops this
+ * from being an animation the reader has to wait out. The drawing takes its
+ * time behind them, because nothing depends on it.
+ *
+ * Every rule here is switched off wholesale under reduced motion at the foot of
+ * the block. The global kill switch shortens durations but does not touch
+ * animation-delay, and a delay with `backwards` fill would leave an element
+ * invisible for its delay and then snap in — a flash rather than a fade. */
+@keyframes lead-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.slide-lead-reveal .lead-main > * {
+  animation: lead-rise 380ms cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+}
+.slide-lead-reveal h2 { animation-delay: 40ms; }
+.slide-lead-reveal .lead-lede { animation-delay: 120ms; }
+.slide-lead-reveal .lead-points { animation-delay: 200ms; }
+
+/* The drawing: a fade and the faintest scale, so it settles rather than slides.
+ * No transform on the groups inside it — each carries its own translate() as an
+ * attribute, and a CSS transform would replace it and stack every card at the
+ * origin. Opacity is the one property that cannot collide. */
+@keyframes lead-art-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+.slide-lead-reveal .lead-art {
+  animation: lead-art-in 620ms cubic-bezier(0.2, 0.7, 0.3, 1) 120ms backwards;
+}
+
+/* The branches draw outward from the trunk. pathLength="1" on each one
+ * normalises them, so a single dasharray covers paths of very different real
+ * lengths — the alternative is measuring seven curves by hand and having them
+ * wrong the first time somebody nudges a control point. */
+@keyframes art-draw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+.slide-lead-reveal .art-branch {
+  stroke-dasharray: 1;
+  animation: art-draw 560ms ease-out 260ms backwards;
+}
+
+/* Then the cap and the six cards, in the order they sit in the source: the cap
+ * first, because it is what the tree is growing towards, then the cards from
+ * the outside in. */
+@keyframes art-pop { from { opacity: 0; } to { opacity: 1; } }
+.slide-lead-reveal .lead-art > g {
+  animation: art-pop 300ms ease-out backwards;
+}
+.slide-lead-reveal .lead-art > g:nth-of-type(1) { animation-delay: 700ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(2) { animation-delay: 780ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(3) { animation-delay: 830ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(4) { animation-delay: 880ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(5) { animation-delay: 930ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(6) { animation-delay: 980ms; }
+.slide-lead-reveal .lead-art > g:nth-of-type(7) { animation-delay: 1030ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Removed outright rather than shortened, for the delay reason above. */
+  .slide-lead-reveal .lead-main > *,
+  .slide-lead-reveal .lead-art,
+  .slide-lead-reveal .lead-art > g,
+  .slide-lead-reveal .art-branch { animation: none; }
+  .slide-lead-reveal .art-branch { stroke-dasharray: none; }
+}
+
+@media (max-width: 52rem) {
+  /* Wrapped by now. Centre the drawing on its own line — left-aligned under a
+   * full-width block of text it reads as having come loose. */
+  .lead { gap: 1.5rem; }
+  .lead-art { flex-basis: 18rem; margin-inline: auto; }
+}
+
+@media (max-width: 34rem) {
+  /* Gone on a phone.
+   *
+   * Three hundred pixels of decoration, above the search box, on the screen
+   * where vertical space is the scarcest thing there is — and it says nothing
+   * the three claims above it do not. It is already hidden from assistive
+   * technology, so removing it removes nothing: this is one line to delete if
+   * somebody decides the phone should have the picture too. */
+  .lead-art { display: none; }
+
+  /* One step down on a phone, where --step-2 over two lines takes a third of the
+   * screen before a word of the page. The lockup still reads: two lines, three
+   * colours, the line through "Dis-". */
+  .lead-headline { font-size: var(--step-1); }
+  .lead-lede { font-size: var(--step-0); }
+  /* Stacked, not wrapped: three claims of very different lengths across two
+   * lines read as five things rather than three. */
+  .lead-points { flex-direction: column; gap: 0.375rem; }
+}
+
+/* The fade exists to say "this content was replaced", which a silent swap does
+ * not. Two hundred milliseconds and no movement: a slide that flies in from the
+ * side is the thing that makes a carousel unreadable. Switched off entirely
+ * under reduced motion, where the band does not rotate on its own anyway. */
+.slide { animation: slide-in 200ms ease-out; }
+@keyframes slide-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide { animation: none; }
+}

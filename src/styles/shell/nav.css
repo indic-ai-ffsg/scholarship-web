@@ -1,0 +1,349 @@
+.masthead nav {
+  display: flex; gap: 0.125rem; flex-wrap: wrap; align-items: center;
+}
+
+/* 48px, matching every button on the site. These are the most-tapped controls
+ * anywhere here, and they were the smallest — 43px against a stated floor of
+ * 48, which is well above WCAG 2.2's 24px minimum precisely because the target
+ * user includes people with tremor operating a phone one-handed. */
+/* Every pressable thing in the bar, wherever it sits in the markup: the
+ * destinations, the menu's own control, and the sign-in button — which lives
+ * outside <nav> because it is an action rather than a place. */
+.masthead nav a,
+.masthead .nav-end > a,
+.masthead .menu > summary {
+  font-weight: var(--w-medium);
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius);
+  text-decoration: none; color: var(--text); font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) ease-out, color var(--dur-fast) ease-out,
+    border-color var(--dur-fast) ease-out, box-shadow var(--dur-fast) ease-out;
+}
+/* The destinations a step quieter than the actions at rest: muted ink, which
+   is 7.2:1 and so still body-legible, and full ink under the pointer. It is
+   what lets the one filled button read as the action and the words as places. */
+.masthead nav a { color: var(--text-muted); }
+.masthead nav a:hover { color: var(--text); }
+.masthead nav a:hover,
+.masthead .nav-end > a:hover,
+.masthead .menu > summary:hover { background: var(--surface-sunken); }
+
+/* The page you are on, marked by more than colour: the weight changes and a
+ * rule sits under the word, so the current place survives a monochrome screen
+ * and a reader who cannot separate the accent from the text. */
+.masthead nav a[aria-current="page"] {
+  /* 600 against the bar's 500, not 700. The weight step still reads, and it is
+     the third signal here rather than the only one — there is a tint behind the
+     word and a rule under it, so the current place survives a monochrome screen
+     without the bar having to shout.
+   *
+   * The rule is under the word now rather than along the bottom of the box: a
+   * 3px bar across the full width of a rounded tint read as a tab that had been
+   * cut off. Under the text it is an underline, which is the mark people read
+   * as "this one". */
+  background: var(--accent-weak); color: var(--accent); font-weight: var(--w-strong);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.45em;
+}
+
+/* The one action in the bar, and now the only filled thing in it. As an
+ * outlined link it carried exactly as much weight as "Find scholarships" beside
+ * it, which left the bar with six controls and no answer to "what do I press". */
+/* The one filled control in the bar, and it is the eligibility check rather
+ * than the account door.
+ *
+ * It was Sign in, which made the loudest thing in the masthead a form — on a
+ * site whose whole proposition is "tell us about yourself and we will tell you
+ * what you qualify for", and whose check needs no account at all. One filled
+ * control, on the thing being asked for. */
+.masthead a.nav-cta {
+  background: var(--accent); color: var(--accent-text);
+  /* Filled, bordered and the only solid thing in the bar. 700 on top of all
+     three was belt and braces. */
+  font-weight: var(--w-strong); border: 2px solid var(--accent);
+  text-decoration: none;
+  padding-inline: 1.125rem;
+  box-shadow: 0 1px 2px rgb(10 92 58 / 0.25), 0 4px 12px -4px rgb(10 92 58 / 0.45);
+}
+.masthead a.nav-cta:hover { background: var(--accent); filter: brightness(1.12); }
+
+/* The account door, quiet beside it. An outline rather than a fill, so the two
+   read as one action and one way back in rather than as a choice between two
+   equal things — which is what a returning student needs and a new one can
+   ignore. */
+.masthead a.nav-signin {
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  padding-inline: 1.125rem;
+}
+.masthead a.nav-signin:hover { border-color: var(--accent); color: var(--accent); }
+
+/* The returning visitor's way in. Outlined rather than filled: it has to be
+ * easy to find and must not compete with the one action the site is asking a
+ * first-time reader to take. */
+
+/* --- the bar's menu -------------------------------------------------------------
+ *
+ * One of them — a student's account. A <details>: keyboard-operable, announces
+ * its own state, and works before JavaScript arrives. The marker is replaced
+ * rather than hidden; the caret is the affordance that says this opens. */
+
+.masthead .menu { position: relative; }
+.masthead .menu > summary { list-style: none; gap: 0.4rem; font-weight: var(--w-medium); }
+.masthead .menu > summary::-webkit-details-marker { display: none; }
+.masthead .menu[open] > summary { background: var(--surface-sunken); }
+.masthead .menu .caret { font-size: 0.8em; transition: transform 120ms ease-out; }
+.masthead .menu[open] .caret { transform: rotate(180deg); }
+
+.menu-panel {
+  position: absolute; inset-inline-end: 0; top: calc(100% + 0.375rem); z-index: 50;
+  min-width: 16rem;
+  display: grid; gap: 0.125rem;
+  padding: 0.5rem;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+}
+.menu-panel a { justify-content: flex-start; width: 100%; }
+.menu-panel hr { border: 0; border-top: 1px solid var(--border); margin: 0.375rem 0; }
+
+/* Two rows between a phone and a monitor, and the break is chosen.
+ *
+ * Everything in one row needs about 70rem: the lockup, the destinations, the
+ * credit, the language and the two actions. Below that the bar used to wrap
+ * wherever it ran out, and at 900px what ran out was the actions — Register and
+ * Login alone on a second row at the left edge, under the brand, the most
+ * important controls in the bar looking like leftovers.
+ *
+ * So the destinations take the second row, on purpose and at full width, and
+ * the identity and every control keep the first. The actions stay at the far
+ * edge where they are at every other width, which is what makes the bar
+ * predictable as the window changes. Before the phone rules below, which
+ * refine this rather than undo it. */
+@media (max-width: 72rem) {
+  .masthead .brand { margin-inline-end: auto; }
+  .masthead .nav-main {
+    order: 1; flex-basis: 100%;
+    justify-content: flex-start;
+    /* Aligned with the brand's edge rather than with the first link's tint. */
+    margin-inline-start: -0.875rem;
+  }
+  .masthead .inner { gap: 0.25rem 1rem; }
+}
+/* The same two rows for a signed-in student, from a wider window.
+ *
+ * Their bar holds four destinations and the account menu where a visitor's has
+ * two and a pair of buttons, and it runs out of room at about 86rem rather than
+ * 72: at 1280px "My account" wrapped onto a second row by itself at the left
+ * edge, under the logo. Keyed on the account menu being there, so the visitor's
+ * bar keeps its single row down to 72rem. */
+@media (max-width: 86rem) {
+  .masthead:has(.account) .brand { margin-inline-end: auto; }
+  .masthead:has(.account) .nav-main {
+    order: 1; flex-basis: 100%;
+    justify-content: flex-start;
+    margin-inline-start: -0.875rem;
+  }
+  .masthead:has(.account) .inner { gap: 0.25rem 1rem; }
+}
+
+@media (max-width: 56rem) {
+  /* The logo alone, to leave the first row room for the credit, the language
+   * and both actions. It carries "Indic-ai" in its own lettering, so the bar
+   * still names the site. The words are hidden, not removed: the logo's alt is
+   * empty by design, and the link needs the name to have one at all. */
+  .masthead .brand-name {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+    padding: 0; border: 0;
+  }
+}
+
+/* Two rows on a phone, and only two.
+ *
+ * The bar used to make three: the brand, then destinations sharing a line with
+ * the language buttons, then a 176px colour select with the sign-in link. Two
+ * hundred pixels of a 640px screen, spent before a word of the page.
+ *
+ * Now the identity and the controls hold the first row — both are small — and
+ * the destinations take the second at full width, sharing it equally. Nothing
+ * wraps inside an item, so the row heights are predictable. */
+/* Three rows on a phone, each with one job.
+ *
+ * A visitor has four destinations and two actions, and no arrangement puts all
+ * of that beside a 144px lockup in 350px of width — the sums are in the comment
+ * on .nav-end below. So: the identity on the first row, with a signed-in
+ * student's account menu beside it; the destinations on the second and third as
+ * a two-by-two grid; and the two actions last, nearest the thumb.
+ *
+ * And the bar stops being sticky here. Three rows are affordable when they
+ * scroll away and indefensible when they sit on a third of a 640px screen for
+ * the whole visit; on a phone the way back to the top is a flick, while on a
+ * monitor it is a long scroll — which is where the sticky bar earns its keep. */
+@media (max-width: 44rem) {
+  .topbar { position: static; }
+
+  /* Every millimetre of the four rows that is not a target. */
+  .masthead { padding-block: 0.375rem; }
+  .masthead .inner { gap: 0.25rem; }
+  /* Not flex: 1 — given the row to itself the lockup centred in it, which read
+   * as a title rather than as a brand in a bar. */
+  .masthead .brand { flex: 0 0 auto; margin-inline-end: auto; }
+
+  /* Row one, beside the brand. */
+  .masthead .account { order: 0; margin-inline-start: 0; }
+
+  /* Rows two and three: the destinations, two to a row, equal targets. */
+  .masthead .nav-main {
+    order: 1; width: 100%; flex-basis: 100%;
+    gap: 0.25rem;
+    /* Equal targets filling the row here, so no alignment to the brand's edge. */
+    margin-inline-start: 0;
+  }
+  .masthead .nav-main a {
+    flex: 1; padding-inline: 0.375rem;
+    font-size: var(--step--1);
+  }
+
+  /* Last row: the two actions, half the width each.
+   *
+   * They were beside the brand, which is where the arithmetic failed — a 144px
+   * lockup, a 63px login and an 85px register leave 58px of a 350px row for the
+   * gaps between them, and that is before the account menu a signed-in student
+   * has in the same place. Down here they have the whole width, so both keep
+   * their words and their 48px targets. */
+  .masthead .nav-end {
+    order: 2; width: 100%; flex-basis: 100%;
+    gap: 0.5rem;
+  }
+  .masthead .nav-end > a { flex: 1; }
+
+  /* Anchored to the viewport edge rather than to the control that opened it, so
+   * the panel opens on screen rather than half off it. */
+  .menu-panel { inset-inline-end: 0; inset-inline-start: auto; min-width: min(18rem, calc(100vw - 2rem)); }
+}
+
+/* Narrow enough that four destinations cannot share one line.
+ *
+ * Two by two, rather than a row that wraps where it happens to run out: a
+ * student's four places came out as two on one line, one on the next and one
+ * stranded on a third, each a different width. A grid gives four equal targets
+ * in two even rows — and gives a visitor's two destinations a single row of
+ * halves, which is the same rule doing the same thing.
+ *
+ * The alternative, shrinking the text until it fits, is not available here.
+ * Nor is a scrolling row: a destination that has to be swiped into view is a
+ * destination this audience will not find. */
+@media (max-width: 30rem) {
+  .masthead .nav-main {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.25rem;
+  }
+  .masthead .nav-main a { white-space: nowrap; }
+}
+
+/* --- the account menu, composed ----------------------------------------------
+ *
+ * The control carries the avatar beside "My account"; the panel opens on who
+ * the account is — the avatar again, the name, how complete the profile is —
+ * then the two places, each with its glyph, and Sign out below a rule, in red.
+ */
+.masthead .menu.account > summary { gap: 0.5rem; padding-inline: 0.5rem 0.75rem; }
+.menu-avatar { width: 2rem; height: 2rem; font-size: 0.875rem; }
+
+.menu-panel {
+  min-width: 17rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  /* No drop shadow: the panel is set off by its border alone. */
+  box-shadow: none;
+  transform-origin: top right;
+}
+[dir="rtl"] .menu-panel { transform-origin: top left; }
+
+/* Opening: a short fade and settle from the control, so the panel reads as
+   coming out of it. Once per opening; nothing moves while it is open. Removed
+   under reduced motion, where it simply appears. */
+@keyframes menu-open {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.masthead .menu[open] > .menu-panel { animation: menu-open 160ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+  .masthead .menu[open] > .menu-panel { animation: none; }
+}
+
+.menu-head {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.625rem 0.625rem 0.875rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.menu-head-avatar { width: 2.75rem; height: 2.75rem; font-size: var(--step-0); }
+.menu-head-text { display: grid; gap: 0.125rem; min-width: 0; }
+.menu-head-text strong { overflow-wrap: anywhere; line-height: 1.25; }
+.menu-head-text span { font-size: var(--step--1); color: var(--text-muted); }
+
+/* The rows: glyph and word, start-aligned, full width, 48px. */
+.menu-panel a,
+.menu-panel .menu-signout {
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding-inline: 0.75rem;
+}
+.menu-panel a .icon,
+.menu-panel .menu-signout .icon { flex: none; color: var(--text-muted); }
+.menu-panel a:hover .icon, .menu-panel a[aria-current="page"] .icon { color: var(--accent); }
+.menu-panel .menu-signout .icon { color: var(--danger); }
+.menu-panel hr { margin: 0.25rem 0.5rem; }
+
+/* The two places as rows, which they never were: the masthead's link rule
+   stops at the bar, so these drew as underlined words 20px tall — a target
+   well under the 48px every other control here meets. */
+.menu-panel a {
+  display: flex; align-items: center;
+  min-height: 48px;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-weight: var(--w-medium);
+  text-decoration: none;
+  transition: background-color var(--dur-fast) ease-out, color var(--dur-fast) ease-out;
+}
+.menu-panel a:hover { background: var(--surface-sunken); }
+/* The page you are on: tint, weight, and a bar on the leading edge. No
+   underline — in a menu of rows it read as a link inside the row rather than
+   as the row being chosen. The bar is the shape that keeps it legible without
+   colour (1.4.1), which the underline was doing before; inset, so it draws
+   inside the row's rounded corner and moves nothing. */
+.menu-panel a[aria-current="page"] {
+  background: var(--accent-weak); color: var(--accent); font-weight: var(--w-strong);
+  text-decoration: none;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+[dir="rtl"] .menu-panel a[aria-current="page"] { box-shadow: inset -3px 0 0 var(--accent); }
+/* Nothing in the menu is underlined, the account control included: every
+   item is a row with its own box, and none of them sits in running text. */
+.masthead .menu.account > summary,
+.menu-panel a,
+.menu-panel a:hover,
+.menu-panel .menu-signout { text-decoration: none; }
+.menu-panel .menu-signout:hover:not(:disabled) { background: var(--danger-weak); }
+
+/* On a phone the account control sits at the left of its row, so a panel
+   anchored to the control's right edge opened off the left of the screen.
+   Anchored to its left edge there, and grown from that corner. */
+@media (max-width: 44rem) {
+  .menu-panel {
+    inset-inline-start: 0; inset-inline-end: auto;
+    transform-origin: top left;
+  }
+  [dir="rtl"] .menu-panel { transform-origin: top right; }
+}

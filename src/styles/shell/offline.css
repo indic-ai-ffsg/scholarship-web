@@ -1,0 +1,13 @@
+/* --- offline banner -----------------------------------------------------------------------
+ * Drafts are tolerant of connection loss (Table 4.1). This says so, rather than
+ * letting a save fail silently on a train. */
+
+.offline {
+  /* Not sticky itself any more: it sits inside .topbar, which is, so the
+   * notice and the bar travel together instead of two elements both claiming
+   * top: 0 and one covering the other. */
+  padding: 0.625rem 1.25rem;
+  background: var(--blocked-weak); color: var(--blocked);
+  border-bottom: 2px solid currentColor;
+  font-weight: 600; text-align: center;
+}

@@ -8,11 +8,11 @@ import { useI18n } from '../../lib/i18n-context'
 import { applyRoute, externalHelpKey } from '../../lib/apply'
 import { useApplied } from '../../lib/applied'
 import { recordReferral } from '../../lib/referral'
-import { asLines, awardLabel, date, stripNumbering } from '../../lib/format'
+import { asLines, awardLabel, date, orgKind, orgKindKey, stripNumbering } from '../../lib/format'
 import { Deadline, ErrorState, Loading, SponsorLogo } from '../../components/ui'
 import { Sheet } from '../../components/Sheet'
 import { usePageTitle } from '../../lib/page-title'
-import { renderRichText } from '../../lib/richtext'
+import { renderInline, renderRichText } from '../../lib/richtext'
 import { isBenefitTable, parseBenefits } from '../../lib/benefits'
 import type { Listing, SchemeSeed } from '../../lib/types'
 
@@ -58,7 +58,7 @@ export function SchemeSheet({
   seed?: SchemeSeed
   onClose: () => void
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { status } = useAuth()
 
   /* The same lookup the row uses, from the same shared cache — opening a panel
@@ -172,13 +172,25 @@ export function SchemeSheet({
         )}
       </>
     }>
-      <div className="sheet-head">
-        <SponsorLogo listing={s} />
+      {/* The head: the scheme's name first, then whose it is.
+          *
+          * It opened with "Offered by" and the sponsor's full title — four lines
+          * for a ministry — above the name, so the first thing a reader met was
+          * a government department's letterhead and the scheme they had pressed
+          * was fifth. The name leads now; the mark and the kind of sponsor sit
+          * over it as a small row, and the sponsor's name under it at the
+          * directory row's size. On the row's hue, so the panel visibly belongs
+          * to the row it was opened from (see components/listing.css). */}
+      <div className="sheet-hero" data-kind={orgKindKey(s.org_type)}>
+        <div className="sheet-head">
+          <SponsorLogo listing={s} />
+          {s.org_type && <span className="kind-chip">{orgKind(t, s.org_type)}</span>}
+        </div>
+        <h2 id="sheet-title">{s.title}</h2>
         <p className="sheet-eyebrow">
           {t('public.offeredBy')} <strong>{s.organisation_name}</strong>
         </p>
       </div>
-      <h2 id="sheet-title">{s.title}</h2>
 
       {/* The three facts first, and that is not the page's order.
           *
@@ -192,7 +204,9 @@ export function SchemeSheet({
         <div>
           <dt>{t('public.award')}</dt>
           <dd>
+            {/* The same 💰 as the row the panel was opened from. */}
             <span className="amount">
+              <span className="mark" aria-hidden="true">💰</span>
               {awardLabel(t, s.award_amount, s.benefit_summary,
                 s.award_amount_min, s.award_amount_max)}
             </span>
@@ -203,7 +217,7 @@ export function SchemeSheet({
           <dt>{t('public.closes')}</dt>
           <dd>
             <Deadline days={s.days_remaining} />
-            {s.closes_at && <span className="muted block">{date(s.closes_at)}</span>}
+            {s.closes_at && <span className="muted block">{date(s.closes_at, locale)}</span>}
           </dd>
         </div>
         {/* Both from the detail response, so both appear a moment after the
@@ -297,8 +311,11 @@ export function SchemeSheet({
           <h3 id="sheet-docs">{t('public.documentsRequired')}</h3>
           {/* Discs, not the criteria checklist. A tick means "you meet this",
               and the reader does not yet — these are things to go and find. */}
-          <ul className="sheet-docs">
-            {s.documents_required.map((d, i) => <li key={i}>{d}</li>)}
+          {/* role="list" because the stylesheet draws these as chips with
+              no markers, and WebKit drops the list role the moment list-style
+              is none — a screen reader would lose "list, 8 items". */}
+          <ul role="list" className="sheet-docs">
+            {s.documents_required.map((d, i) => <li key={i}>{renderInline(d)}</li>)}
           </ul>
           {/* Said plainly, because the alternative is a student uploading six
               documents here and waiting for a decision from a body that never
@@ -383,7 +400,7 @@ function Benefits({ text }: { text: string }) {
 
   return (
     <>
-      {intro && <p className="sheet-benefit-intro">{intro}</p>}
+      {intro && <p className="sheet-benefit-intro">{renderInline(intro)}</p>}
       <table className="sheet-benefits">
         <thead>
           <tr>
@@ -396,8 +413,8 @@ function Benefits({ text }: { text: string }) {
             <tr key={i}>
               {/* scope="row": the component names the row, so a cell read on
                   its own is announced with what it is for. */}
-              <th scope="row">{r.component}</th>
-              <td>{r.amount || <span className="muted">—</span>}</td>
+              <th scope="row">{renderInline(r.component)}</th>
+              <td>{r.amount ? renderInline(r.amount) : <span className="muted">—</span>}</td>
             </tr>
           ))}
         </tbody>
@@ -408,9 +425,12 @@ function Benefits({ text }: { text: string }) {
 
 function Prose({ text, ordered }: { text: string; ordered?: boolean }) {
   const items = asLines(text)
-  if (items.length === 0) return <p>{text}</p>
+  if (items.length === 0) return <p>{renderInline(text)}</p>
 
+  /* Each line through renderInline, so the panel's bold, italic and underline
+     marks render here as they do in Eligibility in detail rather than printing
+     their asterisks. */
   return ordered
-    ? <ol className="sheet-steps">{stripNumbering(items).map((l, i) => <li key={i}>{l}</li>)}</ol>
-    : <ul className="sheet-points">{items.map((l, i) => <li key={i}>{l}</li>)}</ul>
+    ? <ol role="list" className="sheet-steps">{stripNumbering(items).map((l, i) => <li key={i}>{renderInline(l)}</li>)}</ol>
+    : <ul className="sheet-points">{items.map((l, i) => <li key={i}>{renderInline(l)}</li>)}</ul>
 }

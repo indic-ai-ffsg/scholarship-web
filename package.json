@@ -11,7 +11,8 @@
     "check:routes": "node scripts/check-routes.mjs",
     "check:contrast": "python3 ../tools/check-contrast.py",
     "check:responsive": "python3 ../tools/check-responsive.py",
-    "check:image": "sh scripts/smoke-image.sh"
+    "check:image": "sh scripts/smoke-image.sh",
+    "check:i18n": "node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

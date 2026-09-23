@@ -1,0 +1,482 @@
+/* --- the front door ----------------------------------------------------------
+ *
+ * The one screen everybody meets, and the only one in the portal built as a
+ * card rather than as a page.
+ *
+ * It was a heading, a grey paragraph and an input loose on the background. That
+ * is the correct shape for a page of content and the wrong one for a single
+ * question: nothing bounded the task, so nothing said how long it would take,
+ * and the field asking a stranger for their mobile number sat on the same open
+ * ground as the marketing copy above it. This audience is warned about exactly
+ * that — a form asking for a phone number with no visible owner. So the card
+ * carries a boundary, a mark, a two-step meter and one line about what the
+ * number is used for.
+ *
+ * Nothing here shrinks a target or a type size to buy the card its shape: the
+ * 48px controls, the --step-0 body and the 3px focus ring are the shared ones,
+ * and the card is sized around them.
+ */
+
+/* Narrower than .narrow's 34rem. A column holding one field reads as a form at
+ * this width and as an empty page at that one. */
+.page.narrow.auth {
+  max-width: 29rem;
+  padding-top: clamp(1.5rem, 6vh, 3.5rem);
+}
+
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.25rem, 5vw, 2rem);
+  /* The spectrum along the top edge, the same as the directory's filter panel
+     and the landing page's aside: the one raised tool on the screen. */
+  border-top: 4px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--spectrum) border-box;
+  /* A hairline plus a wide, soft drop. The card has to lift off --bg, which is
+   * a near-white: a border alone at that contrast is a rectangle, not a
+   * surface. */
+  box-shadow: 0 1px 2px rgb(20 23 28 / 0.05), 0 18px 40px -28px rgb(20 23 28 / 0.35);
+}
+.auth-card h1 { font-size: var(--step-2); margin-bottom: 0.375rem; }
+
+/* The page behind the card: the landing hero's wash, on the whole of <main>.
+ * The card sat on the bare near-white with nothing around it, which on a wide
+ * window is a small box in the middle of a large empty page — the shape of a
+ * screen that has not finished loading. :has() rather than a class from React,
+ * so the ground follows what is rendered. */
+main:has(.page.auth) {
+  background:
+    radial-gradient(40rem 26rem at 15% 0%, rgb(10 92 58 / 0.10), transparent 62%),
+    radial-gradient(36rem 26rem at 90% 10%, rgb(20 80 140 / 0.08), transparent 60%),
+    radial-gradient(34rem 22rem at 55% 55%, rgb(91 63 160 / 0.06), transparent 60%),
+    var(--bg);
+}
+
+/* What the step is about: a handset, then a shield. A tile in the accent's
+   tint, so it reads as the card's own picture rather than a stray glyph. */
+.auth-icon {
+  display: grid; place-items: center;
+  width: 3rem; height: 3rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--hue-green-weak), var(--hue-teal-weak));
+  color: var(--accent);
+}
+.auth-icon .icon { width: 24px; height: 24px; }
+.auth-card form > :last-child { margin-bottom: 0; }
+
+/* How far in, and how far to go. The bars are decoration — the sentence beside
+ * them carries the same fact in words, which is why they are aria-hidden and
+ * why colour is not doing this alone. */
+.auth-progress {
+  /* baseline, not centre: on a narrow screen the label wraps to two lines and
+   * centring floats the bars in the gap between them. Aligned to the first
+   * line's baseline they read as a rule beside the words either way. */
+  display: flex; align-items: baseline; gap: 0.625rem;
+  margin: 0 0 1.25rem;
+  color: var(--text-muted); font-size: var(--step--1); font-weight: 600;
+}
+.auth-progress .ticks { display: flex; gap: 0.25rem; flex: none; }
+.auth-progress .tick {
+  /* Wider than they were: at 28px the two bars were a speck beside the words,
+     and a progress meter that has to be looked for is not reassuring anyone. */
+  width: 2.5rem; height: 0.375rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+.auth-progress .tick.on { background: var(--accent); border-color: var(--accent); }
+
+.auth-lede { color: var(--text-muted); margin-bottom: 1.5rem; }
+
+/* A fixed prefix inside the control's own border, so "+91" and the ten digits
+ * read as one number and neither can be deleted by accident. The border and the
+ * focus ring move up to the group: two rings, one round the group and one round
+ * the input inside it, is what a naive version of this looks like. */
+.input-group {
+  display: flex; align-items: stretch;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+.input-group .prefix {
+  display: flex; align-items: center;
+  flex: none;
+  padding: 0 0.75rem;
+  background: var(--surface-sunken);
+  border-inline-end: 2px solid var(--border-strong);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.input-group input {
+  flex: 1; min-width: 0;
+  border: 0; border-radius: 0; background: transparent;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+/* Suppressed on the input and reinstated on the group, at the same 3px the
+ * rest of the site uses. Both rules are needed: :focus-within colours the
+ * border for a pointer user, :has draws the ring for a keyboard one. */
+.input-group input:focus-visible { outline: none; }
+.input-group:focus-within { border-color: var(--accent); }
+.input-group:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 3px; }
+.input-group:has(input[aria-invalid="true"]) { border-color: var(--danger); }
+
+/* Six boxes, one field.
+ *
+ * The boxes are decoration — spans showing where each digit landed — and the
+ * field is a single transparent input lying across all six. SignIn.tsx carries
+ * the argument for that; what the CSS has to hold up is the illusion, which is
+ * three rules: the input covers the whole group so every press lands on it, its
+ * text is transparent so only the boxes show a digit, and the caret is drawn by
+ * the box that comes next rather than by the browser.
+ *
+ * A box is about 36px wide on a 320px screen, which would be a poor target if a
+ * box were a target. None of them is: the control behind them is the full
+ * 248px by 56px of the group, and that is what 2.5.8 measures.
+ */
+.code-boxes {
+  position: relative;
+  display: block;
+  /* Six 3rem boxes and five 0.5rem gaps. Below that width the boxes share out
+   * what there is — flex: 1 with no floor — rather than the row overflowing,
+   * which is also what keeps them on one line at 200% text size. */
+  max-width: 21rem;
+  border-radius: var(--radius);
+}
+/* Wrapping, and the floor under a box is what makes it wrap.
+ *
+ * At 200% text (Table 3.3) the page has half the CSS pixels across and the
+ * boxes have the same rem width, so six of them in a row no longer fit any
+ * phone. Given a floor they break to two rows of three and stay readable;
+ * without one they would shrink until a digit no longer fits inside its own
+ * box. The input is inset: 0 over the group, so it covers both rows and the
+ * field is still one target however the boxes fall. */
+.code-boxes .boxes {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 0.5rem;
+}
+.code-boxes .box {
+  flex: 1 1 0; min-width: 2rem; max-width: 3rem;
+  display: flex; align-items: center; justify-content: center;
+  height: 3.5rem;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: var(--step-2); font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* A filled box is deliberately NOT blue.
+ *
+ * It was, as a second signal beside the digit, on the reasoning that colour
+ * should not carry progress alone. The reasoning was right and the conclusion
+ * was wrong: a blue border on every filled box, another on the next one, and a
+ * 3px blue ring around the whole group left the code field three blues deep
+ * and reading as an error state rather than as a form. The digit is the
+ * signal, and a digit is text — so this now depends on colour not at all,
+ * which is a stronger position than the one the blue was defending.
+ *
+ * Blue means one thing in this group: the box you are typing into. */
+
+/* On a 320px phone a box is 36px across, and 56px of height on 36px of width
+ * reads as a slot rather than as a box. */
+@media (max-width: 24rem) {
+  .code-boxes .box { height: 3rem; }
+}
+
+/* The box you are typing into, and the only blue in the group.
+ *
+ * It carries the focus indicator for the whole control, which is why there is
+ * no longer a ring around .code-boxes. One input sits behind the six boxes and
+ * .next is where its caret is, so marking that box marks focus — a 3px blue
+ * edge on one box out of six is unmissable without ringing the group to say
+ * it.
+ *
+ * That holds only while .next always exists. SignIn.tsx clamps it to the last
+ * box for exactly this reason: under the old `i === code.length` a complete
+ * code matched no box at all, and with the group ring gone focus would have
+ * disappeared on the sixth digit.
+ *
+ * Behind :has(input:focus), because a caret blinking in a form nobody is
+ * typing in is a form that looks focused and is not. */
+.code-boxes:has(input:focus) .box.next {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+/* No drawn caret, and nothing blinking.
+ *
+ * There was one: a 2px bar in the active box, blinking on a 1.06s step. It is
+ * gone for two reasons and either would do.
+ *
+ * It said what the box already says. .box.next carries an accent border and an
+ * inset accent edge, and that is both the position and the focus indicator for
+ * the whole control — a bar inside it is a second mark for one fact, and the
+ * one that moves is the one that pulls the eye off the digits somebody is
+ * reading across from a phone.
+ *
+ * Held still instead of removed, it would have been worse: a 2px vertical bar
+ * alone in a box, in a row that reads 0 5 1 _ , is a shape a reader can take
+ * for a 1. A caret may only stop blinking if it stops looking like a digit,
+ * and on a numeric field it cannot.
+ *
+ * Removed here as well as in the panel, because the two are meant to be the
+ * same control — a student and an operator reading the same six digits should
+ * not meet two different fields. */
+
+.code-boxes input {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  min-height: 0;
+  padding: 0; border: 0; border-radius: inherit;
+  background: transparent;
+  text-align: center;
+  /* Transparent, not hidden: opacity and visibility are what autofill
+   * heuristics read to decide a field is not really on the page, and the
+   * autofill is the point of keeping one input. -webkit-text-fill-color as
+   * well as color, because Safari paints an autofilled value through the
+   * first one. */
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: transparent;
+  /* Never below 16px: iOS zooms the page in when a smaller field takes focus,
+   * and the six boxes are then wider than the screen. */
+  font-size: 1rem;
+}
+/* Invisible text still highlights, and a select-all across the field would
+ * otherwise drag a blue block over the boxes. */
+.code-boxes input::selection { background: transparent; }
+
+/* The input's ring is suppressed and NOT replaced by one on the group.
+ *
+ * It used to be a 3px ring at outline-offset 4px around all six boxes, to
+ * match the rest of the site. On any other control that is right; here it drew
+ * a box around a box around a box, and it was the heaviest piece of blue on
+ * the sign-in screen. .box.next above is the focus indicator instead. */
+.code-boxes input:focus-visible { outline: none; }
+.code-boxes:has(input[aria-invalid="true"]) .box { border-color: var(--danger); }
+
+/* The number the code went to, with the way to correct it beside it. A typo is
+ * discovered here, and the remedy belongs next to the evidence. */
+.auth-target {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.auth-target {
+  /* When the pill and the correction do not fit on one line, the correction
+     wraps under it; less side padding keeps its words on the pill's edge rather
+     than indented from it. The 40px height is unchanged. */
+  row-gap: 0.25rem;
+}
+.auth-target button.small { padding-inline: 0.25rem; }
+/* The pencil and the word, beside the number. Its own padding back, since it
+   now shares the line with the pill rather than wrapping under it. */
+.auth-target button.auth-change { padding-inline: 0.625rem; gap: 0.375rem; }
+.auth-target button.auth-change .icon { width: 16px; height: 16px; }
+.auth-target .number {
+  font-weight: 700; font-variant-numeric: tabular-nums;
+  /* On a pill, so the number reads as the one fact the code depends on. */
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+button.small { min-height: 40px; padding: 0.375rem 0.625rem; font-size: var(--step--1); }
+
+/* Signing in or being registered, said before the code is typed. A tinted strip
+ * rather than a notice: it is context, not something that went wrong. */
+.auth-branch {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius);
+  background: var(--accent-weak);
+  font-size: var(--step--1);
+}
+.auth-branch .mark { color: var(--accent); font-weight: 700; flex: none; }
+
+/* Reserved height. The confirmation appears in a live region after a resend,
+ * and a line that pushes the buttons down as it arrives moves a target out from
+ * under the pointer that just pressed it. */
+.auth-sent {
+  min-height: 1.5rem;
+  margin: 0.75rem 0 0;
+  color: var(--accent); font-weight: 600; font-size: var(--step--1);
+}
+
+/* The three ways to receive a code.
+ *
+ * A column on a phone and a row where there is room, because these are three
+ * full sentences ("Call me with the code") rather than three words, and three
+ * sentences squeezed onto one line at 320px wrap into an unreadable thicket.
+ * Each stays a 48px target in both directions.
+ *
+ * Not styled as primary actions: the student has already been given a code by
+ * whatever route the widget chose, and these are the recovery path. Making them
+ * loud would suggest the first attempt had failed before it has had time to
+ * arrive. */
+.auth-retry { display: grid; gap: 0.5rem; margin-block-start: 0.5rem; }
+/* The countdown under the three channels. Advisory, not a gate — the buttons
+   stay live while it runs; see the note in pages/SignIn. */
+.auth-wait { margin: 0; font-size: var(--step--1); }
+.auth-channels { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.auth-channels > button {
+  flex: 1 1 auto;
+  min-height: 48px;
+  justify-content: flex-start;
+  /* min-width rather than a fixed basis: the longest of the three sets the
+     shared width, so they do not stagger as the label lengths change with
+     translation. */
+  min-width: 10rem;
+}
+@media (max-width: 30rem) {
+  /* One per row below 480px. Three of these side by side at that width leaves
+     each about 100px, which wraps "Call me with the code" onto four lines. */
+  .auth-channels { flex-direction: column; }
+  .auth-channels > button { min-width: 0; }
+}
+
+/* The three channels as outlined tiles with an icon each, rather than three
+ * bare green phrases in a row. They are equal options — see the note in
+ * SignIn — so all three are drawn alike and none is filled. Restated over
+ * button.quiet, whose transparent border would otherwise win. */
+.auth-channels > button.auth-channel {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--step--1);
+}
+.auth-channels > button.auth-channel .icon { flex: none; color: var(--accent); }
+/* Start-aligned words, so a label that wraps in a narrow panel — "Call me with
+   the code" — reads down its own left edge beside the icon, not centred under
+   it the way the global button rule sets text. */
+.auth-channels > button.auth-channel { text-align: start; }
+.auth-channels > button.auth-channel:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+.auth-retry > .muted:first-child { font-size: var(--step--1); }
+
+.auth-foot {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 0.5rem; padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: var(--step--1);
+}
+
+/* What the number is for. Under the button that sends it, which is where the
+ * question is actually being asked. */
+.auth-fine {
+  margin: 1rem 0 0;
+  color: var(--text-muted); font-size: var(--step--1);
+}
+
+/* --- the code step, in two panels -------------------------------------------
+ *
+ * Left, the whole of the task: where the code went, whether this is a sign-in
+ * or a new account, the six boxes and Verify. Right, the way out if nothing
+ * arrives. On one column the recovery options sat under the button, so a
+ * student reached them only by scrolling — at the very moment the code had not
+ * come. Beside it, both are on screen at once, and the task keeps the wider
+ * column.
+ *
+ * Only where the window has room for two at a readable width: 60rem. Below it
+ * the panels are the single column they always were, and the card keeps the
+ * 29rem the number step uses — a phone sees no change at all.
+ */
+@media (min-width: 60rem) {
+  .page.narrow.auth.auth-wide { max-width: 52rem; }
+
+  .auth-code-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 0 2.25rem;
+    align-items: start;
+  }
+  /* A hairline between the panels rather than two boxes inside the card: the
+     card is already the boundary, and nested frames are borders for nothing. */
+  .auth-panel + .auth-panel {
+    border-inline-start: 1px solid var(--border);
+    padding-inline-start: 2.25rem;
+    min-height: 100%;
+  }
+  /* The retry panel's lead-in as its heading, now it is a column with a top
+     rather than a line trailing the button; level with the task's title. */
+  /* align-content: start, because .auth-retry is a grid and the panel is
+     stretched to the task's height: without it the spare height was shared
+     out between the rows, and the three buttons grew and drifted away from
+     their own heading. */
+  .auth-panel-retry { margin-block-start: 0; padding-top: 4rem; align-content: start; }
+  .auth-panel-retry > .muted:first-child {
+    display: block;
+    font-size: var(--step-0);
+    font-weight: var(--w-strong);
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+  .auth-panel-retry .auth-channels { flex-direction: column; }
+  .auth-panel-retry .auth-channels > button { min-width: 0; }
+}
+
+/* A channel while MSG91's own wait runs: unavailable, and still a tile. The
+   quiet-button rule for this state takes the border and the ground away,
+   which is right for a bare word and wrong here — three outlines turning into
+   three grey words reads as the buttons having gone. The outline stays, on the
+   sunken ground, with the muted label; the countdown under them says when. */
+.auth-channels > button.auth-channel:disabled:not([aria-busy="true"]):not([data-held]) {
+  border-color: var(--border-strong);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+.auth-channels > button.auth-channel:disabled:not([aria-busy="true"]):not([data-held]) .icon {
+  color: var(--text-muted);
+}
+
+/* --- did it arrive? --------------------------------------------------------------
+ *
+ * The question asked after every code that goes out, where a countdown used to
+ * be. Two answers as two full-width buttons, the likelier one — yes — filled.
+ */
+.auth-arrived {
+  display: grid; gap: 0.75rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: var(--accent-weak);
+}
+.auth-arrived-q { font-weight: var(--w-strong); font-size: var(--step-0); }
+.auth-arrived-actions { display: grid; gap: 0.5rem; }
+.auth-arrived-actions .btn,
+.auth-arrived-actions button { width: 100%; }
+.auth-arrived-actions button:not(.primary) { background: var(--surface); }
+/* Appearing, briefly — it replaces the channels when a code goes out, and the
+   movement says the panel has a new question in it. Off under reduced motion. */
+@keyframes arrived-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+.auth-arrived, .auth-channels { animation: arrived-in 200ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+  .auth-arrived, .auth-channels { animation: none; }
+}
+
+/* Answered yes: the other ways, one quiet press away. */
+button.auth-reopen { padding-inline: 0.25rem; justify-content: flex-start; }
+
+/* Each way's own badge, at the far end of its button: tries left, or the
+   seconds of a wait MSG91 has stated for that one channel. */
+.auth-channels > button.auth-channel { gap: 0.5rem; }
+.auth-channel-label { flex: 1; text-align: start; }
+.auth-channel-badge {
+  flex: none;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}

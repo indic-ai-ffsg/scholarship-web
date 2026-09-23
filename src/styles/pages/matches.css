@@ -1,0 +1,534 @@
+/* --- the matched list -----------------------------------------------------------
+ *
+ * A row per scheme, not a card. It was a stack of full-width cards about four
+ * hundred pixels tall, so three schemes filled a laptop screen and a student
+ * with fourteen matches scrolled past six of them to find out whether any were
+ * closing. The six questions a student arrives with were answered down the card
+ * — which is the order you read a document in, and not the order you scan a
+ * list in.
+ *
+ * The row answers them across, in three tracks with a hairline between the
+ * first two: the scheme, the facts you compare between rows, and the one
+ * action. Everything comparable between two schemes sits in the same column on
+ * both, which is the only property that makes fourteen of them scannable.
+ */
+
+/* --- the hero ---------------------------------------------------------------- */
+
+.match-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem 1.5rem;
+  align-items: start;
+  background: linear-gradient(100deg, var(--accent-weak), var(--surface) 70%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.match-hero-main { min-width: 0; }
+.match-hero-say h1 { margin: 0 0 0.2rem; }
+.match-hero-say p { margin: 0; color: var(--text-muted); max-width: var(--measure); }
+
+/* The four figures. Counts, not controls: the filters under the list do the
+   selecting, and two controls for one job is how somebody learns that pressing
+   either does something slightly different. */
+.match-figures {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.5rem;
+}
+.match-figure {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.7rem;
+  display: grid;
+  gap: 0.1rem;
+}
+.match-figure-n {
+  font-size: var(--step-2);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.match-figure-label { font-size: var(--step--1); color: var(--text-muted); }
+/* Colour on the two figures that mean something to act on, and on the number
+   only. The label says it too — this is a tint, not the signal. */
+.match-figure.tone-eligible .match-figure-n { color: var(--eligible); }
+.match-figure.tone-blocked  .match-figure-n { color: var(--blocked); }
+
+/* Why so few — beside the figures, which is the question they raise. */
+.match-nudge {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+  align-items: start;
+  width: min(20rem, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 0.9rem;
+}
+.match-nudge-mark {
+  display: grid;
+  place-items: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--blocked-weak);
+  color: var(--blocked);
+}
+.match-nudge strong { display: block; font-size: var(--step-0); }
+.match-nudge p { margin: 0.15rem 0 0.4rem; font-size: var(--step--1); color: var(--text-muted); }
+.match-nudge a { font-size: var(--step--1); }
+
+/* --- the filters --------------------------------------------------------------- */
+
+.match-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+.match-tabs { display: flex; flex-wrap: wrap; gap: 0.15rem; }
+.match-filters-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+.match-tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  /* The house 48px target, which a 15px tab does not reach on its own. */
+  min-height: 48px;
+  padding: 0 0.7rem;
+  font: var(--step--1)/1.4 var(--font);
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.match-tab:hover { color: var(--text); }
+.match-tab.is-on { color: var(--text); border-bottom-color: var(--accent); }
+
+.match-tab-n {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--step--1);
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+.match-tab.is-on .match-tab-n { background: var(--accent-weak); color: var(--accent); }
+
+.match-sort { display: inline-flex; align-items: center; gap: 0.4rem; font-size: var(--step--1); }
+.match-sort > span { color: var(--text-muted); white-space: nowrap; }
+.match-sort select { min-height: 40px; }
+.match-empty-filter { margin: 1.5rem 0; }
+
+/* --- one scheme ------------------------------------------------------------------ */
+
+.match-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+
+.match-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) 1px minmax(0, 0.85fr) minmax(0, 0.85fr);
+  gap: 1.25rem;
+  align-items: stretch;
+  padding: 1.15rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  /* The state, as an edge. It is the row's only fill, so a list of fourteen
+     reads as one surface with marks down its left rather than as fourteen
+     coloured objects — and the badge in the first column says the word, so the
+     edge never carries the meaning on its own. */
+  border-inline-start: 6px solid var(--ineligible);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+.match-row.eligible   { border-inline-start-color: var(--eligible); }
+.match-row.likely     { border-inline-start-color: var(--likely); }
+.match-row.blocked    { border-inline-start-color: var(--blocked); }
+.match-row.ineligible { border-inline-start-color: var(--ineligible); }
+
+/* Hover is a border change and nothing else. The row is not itself clickable —
+   the title and the action are — so a lift would promise a target that is not
+   there. */
+.match-row:hover { border-color: var(--border-strong); }
+
+.match-col { min-width: 0; }
+
+/* The hairline between the scheme and its facts. Its own element rather than a
+   border on a column, so it can be removed when the tracks collapse instead of
+   turning into a stray line across a stacked card. */
+.match-rule { background: var(--border); }
+
+.match-col-say .state-badge { margin-bottom: 0.5rem; }
+
+/* The sponsor's mark and the scheme's name, on one line.
+ *
+ * The mark is a fixed square that does not shrink, so a long title wraps beside
+ * it rather than squeezing it into a sliver — and the row's height does not
+ * change when the bytes land, because the box was always that size. */
+.match-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+  margin-bottom: 0.4rem;
+}
+.match-head .org-mark { margin-top: 0.1rem; }
+
+.match-col-say h2 {
+  font-size: var(--step-1);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* No underline on the title.
+ *
+ * It is the largest text in the row and the only link in its column, so it is
+ * already unmistakably a target; underlining it as well put a rule under two
+ * lines of 19px type on every one of fourteen rows, which reads as a page of
+ * struck-through headings. The underline comes back on hover and on focus,
+ * which is where the rule about never removing it actually bites — it must be
+ * discoverable by pointer and reachable by keyboard, not permanently drawn. */
+.match-col-say h2 a { text-decoration: none; }
+.match-col-say h2 a:hover,
+.match-col-say h2 a:focus-visible { text-decoration: underline; }
+
+.match-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  margin: 0 0 0.45rem;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+}
+.match-meta-bit { display: inline-flex; align-items: center; gap: 0.35rem; }
+.match-meta-bit .icon { flex: none; opacity: 0.75; }
+/* The figure is what a student scans for down the column, so it carries the
+   weight and the provider's name does not. */
+.match-award { color: var(--text); font-weight: 600; }
+
+/* The scheme in its own words, clamped. A summary is written to be read on the
+   scheme's own page; a row that lets one run to nine lines stops being a row. */
+.match-summary {
+  margin: 0 0 0.45rem;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.match-more { font-size: var(--step--1); }
+
+/* --- the facts ------------------------------------------------------------------ */
+
+.match-col-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; align-content: start; }
+.match-fact {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 0.45rem;
+  align-items: start;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+}
+.match-fact .icon { flex: none; opacity: 0.75; margin-top: 0.1em; }
+/* The deadline bands format.deadlineLabel already decides, repeated here so the
+   row and the directory colour the same day count alike. */
+.match-fact.deadline-today,
+.match-fact.deadline-soon { color: var(--danger); font-weight: 600; }
+.match-fact.deadline-today .icon,
+.match-fact.deadline-soon .icon { opacity: 1; }
+.match-fact.deadline-closing { color: var(--blocked); font-weight: 600; }
+.match-fact.deadline-closing .icon { opacity: 1; }
+
+/* Why a rule refused. An alert rather than a fourth fact: it is the one line on
+   the row that is bad news, and among three neutral ones it reads as a detail
+   somebody can skip. */
+.match-alert {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 0.45rem;
+  align-items: start;
+  margin-top: 0.15rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius);
+  font-size: var(--step--1);
+}
+.match-alert .icon { flex: none; margin-top: 0.1em; }
+.match-alert.no   { background: var(--danger-weak); color: var(--danger); }
+.match-alert.todo { background: var(--blocked-weak); color: var(--blocked); }
+
+/* --- the action ----------------------------------------------------------------- */
+
+.match-do {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+/* Green only where the answer is yes. The panel is the one place on the row
+   where a fill is earned: it is the answer, and the button inside it is the
+   thing the whole page is for. */
+.match-do.yes { background: var(--accent-weak); }
+.match-do strong { font-size: var(--step-0); }
+.match-do.yes strong { color: var(--accent); }
+.match-do p { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
+.match-do .btn { width: 100%; justify-content: center; text-align: center; margin-top: 0.3rem; }
+
+/* Three tracks, then two, then one.
+ *
+ * The hairline goes first: a vertical rule between stacked blocks is a line
+ * across the card. Then the action panel drops under the facts, which are the
+ * two narrowest tracks and the least damaged by sharing a row. At phone width
+ * everything stacks in the order the questions are asked, and the button is
+ * full width — which there is the only column that matters. */
+@media (max-width: 68rem) {
+  .match-row { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); }
+  .match-rule { display: none; }
+  .match-do { grid-column: 2; }
+}
+@media (max-width: 44rem) {
+  .match-row { grid-template-columns: 1fr; gap: 0.9rem; }
+  .match-do { grid-column: 1; }
+  .match-hero { grid-template-columns: 1fr; }
+  .match-nudge { width: 100%; }
+
+  /* Five tabs wrapped to three lines on a phone, which pushed the first scheme
+     most of a screen down — the tab strip taking more room than the thing it
+     filters. One row that scrolls instead.
+     *
+     * The house rule is that the page body never scrolls sideways; a strip with
+     * its own overflow container is the exception it already makes for tables
+     * and code, and this is the same shape. The scrollbar is hidden because the
+     * partly-visible last chip is the affordance, and a 15px bar under five
+     * 48px targets is noise on the one screen with the least room. */
+  .match-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* Full-bleed to the page gutter, so the strip looks like it runs off the
+       edge rather than stopping short of it. */
+    margin-inline: calc(-1 * var(--page-pad));
+    padding-inline: var(--page-pad);
+    scroll-padding-inline: var(--page-pad);
+  }
+  .match-tabs::-webkit-scrollbar { display: none; }
+  .match-tab { white-space: nowrap; }
+
+  .match-filters-right { width: 100%; justify-content: space-between; }
+}
+
+/* --- the matched list, composed ------------------------------------------------
+ *
+ * The page answers "what can I apply for" before anything else, so weight goes
+ * where the answer is yes and comes off where it is no.
+ */
+
+/* The hero on the landing page's wash rather than a single green-to-white fade,
+   so it reads as the top of the page rather than as one more card. */
+.match-hero {
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 1.5rem 1.375rem;
+  background:
+    radial-gradient(32rem 14rem at 0% 0%, rgb(10 92 58 / 0.10), transparent 62%),
+    radial-gradient(28rem 14rem at 100% 0%, rgb(20 80 140 / 0.08), transparent 60%),
+    var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+/* The four counts in their states' own colours, each with the state's mark —
+ * the same tick, bang, clock and cross the badges on the rows carry — so the
+ * summary and the list below it speak one vocabulary. Still counts, not
+ * controls (see the note in Matches): the tabs do the selecting.
+ *
+ * The mark is generated content with an empty alternative, `content: "✓" / ""`,
+ * so a screen reader reads the number and its label and nothing else. */
+.match-figure {
+  position: relative;
+  padding: 0.75rem 0.875rem 0.75rem 3.25rem;
+  border-color: transparent;
+  background: var(--fig-weak, var(--surface-sunken));
+}
+.match-figure::before {
+  position: absolute; inset-inline-start: 0.875rem; top: 50%; translate: 0 -50%;
+  display: grid; place-items: center;
+  width: 1.75rem; height: 1.75rem;
+  border-radius: 50%;
+  background: var(--fig, var(--ineligible)); color: #fff;
+  font-size: 0.875rem; font-weight: 700;
+}
+.match-figure.tone-eligible   { --fig: var(--eligible);   --fig-weak: var(--eligible-weak); }
+.match-figure.tone-blocked    { --fig: var(--blocked);    --fig-weak: var(--blocked-weak); }
+.match-figure.tone-closing    { --fig: var(--danger);     --fig-weak: var(--danger-weak); }
+.match-figure.tone-ineligible { --fig: var(--ineligible); --fig-weak: var(--ineligible-weak); }
+.match-figure.tone-eligible::before   { content: "✓" / ""; }
+.match-figure.tone-blocked::before    { content: "!" / ""; }
+.match-figure.tone-closing::before    { content: "⏱" / ""; font-size: 0.8rem; }
+.match-figure.tone-ineligible::before { content: "×" / ""; font-size: 1.05rem; }
+.match-figure .match-figure-n { color: var(--fig, var(--text)); }
+/* On a phone the tiles are two to a row, and the mark's column was costing the
+   label its line — "You / qualify". A smaller mark, closer in. */
+@media (max-width: 44rem) {
+  .match-figure { padding-inline-start: 2.625rem; }
+  .match-figure::before { inset-inline-start: 0.625rem; width: 1.5rem; height: 1.5rem; font-size: 0.75rem; }
+}
+.match-figure .match-figure-label { color: var(--text); }
+
+/* The tabs as a segmented control: one pill track, the chosen tab lifted onto
+ * white. It was a row of words over a hairline with the choice marked by a 2px
+ * rule — the lightest possible signal for the control that decides what the
+ * page shows. Every tab keeps its 48px target; the track is what grows. */
+.match-filters { border-bottom: 0; }
+.match-tabs {
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+}
+.match-tab {
+  border-bottom: 0;
+  border-radius: 999px;
+  padding: 0 1rem;
+  transition: background-color var(--dur-fast) ease-out, color var(--dur-fast) ease-out, box-shadow var(--dur-fast) ease-out;
+}
+.match-tab:hover { background: rgb(255 255 255 / 0.6); }
+/* The chosen tab: white ground, a shadow and the accent — and the weight, so it
+   is still marked on a monochrome screen, as aria-selected marks it for a
+   screen reader. */
+.match-tab.is-on {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-1);
+}
+.match-tab.is-on .match-tab-n { background: var(--accent); color: var(--accent-text); }
+@media (max-width: 44rem) {
+  /* The phone's scrolling strip keeps its bleed; only the pill track's radius
+     comes off, since it runs off the edge. */
+  .match-tabs { border-radius: 0; background: transparent; padding-inline: var(--page-pad); }
+  .match-tab { background: var(--surface-sunken); }
+}
+
+/* The rows. Rounded as the rest of the site's cards now are, and the action
+ * panel sized to what is in it: stretched to the row's height it was a tall
+ * green block with a button at the top and empty tint below. */
+.match-row { border-radius: var(--radius-lg); }
+.match-do { align-self: start; }
+.match-col-say h2 a { color: var(--text); }
+.match-col-say h2 a:hover, .match-col-say h2 a:focus-visible { color: var(--accent); }
+
+/* Not open to you: quieter, not hidden. The row keeps its facts and its reason
+ * — somebody may be one change of course away from it — but it gives up the
+ * white card, the shadow and a line of summary, so the rows that can be applied
+ * for are the ones the eye lands on. Nothing is faded: every word keeps its
+ * contrast, which is the rule the .refetching note gives for this site. */
+.match-row.ineligible {
+  background: var(--bg);
+  box-shadow: none;
+}
+.match-row.ineligible .match-summary { -webkit-line-clamp: 2; line-clamp: 2; }
+.match-row.ineligible .match-do { background: transparent; padding-inline: 0; }
+
+/* Outside the open window — the Closed and Coming soon tabs: the same quiet
+   row as "Not open to you" — page ground, no shadow — whatever the verdict,
+   since nothing on it can be acted on yet or any more. The badge keeps its
+   state colour: "you qualify" is still worth seeing plainly, it is the reason
+   to come back when the scheme opens, or to watch for next year's round. */
+.match-row.is-outside {
+  background: var(--bg);
+  box-shadow: none;
+}
+.match-row.is-outside .match-do { background: transparent; padding-inline: 0; }
+.match-row.is-outside .match-col-say h2 { color: var(--text); }
+
+/* --- motion ------------------------------------------------------------------
+ *
+ * Three movements, each saying something, none on a loop.
+ *
+ *   The rows ease up into place when the list arrives and when the tab
+ *   changes (the list is keyed on the tab), fifty milliseconds apart and
+ *   capped at the eighth, so a long list has fully arrived inside half a second
+ *   and nobody waits on an animation to read a row.
+ *   The summary tiles do the same once, on arrival.
+ *   A row under the pointer deepens its shadow. It does not move: the row is
+ *   not itself a target (see the note on .match-row:hover), and a lift would
+ *   promise one.
+ *
+ * All of it is removed, not shortened, under reduced motion: the global rule
+ * cuts durations but not delays, and a delayed `backwards` fill would hold a
+ * row invisible and then snap it in — a flash rather than a fade.
+ */
+@keyframes match-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.match-list > li { animation: match-rise 360ms var(--ease-out) backwards; }
+.match-list > li:nth-child(2) { animation-delay: 50ms; }
+.match-list > li:nth-child(3) { animation-delay: 100ms; }
+.match-list > li:nth-child(4) { animation-delay: 150ms; }
+.match-list > li:nth-child(5) { animation-delay: 200ms; }
+.match-list > li:nth-child(6) { animation-delay: 250ms; }
+.match-list > li:nth-child(7) { animation-delay: 300ms; }
+.match-list > li:nth-child(n+8) { animation-delay: 350ms; }
+
+.match-figures > li { animation: match-rise 420ms var(--ease-out) backwards; }
+.match-figures > li:nth-child(2) { animation-delay: 60ms; }
+.match-figures > li:nth-child(3) { animation-delay: 120ms; }
+.match-figures > li:nth-child(4) { animation-delay: 180ms; }
+
+.match-row { transition: box-shadow var(--dur) ease-out, border-color var(--dur) ease-out; }
+.match-row:not(.is-outside):not(.ineligible):hover { box-shadow: var(--shadow-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .match-list > li, .match-figures > li { animation: none; }
+}
+
+/* The off-site caveat, under the button as its small print. Muted and a step
+   down, never below the --step--1 floor, and not clamped: the one thing only
+   it says — this will not appear under your applications — has to be there to
+   read in full. */
+.match-do .match-note {
+  margin: 0.375rem 0 0;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+/* --- while the list is fetched ----------------------------------------------
+ *
+ * The page's own shapes at their own sizes — four tiles, the tab strip, three
+ * rows in the row's three tracks — so the list fills in rather than drops in.
+ * The sweep and its reduced-motion stand-in come from components/loading.css.
+ */
+.match-figure.skeleton-tile {
+  min-height: 4.5rem;
+  padding: 0;
+  background: var(--surface-sunken);
+}
+.match-figure.skeleton-tile::before { content: none; }
+.match-skeleton { display: grid; gap: 1rem; }
+.match-skeleton-tabs { height: 3.5rem; width: min(40rem, 100%); border-radius: 999px; }
+.match-skeleton-row {
+  margin: 0;
+  border-radius: var(--radius-lg);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) minmax(0, 0.85fr);
+  gap: 1.25rem;
+  min-height: 11rem;
+}
+.match-skeleton-col { display: grid; gap: 0.75rem; align-content: start; }
+@media (max-width: 44rem) {
+  .match-skeleton-row { grid-template-columns: 1fr; }
+}

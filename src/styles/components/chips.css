@@ -1,0 +1,19 @@
+/* --- filters (public directory) --------------------------------------------------------- */
+
+/* A ceiling on the track as well as a floor, and packed to the start rather
+ * than stretched. Four filters sharing 1fr of a full-width page gave each one a
+ * 470px select — a control whose target is a third of the screen wide reads as
+ * broken, and the eye has to travel the whole width to pair it with its label. */
+.filters {
+  display: grid; gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 18rem));
+  justify-content: start;
+}
+.filters .field { margin: 0; }
+
+.chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.chip {
+  padding: 0.375rem 0.75rem; border-radius: 999px;
+  background: var(--surface-sunken); color: var(--text-muted);
+  font-size: var(--step--1); font-weight: 600;
+}

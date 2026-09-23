@@ -8,6 +8,11 @@ import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { SOCIAL } from '../lib/social'
 import { useI18n } from '../lib/i18n-context'
+import { LanguageSwitcher } from './LanguageSwitcher'
+import { hadSession } from '../lib/session-hint'
+import { forgetAvatar } from '../lib/avatar'
+import { Avatar } from './Avatar'
+import { IconShield, IconSignOut, IconUser } from './icons'
 import { PageTitleContext } from '../lib/page-title'
 import { Loading, OfflineBanner } from './ui'
 
@@ -46,13 +51,14 @@ import { Loading, OfflineBanner } from './ui'
  * costs discoverability, and this audience pays that cost twice — once for the
  * icon and again for a target that shrank.
  */
-/* The five addresses the router already answers.
+/* The three addresses the router already answers — /partner and /impact went
+ * with their pages, and their menu rows with migration 0064.
  *
  * Their rows come back from the menu endpoint like any other, and rendering
  * them would draw each of them twice — once from the compiled list above and
  * once from the API. Kept as a set here rather than derived from the nav markup
  * because the markup is conditional on being signed in and this is not. */
-const BUILTIN_SLUGS = new Set(['', 'check', 'scholarships', 'partner', 'impact'])
+const BUILTIN_SLUGS = new Set(['', 'check', 'scholarships'])
 
 export default function Layout() {
   const { t } = useI18n()
@@ -75,7 +81,13 @@ export default function Layout() {
     [location.pathname],
   )
 
-  const signedIn = status === 'authenticated'
+  /* Signed in, or — while the session check is still running — last known to
+     have been. 'loading' used to read as signed out, so every page load drew
+     the visitor's bar and swapped it for the student's half a second later.
+     The hint only chooses which links to draw while waiting; the guards on
+     the routes behind them still wait for the real answer. See
+     lib/session-hint. */
+  const signedIn = status === 'authenticated' || (status === 'loading' && hadSession())
 
   /* The menu items an operator has published, beyond the five compiled in.
    *
@@ -249,14 +261,19 @@ export default function Layout() {
             * for — and the block is still 48px tall, so the bar has not grown
             * to hold it.
             *
-            * The mark is the tree alone rather than the full artwork, which
-            * stacks the tree over "Indic-ai" over a strapline: at the height a
-            * bar can spare those lower two lines are unreadable smudges. The
-            * full lockup is in the footer, where there is room to read it.
+            * The mark is the full artwork now — the tree with "Indic-ai" under
+            * it — where it used to be the tree alone, cropped from it. The crop
+            * was chosen on the reasoning that the wordmark would be a smudge at
+            * bar height; in this file it is two-fifths of the drawing, and at
+            * the 52px the bar gives it the word is about 14px tall and reads.
+            * Cropped, the bar showed a cluster of blue dots that nobody could
+            * name, which is the opposite of what a mark is for.
             *
-            * alt is empty and the words below it are real text: the link
-            * already says the name, and a mark that repeats its own wordmark to
-            * a screen reader is announced twice. */}
+            * Beside it on a wide window, the site's own name; on a narrow one,
+            * the logo alone, since it already carries the foundation's name in
+            * its own lettering. The name is still in the link either way — see
+            * .brand-name in the stylesheet — so the link keeps its accessible
+            * name, and alt stays empty so the name is not announced twice. */}
           {/* The identity block: whose site this is, and who stands behind it.
             *
             * The sponsor credit moved up from the footer, and the move is worth
@@ -275,7 +292,7 @@ export default function Layout() {
             * the thing being decided is whether to trust it with a disability
             * certificate. */}
           <Link to="/" className="brand">
-            <img src="/logo-mark.png" alt="" width="36" height="28" className="brand-mark" />
+            <img src="/logo-full.png" alt="" width="320" height="265" className="brand-mark" />
             <span className="brand-name">{t('app.name')}</span>
           </Link>
 
@@ -358,17 +375,6 @@ export default function Layout() {
             {signedIn && <NavLink to="/matches">{t('nav.matches')}</NavLink>}
             {signedIn && <NavLink to="/applications">{t('nav.applications')}</NavLink>}
             {signedIn && <NavLink to="/documents">{t('nav.documents')}</NavLink>}
-            {/* Last, and only for a visitor. An organisation deciding whether
-                to join and a student halfway through an application are not the
-                same reader, and the student's four destinations are not worth
-                diluting with two that are not theirs. */}
-            {!signedIn && inMenu('impact') && (
-              <NavLink to="/impact">{menuLabel('impact', t('nav.impact'))}</NavLink>
-            )}
-            {!signedIn && inMenu('partner') && (
-              <NavLink to="/partner">{menuLabel('partner', t('nav.partner'))}</NavLink>
-            )}
-
             {/* Pages added in the admin panel (backend migration 0042).
               *
               * Appended rather than replacing the five above, and that is the
@@ -433,6 +439,12 @@ export default function Layout() {
               wide window they read as a cluster at the far edge, and on a
               narrow one they drop to a row of their own at the bottom, nearest
               the thumb. */}
+          {/* The language, ahead of the account controls and outside the
+              conditional below, because it is the one control in this bar that
+              a visitor needs before they can read any of the others. The
+              reasoning is in the component. */}
+          <LanguageSwitcher />
+
           {signedIn
             ? <AccountMenu onSignOut={signOut} />
             : (
@@ -709,8 +721,6 @@ function SocialLinks() {
 /** The page name for the tab, so several open at once stay distinguishable. */
 function titleFor(path: string, t: (key: string) => string): string {
   if (path.startsWith('/scholarships')) return t('nav.find')
-  if (path.startsWith('/partner')) return t('nav.partner')
-  if (path.startsWith('/impact')) return t('nav.impact')
   if (path.startsWith('/dashboard')) return t('nav.dashboard')
   if (path.startsWith('/matches')) return t('nav.matches')
   if (path.startsWith('/applications')) return t('nav.applications')
@@ -739,10 +749,12 @@ function titleFor(path: string, t: (key: string) => string): string {
  * held two copies of the same forty lines, which is how one of them ends up
  * without the Escape handler. */
 function Menu({
-  label, hint, className, children,
+  label, hint, className, leading, children,
 }: {
   /** The visible text on the control. */
   label: string
+  /** Drawn before the label inside the control — the account's avatar. */
+  leading?: ReactNode
   /** Its accessible name, where the visible label is a shorthand. */
   hint?: string
   className?: string
@@ -782,7 +794,8 @@ function Menu({
   return (
     <details className={`menu${className ? ` ${className}` : ''}`} ref={ref}>
       <summary aria-label={hint}>
-        {label}
+        {leading}
+        <span className="menu-label">{label}</span>
         <span className="caret" aria-hidden="true">▾</span>
       </summary>
 
@@ -795,16 +808,43 @@ function Menu({
  * the people helping. */
 function AccountMenu({ onSignOut }: { onSignOut: () => void }) {
   const { t } = useI18n()
+  const { profile } = useAuth()
 
+  /* The avatar on the control and again, larger, at the head of the panel —
+     whose account this is, before anything in it is chosen. The photograph is
+     looked up once for both (lib/avatar). The words stay: "My account" on the
+     control is its accessible name, and the avatar beside it is decoration. */
   return (
-    <Menu label={t('nav.account')} className="account">
+    <Menu
+      label={t('nav.account')}
+      className="account"
+      leading={<Avatar name={profile?.full_name} className="menu-avatar" />}
+    >
       <>
-        <NavLink to="/profile">{t('nav.profile')}</NavLink>
-        <NavLink to="/my-data">{t('nav.privacy')}</NavLink>
+        {profile && (
+          <div className="menu-head">
+            <Avatar name={profile.full_name} className="menu-head-avatar" />
+            <div className="menu-head-text">
+              <strong>{profile.full_name}</strong>
+              <span>{t('profile.complete', { n: profile.completeness_score })}</span>
+            </div>
+          </div>
+        )}
+
+        <NavLink to="/profile"><IconUser />{t('nav.profile')}</NavLink>
+        <NavLink to="/my-data"><IconShield />{t('nav.privacy')}</NavLink>
 
         <hr />
 
-        <button className="quiet wide" onClick={onSignOut}>{t('nav.signout')}</button>
+        {/* Red, and last, below a rule: the one item here that ends
+            something. The cached photograph goes with the session, so the next
+            student on a shared handset does not see this one's. */}
+        <button
+          className="quiet wide destructive menu-signout"
+          onClick={() => { forgetAvatar(); onSignOut() }}
+        >
+          <IconSignOut />{t('nav.signout')}
+        </button>
       </>
     </Menu>
   )

@@ -1,0 +1,57 @@
+/* --- the closing band ----------------------------------------------------------
+ *
+ * The one offer at the foot of a public page — "create an account" on the
+ * landing page, "find scholarships for you" under the directory's results.
+ * One component so the offer looks the same wherever it is made; it began as
+ * .home-cta and moved here when the directory needed it too.
+ */
+
+/* The closing invitation. A row rather than a stack: the words on one side and
+ * the button on the other, both centred against each other, so a band the width
+ * of a monitor reads as one statement instead of three lines in its top-left
+ * corner. */
+.cta-band {
+  /* A page's close, and the one dark band on it: the spectrum at full
+     strength, with white type. Every stop is a hue check-contrast measures
+     against white text at 6.8:1 or more, so the words read at any point along
+     the gradient — the lightest stop, teal, is the one that sets the floor. */
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(120deg,
+    var(--hue-green) 0%, var(--hue-teal) 38%, var(--hue-blue) 72%, var(--hue-violet) 100%);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: clamp(1.75rem, 4vw, 2.75rem) clamp(1.25rem, 4vw, 3rem);
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 1.25rem 2.5rem;
+  box-shadow: var(--shadow-2);
+}
+/* Two soft rings at the far end, for depth. White at a tenth — decoration that
+   raises no part of the band anywhere near the text's contrast floor. */
+.cta-band::before,
+.cta-band::after {
+  content: "";
+  position: absolute; z-index: -1;
+  border-radius: 50%;
+  border: 2.5rem solid rgb(255 255 255 / 0.07);
+  pointer-events: none;
+}
+.cta-band::before { width: 22rem; height: 22rem; inset-inline-end: -6rem; top: -9rem; }
+.cta-band::after  { width: 12rem; height: 12rem; inset-inline-end: 12rem; bottom: -8rem; }
+.cta-band h2 { margin-top: 0; margin-bottom: 0.375rem; color: #fff; font-size: var(--step-2); }
+.cta-band p { margin-bottom: 0; color: #fff; }
+.cta-band > .btn { margin-inline-start: auto; }
+/* The inverse button: white, with the accent for its label. It must restate
+   hover rather than inherit it — the generic .btn:hover would give it the
+   sunken grey, which on this band is a hole rather than a response. */
+.cta-band .btn.cta-inverse {
+  background: #fff; border-color: #fff; color: var(--accent);
+  font-weight: var(--w-strong);
+  padding-inline: 1.75rem;
+}
+.cta-band .btn.cta-inverse:hover { background: var(--accent-weak); border-color: var(--accent-weak); }
+/* The site's focus ring is the accent, which disappears into a band that
+   starts in the accent. White instead, at the same width and offset. */
+.cta-band :focus-visible { outline-color: #fff; }
+.cta-band > div { flex: 1 1 20rem; }

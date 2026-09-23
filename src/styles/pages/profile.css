@@ -1,0 +1,241 @@
+/* --- my profile ---------------------------------------------------------------
+ *
+ * The review screen: every answer on one page, one of them editable at a time.
+ * A <dl>, because that is what this is — a list of questions and the answers
+ * given to them — and a screen reader then announces the pairing instead of
+ * eighteen unrelated lines.
+ */
+
+.detail-list { margin: 1.5rem 0 0; }
+.detail-row {
+  display: grid; gap: 0.25rem 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--border);
+}
+/* Two columns once there is room for them, and the question column is capped
+   so a long question does not push every answer on the page to the right. */
+@media (min-width: 40rem) {
+  .detail-row { grid-template-columns: minmax(0, 18rem) 1fr; align-items: baseline; }
+  .detail-row.editing { grid-template-columns: 1fr; }
+}
+.detail-row dt {
+  font-weight: 600;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+}
+.detail-row dd {
+  margin: 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
+}
+/* Editing turns the row into a column: the control, its help and its two
+   buttons need the full width, and a 18rem label column beside a set of radio
+   rows wastes most of the screen a phone has. */
+.detail-row.editing dd { display: block; }
+.detail-row.editing { background: var(--surface); border-radius: var(--radius); padding: 1rem; }
+.detail-row.editing .row { margin-top: 1rem; }
+
+/* Checked against a document, so the student knows which answers a provider has
+   already accepted. A word and a tick, never the colour alone. */
+.detail-row .verified {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--eligible-weak); color: var(--eligible);
+  font-size: var(--step--1); font-weight: 700;
+}
+
+/* --- the profile, composed -------------------------------------------------------
+ *
+ * Who, then what: the student on the title band with the one way to change
+ * anything, then the answers in the three groups the form asked them in.
+ */
+
+/* The band carries the avatar and the edit button as well as the title — the
+   shared .page-hero, laid out as a row. */
+.profile-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1rem 1.5rem;
+  align-items: center;
+}
+.profile-hero .lede { margin: 0.25rem 0 0; }
+.profile-hero h1 { margin-bottom: 0.25rem; }
+/* The avatar at the size of the band; the circle, the spectrum and the
+   photograph are components/avatar.css. */
+.profile-avatar {
+  width: 4.5rem; height: 4.5rem;
+  font-size: var(--step-2);
+  box-shadow: 0 0 0 4px var(--surface), var(--shadow-2);
+}
+.profile-name {
+  margin: 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem;
+  font-size: var(--step-1);
+}
+.profile-complete {
+  font-size: var(--step--1); font-weight: var(--w-medium);
+  padding: 0.125rem 0.625rem;
+  border-radius: 999px;
+  background: var(--accent-weak); color: var(--accent);
+}
+@media (max-width: 44rem) {
+  .profile-hero { grid-template-columns: auto minmax(0, 1fr); }
+  .profile-edit { grid-column: 1 / -1; justify-self: start; }
+  .profile-avatar { width: 3.5rem; height: 3.5rem; font-size: var(--step-1); }
+}
+
+/* The three groups, side by side where they fit. */
+.profile-groups {
+  display: grid; gap: var(--gap);
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+  align-items: start;
+}
+/* Two classes deep, to beat `.card + .card`, which adds the stacked-card margin
+   to every group after the first and set the three side-by-side cards on three
+   different tops. The grid's gap is the spacing here. */
+.profile-groups > .profile-group { margin: 0; border-radius: var(--radius-lg); }
+.profile-group h2 {
+  display: flex; align-items: center; gap: 0.625rem;
+  font-size: var(--step-1); margin: 0 0 0.5rem;
+}
+/* An icon tile per group in its own hue, so the three cards are told apart at
+   a glance; the heading says which is which. */
+.profile-group-icon {
+  display: grid; place-items: center;
+  width: 2.25rem; height: 2.25rem;
+  border-radius: var(--radius);
+  background: var(--group-weak); color: var(--group);
+}
+.profile-group-icon .icon { width: 20px; height: 20px; }
+.profile-group-personal   { --group: var(--hue-teal);   --group-weak: var(--hue-teal-weak); }
+.profile-group-disability { --group: var(--hue-blue);   --group-weak: var(--hue-blue-weak); }
+.profile-group-education  { --group: var(--hue-violet); --group-weak: var(--hue-violet-weak); }
+
+/* Question over answer, the question the label and the answer the value: the
+   answer is what the student is checking, so it carries the weight. */
+.profile-list { margin: 0; }
+.profile-row {
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+}
+.profile-row:first-child { border-top: 0; }
+.profile-row dt { font-size: var(--step--1); color: var(--text-muted); margin-bottom: 0.125rem; }
+.profile-row dd {
+  margin: 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.625rem;
+  font-weight: var(--w-medium);
+}
+.profile-row .verified {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--eligible-weak); color: var(--eligible);
+  font-size: var(--step--1); font-weight: var(--w-strong);
+}
+
+/* Arriving, once, a beat apart; removed under reduced motion. */
+@keyframes profile-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.profile-group { animation: profile-rise 380ms var(--ease-out) backwards; }
+.profile-group:nth-child(2) { animation-delay: 70ms; }
+.profile-group:nth-child(3) { animation-delay: 140ms; }
+@media (prefers-reduced-motion: reduce) { .profile-group { animation: none; } }
+
+
+/* --- your data --------------------------------------------------------------------
+ *
+ * The record of who looked, and beside it what the student can do about it.
+ * Kept with the profile's styles: it is the same person's page about the same
+ * data, reached from the same account menu.
+ */
+.mydata-grid {
+  display: grid; gap: var(--gap) 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 64rem) {
+  .mydata-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+}
+.mydata-actions { display: grid; gap: var(--gap); }
+/* `.card + .card` would push every card after the first down, in both the grid
+   and the column; the gaps do the spacing here. */
+.mydata-grid .card { margin: 0; border-radius: var(--radius-lg); }
+.mydata-grid h2 { font-size: var(--step-1); margin-bottom: 0.875rem; }
+.mydata-none { margin: 0; }
+
+/* The log as a timeline: a rail down the leading edge, a dot per day, the
+   day's events under its date. */
+.mydata-days { list-style: none; margin: 0; padding: 0; }
+.mydata-day {
+  position: relative;
+  padding: 0 0 1.125rem 1.5rem;
+  border-inline-start: 2px solid var(--border);
+  margin-inline-start: 0.375rem;
+}
+.mydata-day:last-child { border-inline-start-color: transparent; padding-bottom: 0; }
+.mydata-day::before {
+  content: "";
+  position: absolute; inset-inline-start: -0.4375rem; top: 0.3rem;
+  width: 0.75rem; height: 0.75rem; border-radius: 50%;
+  background: var(--surface); border: 2px solid var(--accent);
+}
+.mydata-day:first-child::before { background: var(--accent); }
+.mydata-date {
+  margin: 0 0 0.375rem;
+  font-size: var(--step--1); font-weight: var(--w-strong); color: var(--text-muted);
+}
+.mydata-events { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.375rem; }
+.mydata-events li {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-size: var(--step--1);
+}
+/* A document opened, which is the heavier kind of access, gets the blue tint:
+   it is also said in words — "opened a document: …" — so the tint is only
+   the second signal. */
+.mydata-events li.is-document { background: var(--hue-blue-weak); }
+.mydata-event { min-width: 0; overflow-wrap: anywhere; }
+.mydata-doc { font-weight: var(--w-medium); }
+.mydata-count {
+  flex: none;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-weight: var(--w-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A consent: who, for which scheme, and exactly which fields, one chip each. */
+.mydata-consent + .mydata-consent { border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem; }
+.mydata-consent-who { margin: 0 0 0.5rem; }
+.mydata-fields {
+  list-style: none; margin: 0 0 0.5rem; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 0.375rem;
+}
+.mydata-fields li {
+  padding: 0.125rem 0.625rem;
+  border-radius: 999px;
+  background: var(--hue-teal-weak); color: var(--hue-teal);
+  font-size: var(--step--1); font-weight: var(--w-medium);
+}
+.mydata-export p, .mydata-erase > p { max-width: none; }
+
+/* Delete: the page's one irreversible action, said by a red leading edge and
+   by an outlined red button, as well as by its heading and its sentence. */
+.mydata-erase { border-inline-start: 4px solid var(--danger); }
+.mydata-retained { margin: 0; padding-inline-start: 1.25rem; }
+.mydata-window { margin-top: 0; }
+button.danger-outline {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--surface);
+}
+button.danger-outline:hover:not(:disabled) { background: var(--danger-weak); }
+/* Withdraw lined up with the text above it: a quiet button has no border to
+   show where it starts, so its padding reads as an indent. The 48px target is
+   the padding, and it stays — only the start edge moves. */
+.mydata-consent button.quiet { margin-inline-start: -1.25rem; }

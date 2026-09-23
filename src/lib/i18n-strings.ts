@@ -1,7 +1,18 @@
-/* The string tables.
+/* English, which is both a language and the backstop.
  *
- * Hindi and English at launch; the content model extends to further Indian
- * languages by adding a table here (Table 3.3, Localisation).
+ * The other thirteen are one file each in strings/, fetched only when somebody
+ * asks for one. This table is different in two ways that are worth stating,
+ * because they are why it is not in that directory with them:
+ *
+ *   - it is a static import, so it is in the main bundle and needs no network;
+ *   - every other table falls back to it key by key, so it is the only one that
+ *     has to be complete. A half-written Tamil table shows Tamil where it has
+ *     words and English where it does not; a half-written English one shows the
+ *     key.
+ *
+ * Adding a fifteenth language is a row in locales.ts, a loader line in
+ * i18n-tables.ts and a copy of this file's keys in strings/ (Table 3.3,
+ * Localisation).
  *
  * These are UI chrome only. Everything that carries meaning — a scheme's
  * criteria, the reason an application was blocked — is written by the API in
@@ -10,7 +21,7 @@
  * needs to understand.
  */
 
-type Dict = Record<string, string>
+export type Dict = Record<string, string>
 
 export const en: Dict = {
   /* The name under the mark in the bar, and the tail of every tab title. The
@@ -32,8 +43,6 @@ export const en: Dict = {
   /* "For partners" in the bar; the page's own heading still says "Become a
      partner". A nav item names a destination, and the imperative reads as an
      instruction to a student who is not the audience for it. */
-  'nav.partner': 'For partners',
-  'nav.impact': 'Impact',
   'nav.how': 'How it works',
   'nav.matches': 'My matches',
   'nav.applications': 'My applications',
@@ -42,6 +51,11 @@ export const en: Dict = {
   'nav.privacy': 'My data',
   'nav.account': 'My account',
   'nav.register': 'Sign up',
+  /* The accessible name of the language control in the bar. Never drawn: the
+     control's visible text is the current language's own name, which is the
+     label a reader looking for their language actually needs. This is the noun
+     a screen reader announces before it. */
+  'nav.language': 'Language',
   'footer.social': 'Indic AI elsewhere',
   /* Names the relationship rather than leaving a second mark to imply one.
      See .footer-sponsor in styles.css. */
@@ -69,7 +83,6 @@ export const en: Dict = {
   'nav.signin': 'Sign in',
   'nav.signout': 'Sign out',
   'nav.skip': 'Skip to main content',
-
 
   'public.title': 'Find a scholarship you qualify for',
   'public.lede': 'Every scholarship here is open to students with disabilities. You do not need an account to look.',
@@ -124,7 +137,6 @@ export const en: Dict = {
   'public.awardUnstated': 'Award not stated',
   'public.noClose': 'No closing date',
   'public.closesIn': 'Closes in {n} days',
-  'public.closingSoon': 'Closing soon',
   /* The two states the old two-way split had no words for. "Closing soon" was
      shown for both, and for a scheme that had already closed it was an
      invitation to apply for something nobody can. */
@@ -274,83 +286,9 @@ export const en: Dict = {
   'public.applyHelp': 'We check your profile and your documents against this scholarship first, and tell you if anything is missing. Nothing is sent until you confirm.',
   'public.ctaHelp': 'Tell us about yourself once and we will show you every scholarship you qualify for.',
   'public.back': 'Back to all scholarships',
-
-  /* The partner page.
-   *
-   * Written against the temptation this page always carries: to open with
-   * numbers the platform has not earned yet. Every claim here is either
-   * something the code demonstrably does, or a count read live from the
-   * directory two seconds before the reader sees it. */
-  'partner.title': 'Run your scholarship where the students already are',
-  'partner.lede': 'Publish a scheme here and it is checked against every student profile automatically, applications arrive with documents already verified, and every rupee and every decision is on the record. Charities, companies and government departments all run schemes on this platform.',
-  'partner.talk': 'Talk to us',
-  'partner.seeLive': 'See it working',
-  'partner.seeFigures': 'the figures in full',
-
-  'partner.exampleTitle': 'Your scheme, as a student meets it',
-  'partner.exampleBody': 'A real scheme on the platform right now — not a mock-up. Yours looks like this, in the same list, on the same page they are already reading.',
-
-  'partner.statesTitle': 'Every student gets a reason, not a rejection',
-  'partner.statesBody': 'The platform does not answer yes or no. It answers in four states, and three of them tell the student what to do next — which is what turns your scheme from a form somebody abandoned into an application you can actually decide.',
-  'partner.state.ELIGIBLE': 'Every criterion met, and the documents behind them verified. Ready to apply.',
-  'partner.state.LIKELY_ELIGIBLE': 'Every criterion met on what the student has declared. The certificate is what settles it.',
-  'partner.state.BLOCKED': 'One specific thing is missing, and the student is told which. This is the state that recovers an application instead of losing it.',
-  'partner.state.NOT_ELIGIBLE': 'A criterion your scheme sets cannot be met, and the student is told which one rather than left guessing.',
-
-  'partner.doesTitle': 'What the platform does for you',
-  'partner.does.rules': 'Your criteria, applied for you',
-  'partner.does.rulesBody': 'Your eligibility rules are stored as rules, not prose, so every student on the platform is matched against them the moment their profile changes. You review applications that already meet them.',
-  'partner.does.documents': 'Certificates verified once',
-  'partner.does.documentsBody': 'A disability certificate verified by any organisation here is trusted by all of them, with an expiry date attached. You are not the fourth body to check the same paper.',
-  'partner.does.money': 'Sanction and disbursement tracked',
-  'partner.does.moneyBody': 'Record what you sanctioned and what you paid, against the student and against your budget, and report on it without assembling a spreadsheet.',
-  'partner.does.record': 'A record you can be audited against',
-  'partner.does.recordBody': 'Every decision, every document opened and every consent given is logged with who did it and when — and the student can see the same log. That is the DPDP Act as a feature rather than a memo.',
-
-  'partner.asksTitle': 'What it asks of you',
-  'partner.asksBody': 'The half of this that partner pages leave out. None of it is onerous, and all of it is the reason the rest works.',
-  'partner.asks.criteria': 'Say who the scheme is for, precisely',
-  'partner.asks.criteriaBody': 'Percentages, income ceilings, states, course levels. Written as conditions rather than as a paragraph, because a paragraph cannot be checked automatically and a student cannot be told which line they failed.',
-  'partner.asks.answer': 'Answer the applications',
-  'partner.asks.answerBody': 'A student who applies is waiting on a person. The platform will chase you about it, and the time you take is visible to the platform team.',
-  'partner.asks.verify': 'Name somebody to verify, if you can',
-  'partner.asks.verifyBody': 'Not required. But an organisation that verifies documents for students in its own district makes every other scheme on the platform faster, and that is how this stops being one more portal.',
-
-  'partner.notTitle': 'What we do not do',
-  'partner.notBody': 'We do not choose your scholars, we do not hold your funds, and we do not publish numbers we cannot count. Selection is yours; disbursement is yours; the platform records both and shows the student what happened.',
-
-  'partner.talkTitle': 'Start a conversation',
-  'partner.talkBody': 'Four questions, no application. Somebody reads it and writes back — nothing is approved by filling in a form, because an approved organisation can see applicants\' disability certificates and that is not a decision to leave to a web page.',
-  'partner.org': 'Organisation name',
-  'partner.type': 'What kind of organisation',
-  'partner.typeNGO': 'Charity or NGO',
-  'partner.typeCorporate': 'Company',
-  'partner.typeGovernment': 'Government department',
-  'partner.typePrivate': 'Private organisation',
-  'partner.adminName': 'Your name',
-  'partner.adminEmail': 'Your email address',
-  'partner.adminHint': 'Where we write back. Nothing else is sent here.',
-  'partner.submit': 'Send',
-  'partner.sending': 'Sending…',
-  'partner.doneTitle': 'Thank you — we have it',
-  'partner.doneBody': 'Somebody at the platform will read this and write to the address you gave. We answer every enquiry, including the ones we cannot take forward.',
-
-  'impact.title': 'Impact',
-  'impact.lede': 'Every figure here is counted from what is on the platform right now, not from a report written last year.',
-  'impact.open': 'Scholarships open',
-  'impact.openHint': 'Taking applications today.',
-  'impact.value': 'On offer',
-  'impact.valueHint': 'The awards of every scheme open now, added up.',
-  'impact.providers': 'Providers',
-  'impact.providersHint': 'Charities, companies and departments with a live scheme.',
-  'impact.states': 'States covered',
-  'impact.statesHint': 'Where an open scheme is available.',
-  'impact.byProvider': 'Who is funding them',
-  'impact.byLevel': 'What they are for',
-  'impact.honest': 'What is not here',
-  'impact.honestBody': 'No figure for students helped or money paid out. The platform can count those and this page will show them when the numbers are real rather than a demonstration — a public impact page that flatters itself is worth nothing to the students it is meant to serve.',
-  'impact.empty': 'Nothing is open at the moment. New schemes open through the year.',
-
+  'notFound.title': 'We could not find that page',
+  'notFound.body': 'The address may have a typing mistake, or the page may have moved.',
+  'notFound.home': 'Go to the home page',
 
   /* The student's hub. Counts are phrased as things rather than numbers —
      "3 open" reads as a fact, "3" alone reads as a score. */
@@ -400,7 +338,13 @@ export const en: Dict = {
 
   /* One heading for both, because it is one screen: the number is asked for
      first and the flow only then knows whether it belongs to an account. */
-  'auth.title': 'Sign in or sign up',
+  /* The task, not the account type. "Sign in or sign up" asked the student to
+     place themselves before the screen had asked anything, when the answer is
+     the same number either way — auth.oneDoor under it says so. This names what
+     the screen wants, and pairs with auth.codeTitle on the next step. Each
+     table builds it from its own auth.phone and the verb its translator chose
+     for auth.codeTitle. */
+  'auth.title': 'Enter your mobile number',
   'auth.phone': 'Mobile number',
   'auth.phoneHint': 'We will send a 6-digit code to this number by SMS. The same number signs you in every time.',
   /* Said where the mistake is, in the terms the field itself uses: the leading
@@ -417,7 +361,12 @@ export const en: Dict = {
      number. */
   'auth.stepOf': 'Step {n} of 2 · {name}',
   'auth.stepPhone': 'Your number',
-  'auth.stepCode': 'Your code',
+  /* "OTP", because that is the word on the message itself and the word every
+     bank and government portal in India uses for it; "your code" left a
+     student matching a label to an SMS that said something else. Kept as the
+     Latin initialism in every table, which is how it appears in the SMS
+     whatever the phone's language. */
+  'auth.stepCode': 'Your OTP code',
   /* Under the button, not in a policy nobody opens. This audience is warned
      about handing over a phone number, and the answer to that warning belongs
      on the screen doing the asking. */
@@ -434,6 +383,13 @@ export const en: Dict = {
   'auth.code': '6-digit code',
   'auth.codeHint': 'The message usually arrives within a few seconds.',
   'auth.noCode': 'No message yet? Try another way:',
+  /* Asked after every code that goes out, in place of a countdown: Yes goes to
+     the code boxes, No opens the other ways, which work at once. */
+  'auth.didArrive': 'Did the code arrive?',
+  'auth.arrivedYes': 'Yes, I have it',
+  'auth.arrivedNo': 'No, try another way',
+  /* On each way's button: tries it has left, of three. */
+  'auth.triesLeft': '{n} left',
   'auth.verify': 'Verify',
   /* Three ways to receive the code, and three confirmations that name the one
      used. "Sent." alone cannot tell a student whether their choice of WhatsApp
@@ -449,6 +405,11 @@ export const en: Dict = {
      worth it, not the point at which it becomes allowed. */
   'auth.resendIn': 'Send it again in {n}s',
   'auth.changeNumber': 'Use a different number',
+  /* The same correction, as a short word on a pencil beside the number, so the
+     two sit on one line. changeNumber stays as its tooltip. Its own key rather
+     than ref.change, which says the same word on the referral cards — two
+     screens sharing a string is two screens that change together. */
+  'auth.change': 'Change',
 
   'profile.complete': '{n}% complete',
   /* The profile review screen. "Change" rather than "edit": the student is not
@@ -504,6 +465,10 @@ export const en: Dict = {
   'match.filterStep': 'One step away',
   'match.filterClosing': 'Closing soon',
   'match.filterNo': 'Not open to you',
+  /* Published schemes that have not opened yet (/me/matches/upcoming). The
+     card says when, in place of an Apply button. */
+  'match.filterSoon': 'Coming soon',
+  'match.opensOn': 'Opens {when}',
   'match.filterEmpty': 'Nothing in this group. Try “All”.',
   'match.moreWithProfile': 'More scholarships appear as you fill it in.',
   /* Said on the row, in the column that answers “where do I apply”. The
@@ -720,7 +685,6 @@ export const en: Dict = {
    * feature: "someone to help you" is what this is, and "guardian link" is
    * what we call it among ourselves. */
 
-
   /* --- landing page ---------------------------------------------------------
    * The first thing a visitor sees, and often the only thing: somebody
    * arriving from a printed notice or a WhatsApp forward decides here whether
@@ -740,12 +704,28 @@ export const en: Dict = {
   /* The headline, in the three pieces it is coloured in. Together they read
    * "Dis-Ability to Distinction"; see the note on Lead() for why the hyphen
    * belongs to the struck-out piece and not to the one after it. */
+  /* The struck prefix, and the one string in this table that no other language
+     carries.
+     *
+     * "Dis-Ability to Distinction" is a pun on an English prefix, and a pun on a
+     * prefix does not survive translation — it survives as an insult. Rendered
+     * literally in Hindi it strikes a line through दिव्यांग, which is not a
+     * prefix but the word for a disabled person, and the word this platform's
+     * own copy uses respectfully everywhere else. The same is true in all
+     * thirteen.
+     *
+     * So every other table sets this key to the empty string — which the lookup
+     * honours, because '' is a value and only null and undefined fall back —
+     * and carries the whole headline in the two pieces below, as an ordinary
+     * phrase meaning "from ability to distinction". Nothing is struck through in
+     * those languages, and nothing needs to be: the device was never the point,
+     * the sentence was. */
   'slides.lead.was': 'Dis-',
   'slides.lead.able': 'Ability to',
   'slides.lead.dist': 'Distinction',
   'slides.lead.body': "Every scholarship you're eligible for — government and private — matched to your profile, in your language, in one place.",
   'slides.lead.free': 'Completely free',
-  'slides.lead.languages': '6 languages',
+  'slides.lead.languages': '14 languages',
   'slides.lead.support': 'Personal support at every step',
 
   'slides.label': 'Announcements',
@@ -916,7 +896,6 @@ export const en: Dict = {
      is not undone by a certificate that has to be retried. */
   'reg.fileLater': 'You are registered, and your details are saved. The certificate did not upload — add it from My documents and nothing else needs doing again.',
   'reg.disabilityType': 'Disability type',
-  'reg.selectAll': '(select all that apply)',
   'reg.percent': 'Disability percentage',
   'reg.percentHint': 'The figure on your certificate. Many scholarships need 40% or more.',
   'reg.percentPlaceholder': 'e.g. 40',
@@ -955,20 +934,229 @@ export const en: Dict = {
   'nav.loginCta': 'Login',
   'profile.edit': 'Update your details',
 
+  /* --- the answer vocabularies -----------------------------------------------
+   *
+   * These were hardcoded in lib/fields and lib/questions, which is why a student
+   * reading the site in Bengali still met twenty-one English disability types on
+   * the one question the whole product turns on. They are chrome — the words a
+   * form uses to ask — and belong here with the rest of it.
+   *
+   * Every one of them is a label only. The value beside it is the API's enum and
+   * never passes through a translation. */
+
+  /* The twenty-one conditions of the RPwD Act, 2016, in the Act's own wording.
+     The Act is the authority for the English; a translation follows the state's
+     own gazetted wording where one exists. */
+  'field.disability.BLINDNESS': 'Blindness',
+  'field.disability.LOW_VISION': 'Low vision',
+  'field.disability.LEPROSY_CURED': 'Leprosy (cured)',
+  'field.disability.HEARING_IMPAIRMENT': 'Hearing impairment',
+  'field.disability.LOCOMOTOR_DISABILITY': 'Locomotor disability',
+  'field.disability.DWARFISM': 'Dwarfism',
+  'field.disability.INTELLECTUAL_DISABILITY': 'Intellectual disability',
+  'field.disability.MENTAL_ILLNESS': 'Mental illness',
+  'field.disability.AUTISM_SPECTRUM_DISORDER': 'Autism spectrum disorder',
+  'field.disability.CEREBRAL_PALSY': 'Cerebral palsy',
+  'field.disability.MUSCULAR_DYSTROPHY': 'Muscular dystrophy',
+  'field.disability.CHRONIC_NEUROLOGICAL_CONDITION': 'Chronic neurological condition',
+  'field.disability.SPECIFIC_LEARNING_DISABILITY': 'Specific learning disability',
+  'field.disability.MULTIPLE_SCLEROSIS': 'Multiple sclerosis',
+  'field.disability.SPEECH_AND_LANGUAGE_DISABILITY': 'Speech and language disability',
+  'field.disability.THALASSEMIA': 'Thalassemia',
+  'field.disability.HAEMOPHILIA': 'Haemophilia',
+  'field.disability.SICKLE_CELL_DISEASE': 'Sickle cell disease',
+  'field.disability.MULTIPLE_DISABILITIES': 'Multiple disabilities, including deafblindness',
+  'field.disability.ACID_ATTACK_VICTIM': 'Acid attack survivor',
+  'field.disability.PARKINSONS_DISEASE': "Parkinson's disease",
+
+  /* The states and union territories. The code is the value; STATES in
+     lib/fields keeps the English name because lib/districts looks its district
+     list up by it. */
+  'field.state.AN': 'Andaman and Nicobar Islands',
+  'field.state.AP': 'Andhra Pradesh',
+  'field.state.AR': 'Arunachal Pradesh',
+  'field.state.AS': 'Assam',
+  'field.state.BR': 'Bihar',
+  'field.state.CH': 'Chandigarh',
+  'field.state.CT': 'Chhattisgarh',
+  'field.state.DL': 'Delhi',
+  'field.state.DN': 'Dadra and Nagar Haveli and Daman and Diu',
+  'field.state.GA': 'Goa',
+  'field.state.GJ': 'Gujarat',
+  'field.state.HP': 'Himachal Pradesh',
+  'field.state.HR': 'Haryana',
+  'field.state.JH': 'Jharkhand',
+  'field.state.JK': 'Jammu and Kashmir',
+  'field.state.KA': 'Karnataka',
+  'field.state.KL': 'Kerala',
+  'field.state.LA': 'Ladakh',
+  'field.state.LD': 'Lakshadweep',
+  'field.state.MH': 'Maharashtra',
+  'field.state.ML': 'Meghalaya',
+  'field.state.MN': 'Manipur',
+  'field.state.MP': 'Madhya Pradesh',
+  'field.state.MZ': 'Mizoram',
+  'field.state.NL': 'Nagaland',
+  'field.state.OR': 'Odisha',
+  'field.state.PB': 'Punjab',
+  'field.state.PY': 'Puducherry',
+  'field.state.RJ': 'Rajasthan',
+  'field.state.SK': 'Sikkim',
+  'field.state.TG': 'Telangana',
+  'field.state.TN': 'Tamil Nadu',
+  'field.state.TR': 'Tripura',
+  'field.state.UP': 'Uttar Pradesh',
+  'field.state.UT': 'Uttarakhand',
+  'field.state.WB': 'West Bengal',
+
+  /* course_level, in the API's four values. */
+  'field.level.SCHOOL': 'School',
+  'field.level.SCHOOL.sub': 'Class 9, Class 10, Class 11, Class 12',
+  'field.level.UNDERGRADUATE': 'Undergraduate',
+  'field.level.UNDERGRADUATE.sub': 'BA, BSc, BTech and similar',
+  'field.level.POSTGRADUATE': 'Postgraduate',
+  'field.level.POSTGRADUATE.sub': 'MA, MSc, MTech and similar',
+  'field.level.DOCTORAL': 'Doctoral',
+  'field.level.DOCTORAL.sub': 'PhD',
+
+  /* The same four values as the directory's qualification filter words them —
+     the way a student describes themselves rather than the way the database
+     does. See qualificationChoices in lib/fields. */
+  'field.qual.SCHOOL': 'School',
+  'field.qual.SCHOOL.sub': 'Class 1 to 12',
+  'field.qual.UNDERGRADUATE': 'Graduation',
+  'field.qual.UNDERGRADUATE.sub': 'BA, BSc, BCom, BE / BTech, MBBS — and Diploma or ITI',
+  'field.qual.POSTGRADUATE': 'Post-graduation',
+  'field.qual.POSTGRADUATE.sub': 'MA, MSc, MTech, MBA and similar',
+  'field.qual.DOCTORAL': 'PhD / Doctorate',
+
+  /* listing_tag's SUBJECT rows, as the Course filter offers them. */
+  'field.subject.engineering': 'Engineering',
+  'field.subject.medical': 'Medical',
+  'field.subject.management': 'Management',
+  'field.subject.science': 'Science',
+  'field.subject.commerce': 'Commerce',
+  'field.subject.arts': 'Arts and humanities',
+  'field.subject.vocational': 'Vocational',
+  'field.subject.fellowship': 'Fellowship',
+  'field.subject.talent': 'Talent',
+  'field.subject.sports': 'Sports',
+
+  'field.gender.FEMALE': 'Female',
+  'field.gender.MALE': 'Male',
+  'field.gender.TRANSGENDER': 'Transgender',
+  'field.gender.UNDISCLOSED': 'Prefer not to say',
+  /* The filter's wording, not the profile question's: this one names the
+     category a scheme is written against. */
+  'field.genderFilter.TRANSGENDER': 'Third gender / transgender',
+
+  /* The year chips. ALL_YEARS.label stays English as the control's value; these
+     are what is drawn over it. */
+  'field.year.below9': 'Below 9th class',
+  'field.year.c9': 'Class 9',
+  'field.year.c10': 'Class 10',
+  'field.year.c11': 'Class 11',
+  'field.year.c12': 'Class 12',
+  'field.year.y1': '1st year',
+  'field.year.y2': '2nd year',
+  'field.year.y3': '3rd year',
+  'field.year.y4': '4th year',
+  'field.year.pg1': 'Post-graduate year 1',
+  'field.year.pg2': 'Post-graduate year 2',
+
+  /* --- the profile review's questions ----------------------------------------
+   *
+   * What /profile asks, reading a student's own answers back to them. The
+   * registration form that writes them has its own copy under reg.*, because it
+   * asks in a form's voice and this asks in a summary's. */
+  'q.full_name': 'What is your name?',
+  'q.full_name.help': 'Exactly as it appears on your disability certificate. Providers check the two match.',
+  'q.gender': 'What is your gender?',
+  'q.gender.help': 'Some scholarships are open to women only, or to transgender students. Leave it if you would rather not say.',
+  'q.disability_type': 'What is your disability?',
+  'q.disability_type.help': 'As written on your certificate. Most scholarships filter on this.',
+  'q.disability_percent': 'What percentage is on your certificate?',
+  'q.disability_percent.help': 'A number between 0 and 100. Many scholarships need 40% or more.',
+  'q.disability_percent.range': 'A certificate percentage is between 0 and 100.',
+  'q.udid_number': 'What is your UDID number?',
+  'q.udid_number.help': 'The number on your UDID (Unique Disability ID) card. Leave it if you have not been issued one — it changes nothing about what you qualify for, and you can add it later.',
+  'q.date_of_birth': 'When were you born?',
+  'q.date_of_birth.help': 'Some scholarships have an age limit.',
+  'q.course_name': 'What are you studying?',
+  'q.course_name.help': 'The course you picked when you registered.',
+  'q.institution_name': 'Where do you study?',
+  'q.institution_name.help': 'The name of your school, college or university, as it is written on your bonafide certificate. Leave it if you have not started yet.',
+  'q.institution_name.placeholder': 'Name of your school or college',
+  'q.state_code': 'Which state do you live in?',
+  'q.state_code.help': 'Many scholarships are open only to residents of certain states.',
+  'q.annual_family_income': "What is your family's yearly income?",
+  'q.annual_family_income.help': 'In rupees, as on your income certificate. Most scholarships have a ceiling.',
+  'q.annual_family_income.range': 'An income cannot be less than zero.',
+  'q.academic_percentage': 'What were your last exam marks?',
+  'q.academic_percentage.help': 'Choose the way your marksheet states them, then type the number. Many scholarships ask for a minimum.',
+
+  /* Who runs a scheme, as the badge on a matched row says it.
+     GOVT and GOVERNMENT are one label; the enum has carried both spellings. */
+  'field.orgKind.NGO': 'NGO',
+  'field.orgKind.CORPORATE': 'Corporate',
+  'field.orgKind.GOVERNMENT': 'Government',
+  'field.orgKind.PRIVATE': 'Private',
+
+  /* The document vault's twelve types. The value is the API's enum. */
+  'field.doc.DISABILITY_CERTIFICATE': 'Disability certificate',
+  'field.doc.UDID_CARD': 'UDID card',
+  'field.doc.INCOME_CERTIFICATE': 'Income certificate',
+  'field.doc.DOMICILE_CERTIFICATE': 'Domicile certificate',
+  'field.doc.CASTE_CERTIFICATE': 'Category certificate',
+  'field.doc.MARKSHEET': 'Marksheet',
+  'field.doc.ADMISSION_LETTER': 'Admission letter',
+  'field.doc.BONAFIDE_CERTIFICATE': 'Bonafide certificate',
+  'field.doc.FEE_RECEIPT': 'Fee receipt',
+  'field.doc.BANK_PASSBOOK': 'Bank passbook',
+  'field.doc.IDENTITY_PROOF': 'Proof of identity',
+  'field.doc.PHOTOGRAPH': 'Photograph',
+
+  /* What happens next, per workflow state, on one application.
+   *
+   * Written to the student rather than about the application, and naming the
+   * organisation rather than the officer — the audit trail holds the person, and
+   * telling an applicant which named reviewer refused them invites pressure on
+   * that reviewer and tells the applicant nothing they can act on. */
+  'appl.next.SUBMITTED': 'The provider has your application. A reviewer will read it next.',
+  'appl.next.UNDER_REVIEW': 'A reviewer is reading your application. This is usually the longest step.',
+  'appl.next.INFO_REQUESTED': 'They have asked you for something. Your application waits until you reply.',
+  'appl.next.DOCUMENT_CHECK': 'Your application is with a reviewer. Nothing is needed from you.',
+  'appl.next.VERIFIED': 'Your application is with a reviewer. Nothing is needed from you.',
+  'appl.next.SHORTLISTED': 'Your application is with a reviewer. A decision comes next.',
+  'appl.next.APPROVED': 'Approved. The provider will record the sanction, then arrange payment.',
+  'appl.next.SANCTIONED': 'The money has been sanctioned. Payment is arranged through their bank.',
+  'appl.next.DISBURSED': 'Payment has been recorded. If it has not reached your account in a few working days, raise a grievance.',
+  'appl.next.REJECTED': 'This application was not successful. It does not affect your others.',
+  'appl.next.CLOSED': 'This application is complete.',
+  'appl.next.WITHDRAWN': 'You withdrew this application.',
 }
 
-/* One table, and no switch in front of it.
+/* Fourteen tables, and a switch in front of them.
  *
  * Hindi was here from the start — the report's Table 3.3 asks for it, and half
- * this audience reads it first — and it has been taken out at the product's
- * request. What is kept is the indirection: every string is still looked up by
- * key rather than written into a component, so the copy has one home, a
- * reviewer can read the whole voice of the product in one file, and a second
- * language is a table away rather than a rewrite.
+ * this audience reads it first — then came out at the product's request, and is
+ * back with twelve more beside it. What made that cheap is what survived the
+ * removal: every string stayed looked up by key rather than written into a
+ * component, so the copy kept one home and a language stayed a table away
+ * rather than a rewrite. This is that bet paying.
  *
- * What went with it: the language toggle, the stored preference, the
- * navigator.language sniff, and the Hindi halves of the vocabularies in
- * fields.ts. The API still sends Hindi copy for scheme summaries and slides —
- * those columns are the providers' and the operators' — and this app simply
- * does not read them now.
+ * Back with it: the language control (components/LanguageSwitcher), the stored
+ * preference and the navigator.languages read (lib/i18n-tables), and the
+ * vocabularies that used to be hardcoded English in fields.ts and questions.ts,
+ * which are now field.* and q.* above.
+ *
+ * Still not translated here, and deliberately: everything the API writes. A
+ * scheme's title, its criteria, the reason an application was refused, the
+ * operator's own name for a page in the nav, and the slides' copy are all
+ * authored once in the admin panel and sent as one string. Translating them in
+ * the client would mean inventing the provider's words for them, which is the
+ * one thing a platform that students trust with a disability certificate must
+ * not do. A Bengali reader gets a Bengali product around a scheme written in
+ * whatever language its provider wrote it in — and that is the honest split,
+ * not a gap.
  */

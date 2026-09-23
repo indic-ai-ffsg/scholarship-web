@@ -1,0 +1,20 @@
+/* --- layout ------------------------------------------------------------------ */
+
+/* Full width. The shell sets no ceiling of its own; the parts that need one
+ * carry it themselves — prose at --measure, headings at 40ch, form fields at
+ * --measure below — so the extra width goes to the things that can use it: card
+ * grids gain columns, chip rows stop wrapping, nothing gains line length.
+ *
+ * The gutter grows with the window instead of staying at 1.25rem, which at
+ * 1920px reads as content pressed against the glass. It resolves to exactly
+ * 1.25rem at every width below 800px, so the 40px figures in
+ * tools/check-responsive.py still describe the 320px case. */
+/* The page gutter, named so anything that needs to bleed to the edge — the
+   matched list's tab strip is the one case — can do it without copying the
+   clamp and drifting from it. */
+.page { --page-pad: clamp(1.25rem, 2.5vw, 3rem); }
+.page { margin: 0 auto; padding: 1.5rem var(--page-pad) 5rem; }
+/* The exception, and it stays one: a screen that asks a single question is a
+ * column, not a page. Centred, because parked at the left edge of a wide
+ * monitor it reads as a rendering fault. */
+.page.narrow { max-width: 34rem; }

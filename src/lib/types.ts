@@ -77,7 +77,7 @@ export interface Match {
      has no organisation row — its logo hangs off the scholarship instead, and
      the absence is what tells OrgMark which address to ask. */
   organisation_id?: string
-  /* Absent when the award is not money â a laptop, a bicycle, fees paid
+  /* Absent when the award is not money — a laptop, a bicycle, fees paid
      directly. `benefit_summary` says what it is instead; see format.awardLabel.
      A NULL here crashed the whole directory once, so it is a pointer on the
      server and optional here rather than coalesced to 0: "₹0" on a
@@ -87,9 +87,12 @@ export interface Match {
   currency: string
   /* Both optional since backend 0043: a curated listing is allowed to have no
      window, and the directory now shows those rather than hiding them. Absent
-     means open-ended â NOT closing today, which is what a 0 would read as. */
+     means open-ended — NOT closing today, which is what a 0 would read as. */
   closes_at?: string
   days_remaining?: number
+  /* Only on the Coming soon tab (/me/matches/upcoming): the day a published
+     scheme starts taking applications. */
+  opens_at?: string
   /* Where pressing Apply on this card goes (backend 0054).
    *
    * This payload had neither, and the matched list is where their absence cost
@@ -126,7 +129,7 @@ export interface Listing {
   description_hi?: string
   organisation_name: string
   org_type: string
-  /* Absent when the award is not money â a laptop, a bicycle, fees paid
+  /* Absent when the award is not money — a laptop, a bicycle, fees paid
      directly. `benefit_summary` says what it is instead; see format.awardLabel.
      A NULL here crashed the whole directory once, so it is a pointer on the
      server and optional here rather than coalesced to 0: "₹0" on a
@@ -172,7 +175,7 @@ export interface Listing {
   opens_at: string
   /* Both optional since backend 0043: a curated listing is allowed to have no
      window, and the directory now shows those rather than hiding them. Absent
-     means open-ended â NOT closing today, which is what a 0 would read as. */
+     means open-ended — NOT closing today, which is what a 0 would read as. */
   closes_at?: string
   days_remaining?: number
   slots_available?: number
@@ -225,8 +228,8 @@ export interface Listing {
 export interface Facet { value: string; label: string; count: number }
 
 /* One announcement on the landing page, written by the platform in the admin
- * panel. Both languages arrive together â the response is identical for every
- * caller and therefore cacheable â and a slide with no Hindi falls back to the
+ * panel. Both languages arrive together — the response is identical for every
+ * caller and therefore cacheable — and a slide with no Hindi falls back to the
  * English text rather than disappearing for half the audience. */
 export interface Slide {
   slide_id: string
@@ -259,7 +262,7 @@ export interface Slide {
  *
  * The same four states a signed-in student sees, computed from answers that
  * were never saved anywhere (FR-17). Field-compatible with Match wherever the
- * two overlap, because one card component renders both â what is absent is what
+ * two overlap, because one card component renders both — what is absent is what
  * a visitor has no account to have: whether they already applied. */
 export interface CheckedScheme {
   scholarship_id: string
@@ -269,7 +272,7 @@ export interface CheckedScheme {
   summary_hi?: string
   organisation_name: string
   org_type: string
-  /* Absent when the award is not money â a laptop, a bicycle, fees paid
+  /* Absent when the award is not money — a laptop, a bicycle, fees paid
      directly. `benefit_summary` says what it is instead; see format.awardLabel.
      A NULL here crashed the whole directory once, so it is a pointer on the
      server and optional here rather than coalesced to 0: "₹0" on a
@@ -279,7 +282,7 @@ export interface CheckedScheme {
   currency: string
   /* Both optional since backend 0043: a curated listing is allowed to have no
      window, and the directory now shows those rather than hiding them. Absent
-     means open-ended â NOT closing today, which is what a 0 would read as. */
+     means open-ended — NOT closing today, which is what a 0 would read as. */
   closes_at?: string
   days_remaining?: number
   state: EligibilityState

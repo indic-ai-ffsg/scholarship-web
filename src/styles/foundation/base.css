@@ -1,0 +1,111 @@
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+/* min-height rather than height.
+ *
+ * A sticky element can only stick inside its own containing block, and #root at
+ * exactly 100% is a box the height of the viewport — so the top bar stuck for
+ * one screen and then scrolled away with the box, on precisely the long pages
+ * it exists for. min-height keeps what the rule was for (a short page still
+ * fills the screen, so the footer sits at the bottom) and lets the box grow
+ * with the page. */
+#root { min-height: 100%; display: flex; flex-direction: column; }
+
+/* main takes the slack, which is what makes the comment above actually true.
+ *
+ * It claimed "a short page still fills the screen, so the footer sits at the
+ * bottom". min-height alone does not do that: it stretches #root, but nothing
+ * inside grows to fill it, so the footer sat directly under the content
+ * wherever that ended. Measured on a 900px viewport, /impact left 193px of page
+ * background below the footer and the 404 left 313px -- a white band floating
+ * above a near-white strip, which is what reads as a flash at the bottom of the
+ * page. Pinning it costs nothing on a long page.
+ *
+ * min-height:0 because a flex item defaults to min-height:auto, which refuses
+ * to shrink below its content and would reintroduce exactly the overflow the
+ * 320px reflow audit exists to catch. */
+main { flex: 1 0 auto; min-height: 0; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 var(--step-0)/1.6 var(--font);
+  -webkit-text-size-adjust: 100%;
+  /* An email address, a reference code or a scheme slug has no space in it to
+   * break at, so it pushes its container wide and takes the page with it —
+   * the one overflow a grid-track audit cannot find, because the offending
+   * width is in the content rather than in a rule. break-word only acts when a
+   * word genuinely cannot fit, so ordinary prose is untouched. */
+  overflow-wrap: break-word;
+}
+
+/* Text must resize to 200% without loss of function (Table 3.3). Every length
+ * above is rem or relative, and nothing below sets a fixed height on a
+ * container that holds text. */
+
+/* The cap is in characters rather than rem, so it tracks each heading's own
+ * size. It does nothing until the container is wide — inside a card it is never
+ * reached — and on a page running the full width of a 27-inch monitor it is
+ * what stops an h1 becoming one hundred-character line, which is harder to read
+ * than the narrow column it replaced. */
+h1, h2, h3, h4 {
+  line-height: 1.25; margin: 0 0 0.5rem; max-width: 40ch;
+  /* Stated, where it used to be the browser's `bold`. Every heading on the
+     site was 700 by omission. */
+  font-weight: var(--w-strong);
+  /* A shade tighter than before. Dropping a heading from 700 to 600 opens
+     the letter-fit slightly at the same size, and closing it back up is what
+     keeps the line reading as one word-shape rather than as spaced-out
+     type. It is the difference between lighter and weaker. */
+  letter-spacing: -0.015em;
+}
+h1 { font-size: var(--step-3); }
+h2 { font-size: var(--step-2); }
+h3 { font-size: var(--step-1); }
+p { margin: 0 0 1rem; max-width: var(--measure); }
+/* 600, not the browser's 700. Inside a 400 paragraph that is already a clear
+   step, and 700 next to 400 reads as a shout rather than as emphasis. */
+strong, b { font-weight: var(--w-strong); }
+
+a { color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 3px; }
+
+/* --- focus ------------------------------------------------------------------
+ * Required by section 7.1, and the first thing removed by anyone tidying up.
+ * Thick and offset so it is visible against every surface here. */
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.skip-link {
+  position: absolute; inset-inline-start: -9999px; top: 0; z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--accent); color: var(--accent-text);
+  font-weight: 600;
+  /* Logical, so the corner stays on the inside edge when the page mirrors: the
+     skip link is pinned to the inline start, which is the right-hand side in
+     Urdu and Kashmiri. */
+  border-radius: 0;
+  border-end-end-radius: var(--radius);
+}
+.skip-link:focus { inset-inline-start: 0; top: 0; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; border: 0;
+}

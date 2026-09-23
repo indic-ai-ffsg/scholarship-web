@@ -1,0 +1,29 @@
+/* --- cards --------------------------------------------------------------------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  /* The faintest shadow. On a #fbfbfa page a white card with a hairline is a
+     rectangle drawn on paper; this is what makes it a surface. */
+  box-shadow: var(--shadow-1);
+}
+.card + .card { margin-top: var(--gap); }
+.card > :last-child { margin-bottom: 0; }
+
+.stack { display: grid; gap: var(--gap); }
+.stack.tight { gap: 0.5rem; }
+.row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+
+/* A list that is a list to a screen reader and a stack of cards to everybody
+ * else. The markers are removed and the semantics are not — but only because
+ * every call site carries role="list": WebKit drops the list role the moment
+ * list-style is none, and iOS Safari with VoiceOver is a first-class platform
+ * for this audience rather than an edge case. Without it a helper is no longer
+ * told "list, three items", which is how they know how many people can see
+ * their data. */
+.plain { list-style: none; padding: 0; margin: 0 0 var(--gap); }
+.right { margin-inline-start: auto; }
+.muted { color: var(--text-muted); }
+.lede { font-size: var(--step-1); color: var(--text-muted); max-width: var(--measure); }

@@ -102,19 +102,14 @@ jobs:
       - name: Report bundle sizes
         run: ls -lh dist/assets/
 
-      # This bundle is NOT the one the image ships, and that is deliberate.
-      #
-      # Nothing configures this build: .env is private and absent here, so every
-      # VITE_ value compiles to undefined. That is fine for what this stage is
-      # for — it type-checks, lints and proves the tree builds. It is emphatically
-      # not a build to judge the portal by, and a widget id would not be in it.
-      # Stage 3 builds the artefact that gets pushed, with the real
-      # configuration, and asserts the values arrived.
-      - uses: actions/upload-artifact@v4
-        with:
-          name: web-dist
-          path: dist/
-          retention-days: 7
+      # No artifact upload. This bundle is NOT the one the image ships:
+      # nothing configures this build — .env is private and absent here, so
+      # every VITE_ value compiles to undefined — and the image stage builds its
+      # own from source with the real configuration. Nothing downloaded the
+      # upload that used to be here, and once the account's artifact storage
+      # filled it failed the job, which is what stops an image being built. This
+      # stage's job is to type-check, lint and prove the tree builds; the steps
+      # above do all three.
 
   # ===========================================================================
   # Stage 2 — image
