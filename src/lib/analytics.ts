@@ -56,9 +56,10 @@ function loadTag(): boolean {
   const w = window as GtagWindow
   if (w.gtag) return true
   const id = setting('GA_MEASUREMENT_ID')
-  // A measurement id is G- and letters/digits; anything else is a typo in the
-  // environment, and is not worth putting into a script URL.
-  if (!/^G-[A-Z0-9]+$/i.test(id)) return false
+  // A GA4 measurement id (G-…) or a Google tag id (GT-…), letters and digits
+  // after the prefix; anything else is a typo in the environment, and is not
+  // worth putting into a script URL.
+  if (!/^GT?-[A-Z0-9]+$/i.test(id)) return false
 
   w.dataLayer = w.dataLayer || []
   // gtag.js reads the arguments object itself, so this must stay a function
