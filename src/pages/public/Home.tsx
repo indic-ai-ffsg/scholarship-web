@@ -9,6 +9,7 @@ import { awardLabel, count } from '../../lib/format'
 import { Deadline, Field } from '../../components/ui'
 import Slides, { Illustration, LeadWords } from '../../components/Slides'
 import OrgMark from '../../components/OrgMark'
+import { HELPLINE } from '../../lib/helpline'
 import { IconAward, IconCalendar, IconProvider } from '../../components/icons'
 import type { Facet, Listing } from '../../lib/types'
 
@@ -51,18 +52,7 @@ import type { Facet, Listing } from '../../lib/types'
    lives in i18n-strings.ts under home.step1…home.step7. */
 const STEPS = [1, 2, 3, 4, 5, 6, 7]
 
-/* The helpline, written once and in both forms it is needed in.
- *
- * Not in the string table, because it is not copy: nothing about it changes
- * with the language, and a translator given a phone number to carry is a
- * translator who can mistype one. The two forms are not interchangeable — a
- * dialler wants +91 and no spaces, a reader wants the grouping printed on a
- * phone bill — and keeping them adjacent is what stops one being updated
- * without the other.
- *
- * If this number starts changing per deployment, it belongs in runtime-config
- * alongside the widget id rather than in a rebuild. It has not, so it does not. */
-const HELPLINE = { dial: '+917628953752', label: '+91-76289-53752' }
+/* The helpline's number lives in lib/helpline, shared with the footer. */
 
 export default function Home() {
   const { t } = useI18n()

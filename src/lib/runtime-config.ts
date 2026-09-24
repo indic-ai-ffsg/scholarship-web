@@ -56,6 +56,7 @@ const BUILD: Record<string, string | undefined> = {
   API_VERSION: import.meta.env.VITE_API_VERSION,
   MSG91_WIDGET_ID: import.meta.env.VITE_MSG91_WIDGET_ID,
   MSG91_TOKEN_AUTH: import.meta.env.VITE_MSG91_TOKEN_AUTH,
+  GA_MEASUREMENT_ID: import.meta.env.VITE_GA_MEASUREMENT_ID,
 }
 
 /** A configured value, or '' when it is set in neither place. */

@@ -118,3 +118,85 @@
    * mistake rather than as a decision. */
   .footer-social { margin-inline-start: 0; width: 100%; justify-content: center; }
 }
+
+/* --- the footer, composed -------------------------------------------------------
+ *
+ * The foot of the page on the site's one dark ground: whose site this is, a
+ * person to call, and where else to find the foundation — then the notice
+ * under a rule. No list of destinations, for the reason above: they are all in
+ * the bar at the top, and a second copy is a second thing to keep in step.
+ *
+ * Every colour here is a --footer-* token that check-contrast measures.
+ */
+.site-footer {
+  background: var(--footer-bg);
+  color: var(--footer-text);
+  padding: clamp(2.25rem, 5vw, 3.5rem) clamp(1.25rem, 2.5vw, 3rem) 1.75rem;
+}
+.site-footer .inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem 3rem;
+  align-items: start;
+}
+@media (min-width: 56rem) {
+  .site-footer .inner { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); }
+}
+/* The flex-row rules this replaces sized these by basis and margin; in the
+   grid each is simply its column. */
+.site-footer .footer-brand,
+.site-footer .footer-social { flex: none; max-width: none; margin-inline-start: 0; }
+
+.footer-about {
+  margin: 0;
+  max-width: 34rem;
+  color: var(--footer-muted);
+  font-size: var(--step--1);
+  line-height: 1.6;
+}
+.footer-heading {
+  margin: 0 0 0.5rem;
+  font-size: var(--step-0);
+  color: var(--footer-text);
+}
+.footer-help p { margin: 0 0 1rem; color: var(--footer-muted); font-size: var(--step--1); }
+
+/* The call, as an outlined button in the footer's own ink: the site's grey
+   button would be a pale box on navy. The outline is --footer-muted, which
+   check-contrast holds above the 3:1 a control boundary needs. */
+.site-footer .btn.footer-call {
+  background: transparent;
+  border-color: var(--footer-muted);
+  color: var(--footer-text);
+}
+.site-footer .btn.footer-call:hover { background: rgb(255 255 255 / 0.08); border-color: var(--footer-text); }
+
+/* The accounts on white tiles, so each brand's own colour — LinkedIn's blue,
+   Facebook's — stays visible on navy, where two of the four would sink. */
+.site-footer .footer-social { justify-content: flex-start; gap: 0.5rem; }
+.site-footer .footer-social a,
+.site-footer .footer-social .unlinked {
+  background: #fff;
+  border-radius: var(--radius);
+  transition: transform var(--dur-fast) ease-out, box-shadow var(--dur-fast) ease-out;
+}
+.site-footer .footer-social a:hover {
+  background: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35);
+}
+
+/* The notice, under a rule the colour of the ground's own edge. */
+.site-footer .footer-end {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--footer-rule);
+  padding-top: 1.25rem;
+  /* Centred under all three columns: it belongs to none of them. */
+  justify-content: center;
+}
+.site-footer .footer-end p { color: var(--footer-muted); text-align: center; }
+
+/* The site's focus ring is the accent green, which is lost on navy: white here,
+   at the same width and offset. */
+.site-footer :focus-visible { outline-color: #fff; }
+

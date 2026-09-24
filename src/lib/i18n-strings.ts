@@ -889,6 +889,19 @@ export const en: Dict = {
   'reg.udidHint': 'The number on your UDID (Unique Disability ID) card.',
   'reg.udidPlaceholder': 'Enter your UDID number',
   'reg.certificate': 'Upload UDID certificate',
+  /* Which certificate the student holds. A UDID card is not the only proof: many
+     students still hold the older disability certificate issued by AIIMS or
+     another authorised medical board, and the form must not turn them away. */
+  'reg.certKind': 'Which disability certificate do you have?',
+  'reg.certUdid': 'UDID card',
+  'reg.certUdidSub': 'The Unique Disability ID card',
+  'reg.certMedical': 'Disability certificate from a medical board',
+  'reg.certMedicalSub': 'Issued by AIIMS or another authorised hospital or medical board',
+  'reg.medicalCertificate': 'Upload your disability certificate',
+  'common.chooseOne': 'Choose one',
+  /* For somebody no longer studying: a finished course and the year it ended. */
+  'reg.yearDone': 'Completed / passed out',
+  'reg.passYear': 'Year of passing',
   'reg.certificateHint': 'PDF or image, 5 MB or smaller.',
   'reg.fileType': 'That file must be a PDF, a JPEG or a PNG.',
   'reg.fileSize': 'That file is larger than 5 MB. A photo taken on a phone is usually smaller if you scan it rather than photograph it.',
@@ -904,6 +917,8 @@ export const en: Dict = {
   'reg.state': 'State',
   'reg.statePlaceholder': 'Type to search your state…',
   'reg.program': 'Select your program',
+  'reg.programOther': 'Name of your program',
+  'reg.programOtherHint': 'As it is written on your admission letter, for example B.Voc or LLB.',
   'reg.graduation': 'Graduation',
   'reg.postgraduation': 'Post-Graduation / Masters',
   'reg.year': 'Select year',

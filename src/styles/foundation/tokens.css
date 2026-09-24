@@ -120,6 +120,18 @@
   --dur: 200ms;
   --ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
 
+  /* --- the footer's ground --------------------------------------------
+   *
+   * The one dark surface on the site. The Indic-ai mark is a glow drawn to sit
+   * on a dark ground (see .brand-mark), and the foot of the page is where it
+   * gets one; a deep navy rather than black, so the spectrum rule above it
+   * reads as colour on colour. Text on it is measured by check-contrast like
+   * every other pair here. */
+  --footer-bg: #0f1b2d;
+  --footer-text: #eef2f7;
+  --footer-muted: #b4c0cf;
+  --footer-rule: #2a3a52;
+
   --radius: 10px;
   --radius-lg: 14px;
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;

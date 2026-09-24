@@ -250,6 +250,14 @@
  * becoming a full-width block, or the struck span's underline logic and the
  * baseline of the two spans inside it come apart. */
 .lead-headline .hl-line { display: inline-block; }
+/* "Dis-Ability" is one word, and must read as one. A line may break after a
+   hyphen, so on a narrow screen or at a large text size the browser was free
+   to end a line at "Dis-" and start the next at "Ability" — the word read as
+   broken in two (reported in user-side testing). The whole first line holds
+   together instead; it is three short words, and "Distinction" still wraps
+   onto its own line wherever the space runs out. Applies wherever the lockup
+   is drawn: the lead panel and the landing hero's label. */
+.hl-line { white-space: nowrap; }
 .lead-headline .hl-dist { display: block; }
 
 /* "Dis-", struck.

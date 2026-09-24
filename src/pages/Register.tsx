@@ -91,6 +91,16 @@ function group(digits: string) {
 const asChoices = (values: readonly string[]): Choice[] =>
   values.map(v => ({ value: v, label: v }))
 
+/* The year answer for a student who has finished the course — not one of
+   ALL_YEARS, since it is no year of study. Kept apart from their labels so it
+   can never collide with one. */
+const YEAR_DONE = 'COMPLETED'
+
+/* Years of passing offered, newest first: this year and the fifteen before it.
+   Far enough back for a student returning to study after a long gap; a year
+   earlier than that is outside what any scheme here asks about. */
+const PASS_YEARS = Array.from({ length: 16 }, (_, i) => String(new Date().getFullYear() - i))
+
 /* Two components, and the split exists to own one problem: seeding.
  *
  * A visitor arrives with no profile and the form must open empty. A student who
@@ -140,6 +150,16 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const [email, setEmail] = useState('')
   const [gender, setGender] = useState(profile?.gender ?? '')
   const [udid, setUdid] = useState(profile?.udid_number ?? '')
+  /* Which certificate the student holds. A UDID card is not the only proof of
+     disability a scholarship accepts: many students still hold the older
+     certificate a medical board issued — AIIMS, a district hospital — and
+     requiring a UDID number turned them away at the first question. The UDID
+     number is asked only of those who have one; the API has never required it.
+     An edit opens on UDID when a number is stored, and on the medical
+     certificate when one is not. */
+  const [certKind, setCertKind] = useState<'UDID' | 'MEDICAL'>(
+    profile && !profile.udid_number ? 'MEDICAL' : 'UDID',
+  )
   const [file, setFile] = useState<File | null>(null)
   /* One stored enum becomes a one-item selection. A profile saved as
      MULTIPLE_DISABILITIES reopens as that single chip rather than as the set it
@@ -158,13 +178,33 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
      stored prefixed, and programCategory needs the prefix back to know which
      year chips apply. course_level is what says which group it came from. */
   const [program, setProgram] = useState(() => {
-    if (!profile?.course_name) return ''
-    return profile.course_level === 'POSTGRADUATE' && profile.course_name !== PROGRAM_PHD
-      ? `PG: ${profile.course_name}`
-      : profile.course_name
+    const name = profile?.course_name
+    if (!name) return ''
+    if (name === PROGRAM_PHD) return name
+    const pg = profile.course_level === 'POSTGRADUATE'
+    const known: readonly string[] = pg ? PROGRAMS_PG : [...PROGRAMS_TOP, ...PROGRAMS_GRADUATION]
+    // A name that is none of the options is one the student typed under Others.
+    const option = known.includes(name) ? name : 'Others'
+    return pg ? `PG: ${option}` : option
   })
+  /* The program's name, typed, when it is none of the ones listed — B.Voc, LLB,
+     BDS, a diploma's own title. "Others" alone told a sponsor nothing, and
+     course_name is free text in the API, so what is typed is what is stored. */
+  const [programOther, setProgramOther] = useState(() => {
+    const name = profile?.course_name ?? ''
+    const known: readonly string[] = [...PROGRAMS_TOP, ...PROGRAMS_GRADUATION, ...PROGRAMS_PG, PROGRAM_PHD]
+    return name && !known.includes(name) ? name : ''
+  })
+  const isOther = courseNameFor(program) === 'Others'
   const [year, setYear] = useState(
-    () => yearLabel(profile?.course_level, profile?.current_year) ?? '',
+    () => profile?.graduation_year
+      ? YEAR_DONE
+      : yearLabel(profile?.course_level, profile?.current_year) ?? '',
+  )
+  /* The year of passing, when the answer to "which year" is that the course is
+     finished. Stored in its own column (0065) rather than as a year of study. */
+  const [passYear, setPassYear] = useState(
+    profile?.graduation_year ? String(profile.graduation_year) : '',
   )
   const [institution, setInstitution] = useState(profile?.institution_name ?? '')
   /* Last exam marks, on whichever scale the marksheet uses. The API stores a
@@ -347,7 +387,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     if (!name.trim()) found.name = required
     if (!gender) found.gender = required
     if (!verified) found.phone = t('reg.verifyFirst')
-    if (!udid.trim()) found.udid = required
+    if (certKind === 'UDID' && !udid.trim()) found.udid = required
     /* Only on a first registration. An edit is re-opening a form whose
        certificate was uploaded the first time through, and demanding the file
        again to change a state code would be asking for the document twice. */
@@ -366,8 +406,10 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
        for one mistake, and the second one unactionable. */
     if (state && !district) found.district = required
     if (!program) found.program = required
+    if (isOther && !programOther.trim()) found.programOther = required
     // PhD is the one program with no year to give.
     if (category !== 'phd' && !year) found.year = required
+    if (year === YEAR_DONE && !passYear) found.passYear = required
     if (!institution.trim()) found.institution = required
     // Optional, so only a number that cannot be right is a problem.
     const marksBad = marksProblem(scaleOf(marksScale), marks.trim())
@@ -426,15 +468,19 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
       full_name: name.trim(),
       disability_type: disabilityTypeFor(disabilities),
       disability_percent: Number(percent),
-      udid_number: udid.trim(),
+      // Only for a UDID holder; an empty string would be stored as a number.
+      ...(certKind === 'UDID' && udid.trim() ? { udid_number: udid.trim() } : {}),
       state_code: state,
       district: district.trim(),
       course_level: courseLevelFor(program),
-      course_name: courseNameFor(program),
+      course_name: isOther ? programOther.trim() : courseNameFor(program),
       institution_name: institution.trim(),
     }
     const ordinal = yearOrdinal(year)
     if (ordinal !== null) payload.current_year = ordinal
+    // Finished: the year of passing, and no year of study — the API clears one
+    // when the other is set.
+    if (year === YEAR_DONE && passYear) payload.graduation_year = Number(passYear)
     // Only when answered. An empty string is not one of the four the API
     // accepts, and sending it fails the whole form on a question nobody has to
     // answer.
@@ -469,7 +515,9 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
       if (file) {
         const body = new FormData()
         body.append('file', file)
-        body.append('doc_type', 'UDID_CARD')
+        // Filed as what it is, so the vault and a verifier see a UDID card or
+        // a medical board's certificate rather than one label for both.
+        body.append('doc_type', certKind === 'UDID' ? 'UDID_CARD' : 'DISABILITY_CERTIFICATE')
         try {
           // FormData rather than the JSON client: the browser has to set its own
           // multipart boundary, which it cannot do if a Content-Type is forced.
@@ -743,20 +791,50 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
 
           <h2 className="register-section">{t('reg.disability')}</h2>
 
-          <Field label={t('reg.udid')} hint={t('reg.udidHint')} error={problems.udid || undefined} required>
-            {props => (
-              <input
-                {...props}
-                type="text"
-                placeholder={t('reg.udidPlaceholder')}
-                value={udid}
-                onChange={e => { setUdid(e.target.value); clearProblem('udid') }}
-              />
-            )}
-          </Field>
+          {/* Which certificate, first: it decides whether there is a UDID
+              number to ask for and what the upload is. Two options, so two
+              radios — a dropdown would hide one of them for no gain. */}
+          <div className="field">
+            <span className="field-label" id="reg-certkind">
+              {t('reg.certKind')}
+              <span className="req" aria-hidden="true"> *</span>
+              <span className="sr-only"> ({t('common.required')})</span>
+            </span>
+            <ChipSelector
+              legend={t('reg.certKind')}
+              name="certkind"
+              options={[
+                { value: 'UDID', label: t('reg.certUdid') },
+                { value: 'MEDICAL', label: t('reg.certMedical') },
+              ]}
+              selected={[certKind]}
+              onChange={v => {
+                if (v[0]) { setCertKind(v[0] as 'UDID' | 'MEDICAL'); clearProblem('udid') }
+              }}
+            />
+            {/* Says which certificates count, under the choice it explains:
+                the legacy certificate is the one a student is unsure about. */}
+            <span className="hint">
+              {t(certKind === 'UDID' ? 'reg.certUdidSub' : 'reg.certMedicalSub')}
+            </span>
+          </div>
+
+          {certKind === 'UDID' && (
+            <Field label={t('reg.udid')} hint={t('reg.udidHint')} error={problems.udid || undefined} required>
+              {props => (
+                <input
+                  {...props}
+                  type="text"
+                  placeholder={t('reg.udidPlaceholder')}
+                  value={udid}
+                  onChange={e => { setUdid(e.target.value); clearProblem('udid') }}
+                />
+              )}
+            </Field>
+          )}
 
           <Field
-            label={t('reg.certificate')}
+            label={t(certKind === 'UDID' ? 'reg.certificate' : 'reg.medicalCertificate')}
             hint={t('reg.certificateHint')}
             error={problems.file || undefined}
             required={!profile}
@@ -776,39 +854,30 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             )}
           </Field>
 
-          {/* Not a Field: the control is a group of twenty-one chips with its
-              own <legend>, and Field's <label for> would have nothing single to
-              point at. The label is rendered here and the group names itself. */}
-          <div className="field">
-            <span className="field-label" id="reg-disability">
-              {t('reg.disabilityType')}
-              {/* Both marks, and each is for one audience. The star is the one the
-                  sentence at the top of the form promises, and it is aria-hidden
-                  because "star" is not a word anybody needs read to them. The
-                  sr-only "(required)" is what replaces it in the accessible
-                  name — Field's inputs also carry the native `required`, but a
-                  chip group has nothing to carry it. */}
-              <span className="req" aria-hidden="true"> *</span>
-              <span className="sr-only"> ({t('common.required')})</span>
-            </span>
-            {/* One choice, not "select all that apply". The profile stores a
-                single disability_type, and a multi-select was folded into
-                MULTIPLE_DISABILITIES on the way out — so a student who ticked
-                Blindness and Thalassemia was saved as neither, without being
-                told. Now they choose what is stored: the condition on their
-                certificate, or "Multiple disabilities, including deafblindness",
-                which is the schedule's own item for more than one. */}
-            <ChipSelector
-              legend={t('reg.disabilityType')}
-              name="disability"
-              options={disabilityChips(t)}
-              selected={disabilities}
-              onChange={v => { setDisabilities(v); clearProblem('disability') }}
-            />
-            {problems.disability && (
-              <span className="error" role="alert">{problems.disability}</span>
+          {/* A dropdown, not twenty-one chips: the list is long, a student
+              chooses one, and a native <select> is the most accessible control
+              for exactly that — every screen reader announces it as "combo box,
+              one of twenty-one", every phone opens its own picker, and the form
+              is a screen shorter. One choice, because the profile stores one
+              disability_type; somebody with more than one chooses "Multiple
+              disabilities, including deafblindness", the schedule's own item. */}
+          <Field label={t('reg.disabilityType')} error={problems.disability || undefined} required>
+            {props => (
+              <select
+                {...props}
+                value={disabilities[0] ?? ''}
+                onChange={e => {
+                  setDisabilities(e.target.value ? [e.target.value] : [])
+                  clearProblem('disability')
+                }}
+              >
+                <option value="">{t('common.chooseOne')}</option>
+                {disabilityChips(t).map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
             )}
-          </div>
+          </Field>
 
           <Field
             label={t('reg.percent')}
@@ -880,91 +949,96 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             )}
           </Field>
 
-          <div className="field">
-            <span className="field-label" id="reg-program">
-              {t('reg.program')}
-              {/* Both marks, and each is for one audience. The star is the one the
-                  sentence at the top of the form promises, and it is aria-hidden
-                  because "star" is not a word anybody needs read to them. The
-                  sr-only "(required)" is what replaces it in the accessible
-                  name — Field's inputs also carry the native `required`, but a
-                  chip group has nothing to carry it. */}
-              <span className="req" aria-hidden="true"> *</span>
-              <span className="sr-only"> ({t('common.required')})</span>
-            </span>
+          {/* The program as one dropdown with its groups as <optgroup>s —
+              "Graduation" and "Post-Graduation / Masters" are headings the
+              picker draws and cannot be chosen, which is what they are. The
+              values are the ones the chips stored, so a saved answer reopens
+              on itself. */}
+          <Field label={t('reg.program')} error={problems.program || undefined} required>
+            {props => (
+              <select
+                {...props}
+                value={program}
+                onChange={e => { setProgram(e.target.value); setYear(''); setPassYear(''); clearProblem('program') }}
+              >
+                <option value="">{t('common.chooseOne')}</option>
+                {asChoices(PROGRAMS_TOP).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <optgroup label={t('reg.graduation')}>
+                  {asChoices(PROGRAMS_GRADUATION).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </optgroup>
+                <optgroup label={t('reg.postgraduation')}>
+                  {PROGRAMS_PG.map(p => <option key={p} value={`PG: ${p}`}>{p}</option>)}
+                </optgroup>
+                <option value={PROGRAM_PHD}>{PROGRAM_PHD}</option>
+              </select>
+            )}
+          </Field>
 
-            {/* Three groups and a single answer across all of them. The
-                headings are headings rather than selectable chips, because
-                "Graduation" is not a program somebody is enrolled on — and a
-                chip that looks identical to its neighbours and does nothing
-                when pressed is worse than a word that never looked pressable. */}
-            <ChipSelector
-              legend={t('reg.program')}
-              name="program"
-              options={asChoices(PROGRAMS_TOP)}
-              selected={program ? [program] : []}
-              onChange={v => { setProgram(v[0] ?? ''); setYear(''); clearProblem('program') }}
-            />
+          {isOther && (
+            <Field
+              label={t('reg.programOther')}
+              hint={t('reg.programOtherHint')}
+              error={problems.programOther || undefined}
+              required
+            >
+              {props => (
+                <input
+                  {...props}
+                  type="text"
+                  maxLength={160}
+                  autoComplete="off"
+                  value={programOther}
+                  onChange={e => { setProgramOther(e.target.value); clearProblem('programOther') }}
+                />
+              )}
+            </Field>
+          )}
 
-            <p className="chip-heading">{t('reg.graduation')}</p>
-            <ChipSelector
-              legend={t('reg.graduation')}
-              name="program"
-              options={asChoices(PROGRAMS_GRADUATION)}
-              selected={program ? [program] : []}
-              onChange={v => { setProgram(v[0] ?? ''); setYear(''); clearProblem('program') }}
-            />
-
-            <p className="chip-heading">{t('reg.postgraduation')}</p>
-            <ChipSelector
-              legend={t('reg.postgraduation')}
-              name="program"
-              /* Stored prefixed — "Others" is in both grouped lists and MD is a
-                 postgraduate degree, so the label alone cannot say which group
-                 an answer came from. See pgValue in lib/fields. */
-              options={PROGRAMS_PG.map(p => ({ value: `PG: ${p}`, label: p }))}
-              selected={program ? [program] : []}
-              onChange={v => { setProgram(v[0] ?? ''); setYear(''); clearProblem('program') }}
-            />
-
-            <p className="chip-heading sr-only">{PROGRAM_PHD}</p>
-            <ChipSelector
-              legend={PROGRAM_PHD}
-              name="program"
-              options={asChoices([PROGRAM_PHD])}
-              selected={program ? [program] : []}
-              onChange={v => { setProgram(v[0] ?? ''); setYear(''); clearProblem('program') }}
-            />
-
-            {problems.program && <span className="error" role="alert">{problems.program}</span>}
-          </div>
-
-          {/* PhD has no year to give, so the question goes rather than sitting
-              there with every chip greyed out. */}
+          {/* PhD has no year to give, so the question goes. The years that do
+              not belong to the chosen program are disabled rather than removed
+              — see ALL_YEARS — and "Completed / passed out" is the answer for
+              a student who has finished or is between courses, which the list
+              had none of. */}
           {category !== 'phd' && (
-            <div className="field">
-              <span className="field-label" id="reg-year">
-                {t('reg.year')}
-                {/* Both marks, and each is for one audience. The star is the one the
-                    sentence at the top of the form promises, and it is aria-hidden
-                    because "star" is not a word anybody needs read to them. The
-                    sr-only "(required)" is what replaces it in the accessible
-                    name — Field's inputs also carry the native `required`, but a
-                    chip group has nothing to carry it. */}
-                <span className="req" aria-hidden="true"> *</span>
-                <span className="sr-only"> ({t('common.required')})</span>
-                {!program && <span className="hint"> {t('reg.yearAfterProgram')}</span>}
-              </span>
-              <ChipSelector
-                legend={t('reg.year')}
-                name="year"
-                options={ALL_YEARS.map(y => ({ value: y.label, label: t(y.key) }))}
-                selected={year ? [year] : []}
-                disabledValues={yearsOff}
-                onChange={v => { setYear(v[0] ?? ''); clearProblem('year') }}
-              />
-              {problems.year && <span className="error" role="alert">{problems.year}</span>}
-            </div>
+            <Field
+              label={t('reg.year')}
+              hint={!program ? t('reg.yearAfterProgram') : undefined}
+              error={problems.year || undefined}
+              required
+            >
+              {props => (
+                <select
+                  {...props}
+                  value={year}
+                  disabled={!program}
+                  onChange={e => { setYear(e.target.value); clearProblem('year') }}
+                >
+                  <option value="">{t('common.chooseOne')}</option>
+                  {ALL_YEARS.map(y => (
+                    <option key={y.label} value={y.label} disabled={yearsOff.includes(y.label)}>
+                      {t(y.key)}
+                    </option>
+                  ))}
+                  <option value={YEAR_DONE}>{t('reg.yearDone')}</option>
+                </select>
+              )}
+            </Field>
+          )}
+
+          {year === YEAR_DONE && (
+            <Field label={t('reg.passYear')} error={problems.passYear || undefined} required>
+              {props => (
+                <select
+                  {...props}
+                  className="input-short"
+                  value={passYear}
+                  onChange={e => { setPassYear(e.target.value); clearProblem('passYear') }}
+                >
+                  <option value="">{t('common.chooseOne')}</option>
+                  {PASS_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              )}
+            </Field>
           )}
 
           {/* Last exam marks — a percentage, or a CGPA on a ten- or five-point

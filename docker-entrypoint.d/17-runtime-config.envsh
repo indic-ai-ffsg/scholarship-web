@@ -33,7 +33,7 @@ _json() {
 {
     echo '/* Generated at container start. Edits here are lost on restart. */'
     echo 'window.__ENV__ = {'
-    for _name in API_VERSION MSG91_WIDGET_ID MSG91_TOKEN_AUTH; do
+    for _name in API_VERSION MSG91_WIDGET_ID MSG91_TOKEN_AUTH GA_MEASUREMENT_ID; do
         eval "_value=\${$_name-}"
         # Unset and empty are both written through as "". runtime-config.ts
         # treats an empty string as absent, so a variable cleared on the service
@@ -48,7 +48,7 @@ _json() {
 # a start-up log that echoes configuration invites the habit of putting things
 # there that are. The names and whether each is set is what a deploy needs.
 _report=''
-for _name in API_VERSION MSG91_WIDGET_ID MSG91_TOKEN_AUTH; do
+for _name in API_VERSION MSG91_WIDGET_ID MSG91_TOKEN_AUTH GA_MEASUREMENT_ID; do
     eval "_value=\${$_name-}"
     if [ -n "${_value:-}" ]; then
         _report="$_report $_name=set"

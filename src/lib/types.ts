@@ -325,6 +325,8 @@ export interface Profile {
   institution_name?: string
   admission_year?: number
   current_year?: number
+  /** The year of passing, for a student who has finished (0065). */
+  graduation_year?: number
   academic_percentage?: number
   annual_family_income?: number
   social_category?: string

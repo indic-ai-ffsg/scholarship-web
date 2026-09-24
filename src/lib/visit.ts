@@ -24,6 +24,10 @@
  * because nothing needs to: the server counts a day's distinct callers with a
  * hash that it throws away at midnight (migration 0063).
  *
+ * (Google Analytics was added on 2026-09-24 — lib/analytics.ts — and it does
+ * set a cookie and load a third-party script, so the paragraph below now
+ * describes this beacon only, not the site.)
+ *
  * That is why this site still has no consent banner. Under the DPDP Act a
  * tracker storing an identifier on a student's device is personal data
  * processing that needs notice and consent; a path sent to our own API, with no

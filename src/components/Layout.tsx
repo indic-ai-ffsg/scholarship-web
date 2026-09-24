@@ -11,6 +11,7 @@ import { useI18n } from '../lib/i18n-context'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { hadSession } from '../lib/session-hint'
 import { forgetAvatar } from '../lib/avatar'
+import { HELPLINE } from '../lib/helpline'
 import { Avatar } from './Avatar'
 import { IconShield, IconSignOut, IconUser } from './icons'
 import { PageTitleContext } from '../lib/page-title'
@@ -636,6 +637,10 @@ function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="inner">
+        {/* Whose site this is, and what it does — in one sentence under the
+            mark, because a student about to hand over a disability
+            certificate is entitled to know both, and the footer is where a
+            doubtful reader looks. */}
         <div className="footer-brand">
           <img
             src="/logo-full.png"
@@ -644,30 +649,33 @@ function SiteFooter() {
             height="130"
             className="footer-logo"
           />
-
-          {/* The funder used to sit here, under the foundation's own mark. It
-            * is in the masthead now — see the note there. The argument for the
-            * label survived the move intact and the argument for the position
-            * did not: "whose platform is this" was being answered four screens
-            * below the fold, after the visitor had already decided.
-            *
-            * Not repeated in both places. A sponsor credit twice on one page
-            * starts to read as advertising rather than as provenance, which is
-            * the opposite of what it is for. */}
+          <p className="footer-about">{t('slides.lead.body')}</p>
         </div>
 
-        {/* The accounts at the far side, level with the top of the logo. */}
-        <SocialLinks />
+        {/* A person to call, on every page, not only on the landing page's
+            "how it works". A student stuck on a form four screens deep is the
+            one who needs the number, and the footer is the one place it can
+            always be found. */}
+        <div className="footer-help">
+          <h2 className="footer-heading">{t('home.help')}</h2>
+          <p>{t('home.helpBody')}</p>
+          <a className="btn footer-call" href={`tel:${HELPLINE.dial}`}>
+            {t('home.helpCall', { number: HELPLINE.label })}
+          </a>
+        </div>
+
+        {/* The accounts, under the name the nav around them already carries. */}
+        <div className="footer-elsewhere">
+          <h2 className="footer-heading" aria-hidden="true">{t('footer.social')}</h2>
+          <SocialLinks />
+        </div>
 
         <div className="footer-end">
-          {/* Centred under both, because it belongs to neither: the notice is
-              about the whole site rather than about the column above it.
-
-              The year is read from the clock rather than written in, so it
+          {/* The year is read from the clock rather than written in, so it
               cannot quietly go stale — a copyright line a year behind is the
               smallest possible signal that nobody is looking after a site, and
               this one asks people for their disability certificates. */}
-          <p className="muted">{t('footer.copyright', { year: YEAR })}</p>
+          <p>{t('footer.copyright', { year: YEAR })}</p>
         </div>
       </div>
     </footer>

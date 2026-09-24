@@ -53,6 +53,8 @@ services:
       # right default for a local stack that has no reason to send SMS.
       MSG91_WIDGET_ID: ${MSG91_WIDGET_ID:-}
       MSG91_TOKEN_AUTH: ${MSG91_TOKEN_AUTH:-}
+      # Google Analytics. Unset, no Google script is loaded at all.
+      GA_MEASUREMENT_ID: ${GA_MEASUREMENT_ID:-}
 
       # Passed through only if it is set. Left empty, the container reads its
       # own /etc/resolv.conf, which on this network is Docker's embedded DNS —

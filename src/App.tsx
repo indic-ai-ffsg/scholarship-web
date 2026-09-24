@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './lib/auth-context'
 import { withNext } from './lib/next'
 import { usePageVisit } from './lib/visit'
+import { usePageAnalytics } from './lib/analytics'
 import Layout from './components/Layout'
 import { Loading } from './components/ui'
 /* Eager: the three screens somebody arrives on.
@@ -62,6 +63,8 @@ export default function App() {
    * lib/visit.ts, which carries the reasoning and the reason there is still no
    * consent banner on this site. */
   usePageVisit()
+  // Google Analytics, every route — see lib/analytics.ts.
+  usePageAnalytics()
 
   return (
     <Routes>
