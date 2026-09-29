@@ -310,6 +310,16 @@ export interface Step {
   message: string
 }
 
+/* The latest decision about one answer (backend migration 0069). `current` is
+   false once the answer has changed since — a refusal already corrected. */
+export interface FieldReview {
+  field: string
+  decision: 'VERIFIED' | 'REFUSED' | 'WITHDRAWN'
+  reason?: string
+  decided_at: string
+  current: boolean
+}
+
 export interface Profile {
   profile_id: string
   user_id: string
@@ -336,6 +346,9 @@ export interface Profile {
   pincode?: string
   completeness_score: number
   verified_fields: string[]
+  /** What the platform decided about each answer. A REFUSED one with
+      `current` true is waiting for the student to correct it. */
+  field_reviews?: FieldReview[]
   /** What to fill in next, ordered by how many schemes each field unlocks. */
   next_steps?: Step[]
 }

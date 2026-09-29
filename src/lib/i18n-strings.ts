@@ -417,6 +417,13 @@ export const en: Dict = {
   'profile.viewLede': 'Everything you have told us. Change any answer and it is used for every scholarship from then on.',
   'profile.notAnswered': 'Not answered yet',
   'profile.verified': 'Verified',
+  /* An answer the platform could not confirm (2026-09-29). Said as a request
+     to correct, with the reason in the platform's own words underneath —
+     never as an accusation, and never the colour alone. */
+  'profile.refused': 'Needs correcting',
+  'profile.refusedTitle': 'Please correct {n} answer | Please correct {n} answers',
+  'profile.refusedLede': 'We checked these against your documents and could not confirm them. Correct them and they will be checked again.',
+  'profile.refusedFix': 'Correct my answers',
   'profile.continue': 'Continue where you left off',
   'profile.start': 'Start your profile',
   'profile.saved': 'Saved',

@@ -17,8 +17,8 @@
  * implementation: a student who moved house opens it, changes the state, and
  * presses save.
  *
- * So this is a review. It lists what is stored, marks what an organisation has
- * verified, and hands off to the form for anything that needs changing. The
+ * So this is a review. It lists what is stored, marks what the platform has
+ * verified or asked to be corrected, and hands off to the form for anything that needs changing. The
  * one-field PATCH is the real loss and it is a real one — saving now sends the
  * whole form again. It is bounded by the fact that a student is the only writer
  * of their own profile, so the tab that loses a race is their own.
@@ -64,6 +64,13 @@ export default function Profile() {
 
   const complete = profile.completeness_score >= 100
 
+  /* Answers the platform refused and the student has not yet changed. Once
+     they change one it drops out: the next look is the platform's to take. */
+  const refused = new Map((profile.field_reviews ?? [])
+    .filter(r => r.decision === 'REFUSED' && r.current)
+    .map(r => [r.field, r.reason ?? '']))
+  const refusedQuestions = questions.filter(q => refused.has(q.field))
+
   const grouped = new Set<string>(GROUPS.flatMap(g => g.fields as readonly string[]))
   const questionsIn = (fields: readonly string[], first: boolean) => questions.filter(q =>
     fields.includes(q.field) || (first && !grouped.has(q.field)))
@@ -91,6 +98,32 @@ export default function Profile() {
             the same questions in the end. */}
         <Link className="btn primary profile-edit" to="/register?edit">{t('profile.edit')}</Link>
       </header>
+
+      {/* What needs correcting, first. A refusal is the one thing on this
+          page that is waiting on the student, so it comes before the meter,
+          names each answer and says why, and has the one button that fixes
+          it. role="alert" is not used: it is not new on every visit, and a
+          page that interrupts on load is worse than one read in order. */}
+      {refusedQuestions.length > 0 && (
+        <section className="card refused-panel" aria-labelledby="refused">
+          <h2 id="refused">
+            <span className="refused-mark" aria-hidden="true">!</span>
+            {t('profile.refusedTitle', { n: refusedQuestions.length })}
+          </h2>
+          <p className="lede">{t('profile.refusedLede')}</p>
+          <ul className="refused-list">
+            {refusedQuestions.map(q => (
+              <li key={q.field}>
+                <strong>{q.question}</strong>
+                {refused.get(q.field) && <span>{refused.get(q.field)}</span>}
+              </li>
+            ))}
+          </ul>
+          <div className="actions">
+            <Link className="btn primary" to="/register?edit">{t('profile.refusedFix')}</Link>
+          </div>
+        </section>
+      )}
 
       {/* The meter, and the way back into the form. Both are here rather than
           only on the dashboard because this is the screen somebody opens when
@@ -153,8 +186,9 @@ export default function Profile() {
                 {qs.map(q => {
                   const shown = displayValue(q, answers[q.field])
                   const verified = profile.verified_fields?.includes(q.field) ?? false
+                  const reason = refused.get(q.field)
                   return (
-                    <div className="profile-row" key={q.field}>
+                    <div className={`profile-row${reason !== undefined ? ' is-refused' : ''}`} key={q.field}>
                       <dt>{q.question}</dt>
                       <dd>
                         {shown ?? <span className="muted">{t('profile.notAnswered')}</span>}
@@ -166,6 +200,12 @@ export default function Profile() {
                             <span aria-hidden="true">✓</span> {t('profile.verified')}
                           </span>
                         )}
+                        {reason !== undefined && (
+                          <span className="refused">
+                            <span aria-hidden="true">!</span> {t('profile.refused')}
+                          </span>
+                        )}
+                        {reason && <span className="refused-reason">{reason}</span>}
                       </dd>
                     </div>
                   )
