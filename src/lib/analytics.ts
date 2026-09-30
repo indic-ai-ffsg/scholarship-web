@@ -4,8 +4,10 @@
  * (published in /config.js) or VITE_GA_MEASUREMENT_ID in .env for development.
  * Unset, nothing is loaded and nothing is sent — see .env.example.
  *
- * The tag is loaded from here rather than written into index.html, because the
- * id is not known until runtime-config has read it. Configured with
+ * In a container the tag is already in index.html: the entrypoint writes it in
+ * at start-up (docker-entrypoint.d/17-runtime-config.envsh), because Google's
+ * installation test reads the HTML and never sees a tag the bundle adds. Under
+ * `npm run dev` there is no entrypoint, so loadTag adds it here. Configured with
  * send_page_view: false. Left to itself gtag counts a page when the document
  * loads, and this is a
  * single-page app: a visitor who lands on the home page and reads the

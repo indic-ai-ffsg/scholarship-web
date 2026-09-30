@@ -58,9 +58,54 @@ for _name in API_VERSION MSG91_WIDGET_ID MSG91_TOKEN_AUTH GA_MEASUREMENT_ID; do
 done
 echo "17-runtime-config: wrote $_html/config.js —$_report"
 
+# The Google tag, written into index.html in place of its marker.
+#
+# lib/analytics.ts can load the tag on its own, and does under `npm run dev` —
+# but Google's "Test your website" reads the page's HTML without running it,
+# so a tag the bundle adds is one it reports as never installed. Written here,
+# at start-up, it is in the HTML Google reads and the id is still configuration
+# rather than source. analytics.ts sees window.gtag already defined and only
+# sends the page views.
+#
+# The config line matches analytics.ts: no automatic page view (the app sends
+# one per route), no Google signals, no ad personalisation.
+#
+# Only an id shaped like one (G-… or GT-…, letters and digits) is written: it
+# goes into a script tag, and a stray quote in a variable must not become
+# markup. Anything else leaves the marker, and the page, as they were.
+_ga="${GA_MEASUREMENT_ID:-}"
+case "$_ga" in
+    G-*|GT-*)
+        if printf '%s' "$_ga" | grep -Eq '^GT?-[A-Za-z0-9]+$'; then
+            _tag="<script async src=\"https://www.googletagmanager.com/gtag/js?id=$_ga\"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','$_ga',{send_page_view:false,allow_google_signals:false,allow_ad_personalization_signals:false});</script>"
+            # awk rather than sed: the tag is JavaScript, full of the | and &
+            # a sed replacement treats as syntax. awk takes it from the
+            # environment as plain text. Into a temporary file and moved, so a
+            # failure leaves the served index.html untouched — it is the whole
+            # site.
+            if _tag="$_tag" awk '
+                    index($0, "<!-- google-tag -->") { sub(/<!-- google-tag -->/, ""); print ENVIRON["_tag"] $0; next }
+                    { print }
+                ' "$_html/index.html" > "$_html/index.html.tmp" \
+                && mv "$_html/index.html.tmp" "$_html/index.html"; then
+                echo "17-runtime-config: Google tag written into index.html"
+            else
+                rm -f "$_html/index.html.tmp"
+                echo "17-runtime-config: could not write the Google tag into index.html" >&2
+            fi
+        else
+            echo "17-runtime-config: GA_MEASUREMENT_ID is not a Google tag id; index.html left without one" >&2
+        fi
+        ;;
+    "") ;;
+    *)
+        echo "17-runtime-config: GA_MEASUREMENT_ID is not a Google tag id; index.html left without one" >&2
+        ;;
+esac
+
 if [ -z "${MSG91_WIDGET_ID:-}" ]; then
     echo "17-runtime-config: phone sign-in is off (MSG91_WIDGET_ID is unset). \
 Public pages are unaffected; the sign-in screen says so plainly." >&2
 fi
 
-unset _html _name _value _report
+unset _html _name _value _report _ga _tag
