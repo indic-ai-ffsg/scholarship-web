@@ -137,6 +137,11 @@ jobs:
       # was never started is not a passing result.
       - name: Build
         uses: docker/build-push-action@v6
+        # No build record: the action uploads one as an artifact on every
+        # build, kept 90 days, and those filled the account's artifact
+        # quota (2026-09-30). The run's own log says what was built.
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           tags: ${{ env.TAG }}
@@ -268,6 +273,11 @@ jobs:
       # image layer or a bundle.
       - name: Build
         uses: docker/build-push-action@v6
+        # No build record: the action uploads one as an artifact on every
+        # build, kept 90 days, and those filled the account's artifact
+        # quota (2026-09-30). The run's own log says what was built.
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           tags: ${{ env.IMAGE }}:${{ github.sha }}
