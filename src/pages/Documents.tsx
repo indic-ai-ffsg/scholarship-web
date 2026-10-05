@@ -21,11 +21,13 @@ import type { Document } from '../lib/types'
  * a recoverable problem if the student is told, and a missed year if not.
  */
 
-const DOC_TYPES = [
-  'DISABILITY_CERTIFICATE', 'UDID_CARD', 'INCOME_CERTIFICATE', 'DOMICILE_CERTIFICATE',
-  'CASTE_CERTIFICATE', 'MARKSHEET', 'ADMISSION_LETTER', 'BONAFIDE_CERTIFICATE',
-  'FEE_RECEIPT', 'BANK_PASSBOOK', 'IDENTITY_PROOF', 'PHOTOGRAPH',
-]
+/* Only the documents registration asks for (2026-10-05): the disability
+ * proof and a photograph. The form used to offer all twelve kinds up front, so
+ * a student met a dropdown of certificates no scheme had asked them for yet.
+ * Everything else is asked for by the scheme that needs it, on its Apply page,
+ * with an Upload button beside each line — this page lists them all once
+ * uploaded, and is where a registration document is replaced. */
+const DOC_TYPES = ['UDID_CARD', 'DISABILITY_CERTIFICATE', 'PHOTOGRAPH']
 
 /* The labels are field.doc.* in the string table. The key is built from the
    enum, so a document type the API adds shows its own enum name until somebody
@@ -87,11 +89,11 @@ export default function Documents() {
       {/* The shared title band (components/page-hero). */}
       <header className="page-hero">
         <h1>{t('doc.title')}</h1>
-        <p className="lede">{t('doc.lede')}</p>
+        <p className="lede">{t('doc.ledeApply')}</p>
       </header>
 
       <section className="card doc-upload" aria-labelledby="add-doc">
-        <h2 id="add-doc">{t('doc.upload')}</h2>
+        <h2 id="add-doc">{t('doc.replace')}</h2>
 
         {error && <Notice tone="danger">{error}</Notice>}
 

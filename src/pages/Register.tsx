@@ -161,6 +161,10 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     profile && !profile.udid_number ? 'MEDICAL' : 'UDID',
   )
   const [file, setFile] = useState<File | null>(null)
+  /* The student's photograph, optional (2026-10-05). Asked here with the
+     certificate because it is the other document every application uses, so
+     it is uploaded once rather than met for the first time on an Apply page. */
+  const [photo, setPhoto] = useState<File | null>(null)
   /* One stored enum becomes a one-item selection. A profile saved as
      MULTIPLE_DISABILITIES reopens as that single chip rather than as the set it
      was folded from — the set was never stored, and guessing it back would be
@@ -527,6 +531,18 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
         }
       }
 
+      // The photograph the same way, and allowed to fail the same way.
+      if (photo) {
+        const body = new FormData()
+        body.append('file', photo)
+        body.append('doc_type', 'PHOTOGRAPH')
+        try {
+          await api.upload('/me/documents', body)
+        } catch {
+          setFileWarning(t('reg.fileLater'))
+        }
+      }
+
       await refreshProfile()
       announce(t('reg.done'))
       /* Held on the page when the certificate did not go up, so the sentence
@@ -850,6 +866,18 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                 // default is wrong for somebody who has already scanned the
                 // certificate, and the picker offers the camera anyway.
                 onChange={e => chooseFile(e.target.files?.[0] ?? null)}
+              />
+            )}
+          </Field>
+
+          <Field label={t('reg.photo')} hint={t('reg.photoHint')}>
+            {props => (
+              <input
+                {...props}
+                type="file"
+                className="file-input"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={e => setPhoto(e.target.files?.[0] ?? null)}
               />
             )}
           </Field>

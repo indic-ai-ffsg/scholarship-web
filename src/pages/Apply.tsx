@@ -71,6 +71,8 @@ export default function Apply() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [blocked, setBlocked] = useState<string | null>(null)
+  /* Which document is uploading from its line, so only that button spins. */
+  const [uploading, setUploading] = useState<string | null>(null)
 
   /* The document bundle's own state, kept apart from `busy` and `error`.
    *
@@ -267,6 +269,27 @@ export default function Apply() {
   // Defaulted here rather than at each use: this is read in four places below,
   // and three of them would be a second chance to forget.
   const documents = query.data.documents ?? []
+
+  /* Uploading a document the scheme asks for, from its own line (2026-10-05).
+     It used to send the student to My documents and leave them to find the
+     right kind in a list of twelve and come back; the line now takes the file
+     itself, and the checklist reloads to say it is there. */
+  async function uploadFor(docType: string, label: string, file: File) {
+    setUploading(docType)
+    setError(null)
+    const body = new FormData()
+    body.append('file', file)
+    body.append('doc_type', docType)
+    try {
+      await api.upload('/me/documents', body)
+      announce(`${label} ${t('apply.uploaded')}`, 'ok')
+      query.reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'))
+    } finally {
+      setUploading(null)
+    }
+  }
   const shared = [...new Set(documents.map(d => d.label))].join(', ')
 
   async function submit() {
@@ -354,6 +377,7 @@ export default function Apply() {
       {documents.length > 0 && (
       <section className="card" aria-labelledby="docs">
         <h2 id="docs" style={{ fontSize: 'var(--step-1)' }}>{t('apply.docs')}</h2>
+        <p className="muted" style={{ marginTop: 0, fontSize: 'var(--step--1)' }}>{t('apply.docsHint')}</p>
 
         <ul role="list" className="stack tight" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {documents.map(doc => (
@@ -367,7 +391,7 @@ export default function Apply() {
               >
                 {doc.satisfied ? '✓' : '!'}
               </span>
-              <span>
+              <span className="apply-doc-text">
                 <strong>{doc.label}</strong>
                 <span className="sr-only">
                   {' — '}{doc.satisfied ? t('doc.verified') : t('match.blocked')}
@@ -378,6 +402,28 @@ export default function Apply() {
                   </span>
                 )}
               </span>
+              {/* Missing: upload it here. Uploaded but not yet checked: say so
+                  rather than offer the same file again. */}
+              {!doc.satisfied && !doc.document_id && (
+                <label className={`btn apply-upload${uploading === doc.doc_type ? ' is-busy' : ''}`}>
+                  {uploading === doc.doc_type ? t('apply.uploading') : t('apply.upload')}
+                  <span className="sr-only"> {doc.label}</span>
+                  <input
+                    type="file"
+                    className="sr-only"
+                    accept="application/pdf,image/jpeg,image/png,image/webp"
+                    disabled={uploading !== null}
+                    onChange={e => {
+                      const f = e.target.files?.[0]
+                      if (f) void uploadFor(doc.doc_type, doc.label, f)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+              )}
+              {!doc.satisfied && doc.document_id && (
+                <span className="apply-waiting">{t('apply.waitingCheck')}</span>
+              )}
             </li>
           ))}
         </ul>

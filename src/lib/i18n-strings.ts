@@ -507,6 +507,8 @@ export const en: Dict = {
   'doc.title': 'Your documents',
   'doc.lede': 'Upload a document once. Every scholarship you apply to can use it — you will not be asked for it again.',
   'doc.upload': 'Add a document',
+  'doc.ledeApply': 'Your disability proof and your photograph. Anything else a scholarship needs, you upload on its Apply page.',
+  'doc.replace': 'Upload or replace',
   'doc.type': 'What is this document?',
   'doc.file': 'Choose a file',
   'doc.fileHint': 'A PDF or a clear photograph. Up to 10 MB.',
@@ -567,6 +569,11 @@ export const en: Dict = {
   'apply.bundleWorking': 'Getting them ready\u2026',
   'apply.bundleDone': 'Your documents have been downloaded.',
   'apply.docs': 'Documents this scholarship needs',
+  'apply.docsHint': 'Upload each one here. A reviewer checks them before your application is decided.',
+  'apply.upload': 'Upload',
+  'apply.uploading': 'Uploading…',
+  'apply.uploaded': 'uploaded',
+  'apply.waitingCheck': 'Uploaded — waiting to be checked',
 
   'appl.title': 'Your applications',
   'appl.none': 'You have not applied to anything yet',
@@ -914,6 +921,8 @@ export const en: Dict = {
   'reg.fileSize': 'That file is larger than 5 MB. A photo taken on a phone is usually smaller if you scan it rather than photograph it.',
   /* Said instead of an error, because the profile did save. The registration
      is not undone by a certificate that has to be retried. */
+  'reg.photo': 'Your photograph',
+  'reg.photoHint': 'Optional. A clear, recent photo of your face. JPG or PNG, 5 MB or smaller.',
   'reg.fileLater': 'You are registered, and your details are saved. The certificate did not upload — add it from My documents and nothing else needs doing again.',
   'reg.disabilityType': 'Disability type',
   'reg.percent': 'Disability percentage',
