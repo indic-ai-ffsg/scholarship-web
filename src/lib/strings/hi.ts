@@ -612,6 +612,9 @@ const hi: Dict = {
   'appl.next.REJECTED': 'यह आवेदन सफल नहीं रहा। इससे आपके दूसरे आवेदनों पर कोई असर नहीं पड़ता।',
   'appl.next.CLOSED': 'यह आवेदन पूरा हो चुका है।',
   'appl.next.WITHDRAWN': 'आपने यह आवेदन वापस ले लिया था।',
+
+  /* Read Aloud's sample sentence, in the language the voice will read. */
+  'a11y.voiceSample': 'पढ़कर सुनाएँ की आवाज़ ऐसी सुनाई देगी। आप सूची से दूसरी आवाज़ भी चुन सकते हैं।',
 }
 
 export default hi

@@ -1,0 +1,141 @@
+/* --- the accessibility menu ---------------------------------------------------
+ *
+ * components/AccessibilityPanel carries the argument. The panel is wider than
+ * the account menu because its buttons carry sentences, and it scrolls inside
+ * itself rather than running off the bottom of a phone. Every control is 48px.
+ */
+.masthead .menu.a11y .menu-panel {
+  width: min(24rem, calc(100vw - 2rem));
+  max-height: min(36rem, calc(100vh - 6rem));
+  overflow-y: auto;
+  padding: 1rem;
+}
+.a11y-title { font-size: var(--step-1); margin: 0 0 0.75rem; max-width: none; }
+.a11y-group { margin: 0 0 1rem; display: grid; gap: 0.5rem; }
+.a11y-group h3 {
+  font-size: var(--step--1);
+  font-weight: var(--w-strong);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+}
+.a11y-panel button {
+  min-height: 48px;
+  font: inherit;
+  cursor: pointer;
+}
+.a11y-toggle {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  text-align: start;
+}
+.a11y-icon { text-align: center; font-size: 1.125em; }
+.a11y-name { font-weight: var(--w-medium); }
+/* On: a thicker accent border, a filled ground and the word "On" — three
+   signals, so the state survives a monochrome screen and colour blindness. */
+.a11y-state {
+  font-size: var(--step--1);
+  font-weight: var(--w-strong);
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+.a11y-toggle[aria-pressed="true"] {
+  border-width: 3px;
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+.a11y-toggle[aria-pressed="true"] .a11y-state {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.a11y-now { margin: 0.25rem 0 0; font-weight: var(--w-medium); }
+.a11y-stepper { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.a11y-stepper button {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.125rem;
+  padding: 0.375rem;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--step--1);
+  line-height: 1.2;
+  text-align: center;
+}
+.a11y-stepper button > span[aria-hidden] { font-size: 1.25em; font-weight: 700; }
+.a11y-stepper button[aria-disabled="true"],
+.a11y-reset[aria-disabled="true"] {
+  border-style: dashed;
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+.a11y-hint { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
+.a11y-reset {
+  width: 100%;
+  border: 2px solid var(--text);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: var(--w-medium);
+}
+
+/* The control in the bar: the mark alone, a 48px square. */
+.masthead .menu.a11y > summary { min-width: 48px; justify-content: center; padding-inline: 0.5rem; }
+.masthead .menu.a11y .menu-label:empty { display: none; }
+.a11y-mark { font-size: 1.5rem; line-height: 1; }
+
+/* On a phone the control sits at the right edge and the shared rule opens
+   panels to the right of their control, which ran this one 200px off a 320px
+   screen. Here it opens across the full width under the bar instead: the
+   menu gives up being the positioning box, and the bar's row takes it. */
+@media (max-width: 44rem) {
+  .masthead .inner { position: relative; }
+  .masthead .menu.a11y { position: static; }
+  .masthead .menu.a11y .menu-panel {
+    inset-inline: 0.5rem;
+    top: calc(100% + 0.25rem);
+    width: auto;
+  }
+}
+
+/* The speech-rate choice: the chosen one is drawn as a pressed toggle is. */
+.a11y-stepper button[aria-pressed="true"] {
+  border-width: 3px;
+  border-color: var(--accent);
+  background: var(--accent-weak);
+  font-weight: var(--w-strong);
+}
+
+/* Reading Guide's band. A tinted strip a line and a half tall with a firm edge
+   below it, so the line being read sits inside a frame. Never takes a click. */
+.reading-guide {
+  position: fixed; inset-inline: 0; z-index: 90;
+  height: 2.75rem; translate: 0 -50%;
+  background: rgb(255 212 0 / 0.18);
+  border-block: 3px solid #0b0c0c;
+  box-shadow: 0 0 0 1px #ffd400;
+  pointer-events: none;
+}
+
+/* Zoom buttons on a wide screen; on a phone, the sentence about pinching. */
+.a11y-zoom { display: grid; gap: 0.5rem; }
+.a11y-zoom-phone { display: none; }
+@media (max-width: 43.99rem) {
+  .a11y-zoom { display: none; }
+  .a11y-zoom-phone { display: block; }
+}
+
+/* The voice picker: full width, a 48px target like everything else here. */
+.a11y-voice { width: 100%; min-height: 48px; }

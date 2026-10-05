@@ -6,10 +6,14 @@ import App from './App'
 import { AuthProvider } from './lib/auth'
 import { I18nProvider } from './lib/i18n'
 import { Announcer } from './components/Announcer'
+import { applySavedDisplay } from './lib/display'
 import './styles.css'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('missing #root')
+
+// Before the first render, so a saved text size never flashes the default one.
+applySavedDisplay()
 
 createRoot(root).render(
   <StrictMode>

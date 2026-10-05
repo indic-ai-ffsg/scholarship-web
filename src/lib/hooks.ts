@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useDisplay } from './display'
 
 export interface QueryMeta {
   page: number
@@ -109,6 +110,11 @@ export function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
+  /* The same request made on this site rather than on the device: Reduce
+     Motion, Pause Animations or Stop Auto-Play in the accessibility panel
+     (lib/display). Any one of them stops the rotation — a reader who asked for
+     auto-play to stop asked for exactly this. */
+  const display = useDisplay()
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -118,5 +124,5 @@ export function usePrefersReducedMotion() {
     return () => query.removeEventListener('change', update)
   }, [])
 
-  return reduced
+  return reduced || display.reduceMotion || display.pauseAnimations || display.stopAutoplay
 }

@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react'
 
-import { AnnouncerContext, type Tone } from '../lib/announce'
+import { AnnouncerContext, type AnnounceOptions, type Tone } from '../lib/announce'
 
 /* Confirmation that something happened.
  *
@@ -57,11 +57,12 @@ export function Announcer({ children }: { children: ReactNode }) {
     timers.current.set(id, window.setTimeout(() => drop(id), ms))
   }, [drop])
 
-  const announce = useCallback<(text: string, tone?: Tone) => void>((text, tone = 'ok') => {
+  const announce = useCallback<(text: string, tone?: Tone, options?: AnnounceOptions) => void>((text, tone = 'ok', options) => {
     // Cleared first, so announcing the same string twice is still spoken the
     // second time — assistive technology ignores an unchanged live region.
     setMessage('')
     window.setTimeout(() => setMessage(text), 60)
+    if (options?.spokenOnly) return
 
     const id = nextId.current++
     // The clock is recorded even when the stack is being held, so that

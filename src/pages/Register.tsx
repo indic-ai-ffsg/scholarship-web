@@ -54,6 +54,7 @@ import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
 import { useI18n } from '../lib/i18n-context'
 import { useAnnounce } from '../lib/announce'
+import { usePageTitle } from '../lib/page-title'
 import { safeNext } from '../lib/next'
 import { formatE164, type Channel } from '../lib/otp'
 import {
@@ -100,6 +101,42 @@ const YEAR_DONE = 'COMPLETED'
    Far enough back for a student returning to study after a long gap; a year
    earlier than that is outside what any scheme here asks about. */
 const PASS_YEARS = Array.from({ length: 16 }, (_, i) => String(new Date().getFullYear() - i))
+
+/* Three steps, from the design Rakesh drew and Sarita and Sandeep approved
+ * (2026-10-05): about you, eligibility, then a review of both before anything
+ * is sent.
+ *
+ * Not the eleven-screen wizard back again, and the header's argument against it
+ * still holds — this is what answers it. The rail beside the form names all
+ * three steps from the first moment, so the length of the ask is visible before
+ * the first keystroke, which is what the wizard could not do. And going back is
+ * one press of Edit on the review rather than Back eight times.
+ *
+ * What the steps add that one long page did not is a place to stop and check.
+ * On one page the only check was the submit button, and a mistake in the second
+ * question surfaced as a summary three thousand pixels away from it. Each step
+ * is checked as it is left, so a problem is met beside the questions it is about.
+ *
+ * Every question the one page asked is still asked; Rakesh's design was drawn
+ * from a shorter list, and the state, income and marks it leaves out are what
+ * most schemes match on. They are placed into the design's steps instead. */
+type Step = 1 | 2 | 3
+
+/* Which step each answer lives on, in the order they appear on screen — the
+   error summary lists them in this order, so it reads top to bottom the way the
+   form does rather than in the order the checks happen to run. */
+const STEP_OF: Record<string, Step> = {
+  name: 1, phone: 1, gender: 1,
+  udid: 2, file: 2, disability: 2, percent: 2,
+  state: 2, district: 2, program: 2, programOther: 2, year: 2, passYear: 2,
+  marks: 2, institution: 2,
+  declaration: 3,
+}
+
+/* The problems that belong to one step. */
+function onStep(found: Record<string, string>, step: Step): Record<string, string> {
+  return Object.fromEntries(Object.entries(found).filter(([k]) => STEP_OF[k] === step))
+}
 
 /* Two components, and the split exists to own one problem: seeding.
  *
@@ -247,7 +284,6 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const held = (own: boolean, unavailable = false) =>
     (busy && !own && !unavailable) || undefined
   const [formError, setFormError] = useState<string | null>(null)
-  const [fileWarning, setFileWarning] = useState<string | null>(null)
   const [sentVia, setSentVia] = useState<Channel>('sms')
   const [resent, setResent] = useState(false)
   /* Seconds since the last code went out, counted down from 30.
@@ -259,10 +295,25 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const [resentAt, setResentAt] = useState<number | null>(null)
   const [secondsLeft, setSecondsLeft] = useState(0)
 
+  const [step, setStep] = useState<Step>(1)
+  /* Whether the summary of problems is showing. Opened by a refused Continue,
+     and it empties itself as each problem is fixed — the list is read from
+     `problems` rather than copied, so it cannot go on naming a field that is
+     already right. */
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [declared, setDeclared] = useState(false)
+
   const phoneInput = useRef<HTMLInputElement>(null)
   const codeInput = useRef<HTMLInputElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const form = useRef<HTMLFormElement>(null)
+  const summary = useRef<HTMLDivElement>(null)
+  const stepHeads = useRef<(HTMLHeadingElement | null)[]>([])
+
+  /* The tab names the step as well as the page (2.4.2): "Step 2 of 3" is what a
+     screen reader user switching back to this tab needs to hear, and a title
+     that stayed "Register" for all three steps would not say it. */
+  usePageTitle(`${t(`reg.step${step}`)} · ${t(profile ? 'reg.editTitle' : 'reg.title')}`)
 
 
   useEffect(() => {
@@ -361,7 +412,6 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   }
 
   function chooseFile(chosen: File | null) {
-    setFileWarning(null)
     clearProblem('file')
     if (!chosen) {
       setFile(null)
@@ -390,7 +440,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
 
     if (!name.trim()) found.name = required
     if (!gender) found.gender = required
-    if (!verified) found.phone = t('reg.verifyFirst')
+    if (!verified) found.phone = t('reg.verifyToContinue')
     if (certKind === 'UDID' && !udid.trim()) found.udid = required
     /* Only on a first registration. An edit is re-opening a form whose
        certificate was uploaded the first time through, and demanding the file
@@ -418,51 +468,109 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     // Optional, so only a number that cannot be right is a problem.
     const marksBad = marksProblem(scaleOf(marksScale), marks.trim())
     if (marksBad) found.marks = marksBad
+    if (!declared) found.declaration = t('reg.declarationMissing')
 
     return found
+  }
+
+  /* Moves to a step and puts focus on its heading.
+   *
+   * Focus has to move, or a screen reader user presses Continue and hears
+   * nothing: the button they pressed is on a section that has just been hidden,
+   * and focus falls to the body. The heading is the right place to land because
+   * it says "Step 2 of 3, Eligibility" — where they are and how far there is to
+   * go — and the next Tab reaches the first question.
+   *
+   * flushSync, because the heading being focused is in a section the state
+   * update un-hides. A hidden element cannot take focus, and React batches an
+   * update made in an event handler until after the handler returns, so without
+   * it the focus call ran against the old DOM and silently did nothing. */
+  function goTo(next: Step) {
+    flushSync(() => {
+      setStep(next)
+      setSummaryOpen(false)
+      setFormError(null)
+    })
+    const head = stepHeads.current[next - 1]
+    head?.focus()
+    head?.scrollIntoView({ block: 'start' })
+  }
+
+  /* Refuses to leave a step, and says why in one place.
+   *
+   * The summary takes focus rather than the first wrong field. Landing on a
+   * field tells a screen reader user about that one problem and leaves them to
+   * find the other three by tabbing; the summary reads the count and every
+   * problem in order, each a link to its field — the pattern GOV.UK's forms
+   * settled on after testing it with exactly this audience. */
+  function refuse(found: Record<string, string>) {
+    flushSync(() => {
+      setProblems(found)
+      setSummaryOpen(true)
+    })
+    summary.current?.focus()
+    summary.current?.scrollIntoView({ block: 'start' })
+  }
+
+  /* Puts focus on the control a summary link names.
+   *
+   * By data-field rather than by id, because Field mints its ids with useId and
+   * a chip group or the district picker has no single control to own one. The
+   * first enabled control under the marker wins: the phone question's number
+   * box is disabled while a code is pending, and the code box is then the one
+   * to type into. Centred, so the label and hint above it are not left under
+   * the sticky masthead. */
+  function focusField(key: string) {
+    const marked = form.current?.querySelectorAll<HTMLElement>(`[data-field="${key}"]`) ?? []
+    const target = [...marked]
+      .map(el => el.matches('input, select, textarea, button')
+        ? el
+        : el.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea, button:not([disabled])'))
+      .find(el => el && !(el as HTMLInputElement).disabled)
+    target?.focus()
+    target?.scrollIntoView({ block: 'center' })
+  }
+
+  function next() {
+    const found = onStep(check(), step)
+    if (Object.keys(found).length > 0) {
+      refuse(found)
+      return
+    }
+    setProblems({})
+    goTo((step + 1) as Step)
   }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
 
+    /* Enter in the code box means "check this code", not "next step": the
+       form's only submit button is Continue, and a student who types six digits
+       and presses Enter has not finished the page. */
+    if (step === 1 && awaitingCode && document.activeElement === codeInput.current) {
+      if (code.length === CODE_LENGTH) void verify()
+      return
+    }
+    if (step < 3) {
+      next()
+      return
+    }
+
     const found = check()
     if (Object.keys(found).length > 0) {
-      /* Focus the first thing that is wrong, in document order rather than in
-       * the order the checks happen to run. A summary at the top telling
-       * somebody that four fields need attention, with no way to reach the
-       * first of them, is the failure mode this avoids — and on a form three
-       * thousand pixels tall it is the difference between a fixable error and
-       * a hunt.
-       *
-       * flushSync, because the thing being searched for is drawn by the state
-       * update on the line above it. aria-invalid reaches the DOM when React
-       * commits, and React batches an update made inside an event handler to
-       * after the handler returns — so the querySelector below ran against the
-       * previous DOM, matched nothing, and focus stayed on the body. Nothing
-       * about it looked broken: the errors all appeared correctly a frame
-       * later, and only the focus silently did not move.
-       *
-       * A rAF or a zero timeout would also work and would be worse: both say
-       * "wait a moment and hope", where this says which paint is being waited
-       * for. The cost is one synchronous re-render on a path that has just
-       * refused to submit, which is not a path worth optimising. */
-      flushSync(() => {
-        setProblems(found)
-        setFormError(t('reg.fix'))
-      })
-      const first = form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')
-      first?.focus()
-      /* Centred rather than scrolled to the top: the label and the hint sit
-         above the control, and a field aligned to the top of the viewport puts
-         both of them under the sticky masthead. */
-      first?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      /* Each step was checked on the way out of it, so a problem here is
+         normally the declaration alone. One from an earlier step — a session
+         that expired between steps, say — sends the student back to it, since
+         the summary's links cannot reach a field on a hidden step. */
+      const earliest = Math.min(...Object.keys(found).map(k => STEP_OF[k] ?? 3)) as Step
+      if (earliest !== step) goTo(earliest)
+      refuse(onStep(found, earliest))
       return
     }
     setProblems(found)
 
     setWorking('save')
     setFormError(null)
-    setFileWarning(null)
 
     /* Only what was answered, and each in the type the API decodes it as.
      * disability_percent is *int and current_year is *int on UpsertInput; a
@@ -506,6 +614,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
      * concludes the address is on file. */
     void email
 
+    let uploadFailed = false
     try {
       if (profile) {
         await api.request('/me/profile', { method: 'PATCH', body: payload })
@@ -527,7 +636,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
           // multipart boundary, which it cannot do if a Content-Type is forced.
           await api.upload('/me/documents', body)
         } catch {
-          setFileWarning(t('reg.fileLater'))
+          uploadFailed = true
         }
       }
 
@@ -539,15 +648,30 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
         try {
           await api.upload('/me/documents', body)
         } catch {
-          setFileWarning(t('reg.fileLater'))
+          uploadFailed = true
         }
       }
 
+      /* A file that did not go up, said where it will be seen.
+
+         It used to be held on this page, and for a new registration it never
+         was: refreshProfile gives the session a profile, Register re-keys on
+         that profile's id and remounts this form with fresh state, and the
+         remount's "already registered" redirect leaves before a warning can
+         draw. So a failed upload now goes to My documents — the one place it
+         can be retried — with the reason as a warning toast, which the
+         Announcer holds across the navigation and also speaks. An edit
+         (profile already present, nothing re-keys) is the same, for the same
+         reason: the fix is in the documents, not in this form. */
+      if (uploadFailed) {
+        announce(t('reg.fileLater'), 'warn')
+        await refreshProfile()
+        navigate('/documents')
+        return
+      }
       await refreshProfile()
       announce(t('reg.done'))
-      /* Held on the page when the certificate did not go up, so the sentence
-         about it is read rather than flashed on the way out. */
-      if (!fileWarning) navigate(destination)
+      navigate(destination)
     } catch (err) {
       setFormError(err instanceof Error ? err.message : t('common.error'))
     } finally {
@@ -555,8 +679,94 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     }
   }
 
+  /* What each problem is called in the summary — the question's own words, so
+     a link reads "Full name: This one is needed" and lands on the box with that
+     label. */
+  const fieldNames: Record<string, string> = {
+    name: t('reg.name'),
+    phone: t('auth.phone'),
+    gender: t('reg.gender'),
+    udid: t('reg.udid'),
+    file: t(certKind === 'UDID' ? 'reg.certificate' : 'reg.medicalCertificate'),
+    disability: t('reg.disabilityType'),
+    percent: t('reg.percent'),
+    state: t('reg.state'),
+    district: t('reg.district'),
+    program: t('reg.program'),
+    programOther: t('reg.programOther'),
+    year: t('reg.year'),
+    passYear: t('reg.passYear'),
+    marks: scaleOf(marksScale).field,
+    institution: t('reg.institution'),
+    declaration: t('reg.declarationLegend'),
+  }
+  const listed = Object.keys(STEP_OF).filter(k => problems[k])
+
+  /* The heading each step opens with. Focusable from script only, so goTo can
+     land on it; "Step 2 of 3" and the step's name are one heading, and so one
+     announcement, rather than a caption read separately. */
+  const stepHead = (n: Step) => (
+    <h2
+      id={`reg-step-${n}`}
+      className="register-step-head"
+      tabIndex={-1}
+      ref={el => { stepHeads.current[n - 1] = el }}
+    >
+      <span className="register-eyebrow">{t('reg.stepOf', { n })}</span>
+      <span className="sr-only">: </span>
+      {t(`reg.step${n}`)}
+    </h2>
+  )
+
+  /* The review's one row. An unanswered optional question says so in words
+     rather than leaving a blank that reads as a value lost. */
+  const row = (label: string, value: string | null | undefined) => (
+    <div className="review-row">
+      <dt>{label}</dt>
+      <dd>{value ? value : <span className="muted">{t('reg.notGiven')}</span>}</dd>
+    </div>
+  )
+
+  const choiceLabel = (choices: Choice[], value: string) =>
+    choices.find(c => c.value === value)?.label ?? value
+  const yearText = year === YEAR_DONE
+    ? [t('reg.yearDone'), passYear].filter(Boolean).join(', ')
+    : (() => { const y = ALL_YEARS.find(a => a.label === year); return y ? t(y.key) : '' })()
+  const marksText = marks.trim() === ''
+    ? ''
+    : marksScale === 'PERCENT'
+      ? `${marks.trim()}%`
+      : `${marks.trim()} ${scaleOf(marksScale).label} (${toPercent(Number(marks), scaleOf(marksScale))}%)`
+
   return (
     <div className="page register-page">
+      <div className="register-layout">
+        {/* The rail. An ordered list, because the steps are a sequence and a
+            screen reader saying "list, 3 items" is the length of the ask. Each
+            step's state is said in words beside its mark — a tick, a filled
+            number, an outlined one — so colour carries none of it (1.4.1). Not
+            links: a step is reached by finishing the one before it, and Edit on
+            the review is the way back. */}
+        <nav className="register-rail" aria-label={t('reg.progress')}>
+          <ol>
+            {([1, 2, 3] as Step[]).map(n => {
+              const where = n < step ? 'done' : n === step ? 'now' : 'later'
+              return (
+                <li key={n} className={`rail-step ${where}`} aria-current={n === step ? 'step' : undefined}>
+                  <span className="rail-num" aria-hidden="true">{where === 'done' ? '✓' : n}</span>
+                  <span className="rail-copy">
+                    <strong>{t(`reg.step${n}`)}</strong>
+                    <span className="rail-note">{t(`reg.step${n}Note`)}</span>
+                    <span className="sr-only">
+                      {' '}({t(where === 'done' ? 'reg.stepDone' : where === 'now' ? 'reg.stepNow' : 'reg.stepLater')})
+                    </span>
+                  </span>
+                </li>
+              )
+            })}
+          </ol>
+        </nav>
+
       <div className="register-card">
         <h1>{profile ? t('reg.editTitle') : t('reg.title')}</h1>
         <p className="register-sub">
@@ -564,26 +774,60 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               line about asterisks and a sr-only line stating the real rule —
               which is two conventions to keep true instead of one, and only the
               hidden half was right. Nothing here needs hiding now. */}
-          {t('reg.requiredNote')}
+          {/* The star drawn as the fields draw it, red, in every language —
+              split on the glyph rather than on words, so a translation that
+              moves the star mid-sentence keeps it marked. Not aria-hidden,
+              unlike the fields' stars: here it is the word the sentence is
+              about, and hiding it would read "marked with are required". */}
+          {t('reg.requiredNote').split('*').map((part, i) => (
+            <span key={i}>{i > 0 && <span className="req">*</span>}{part}</span>
+          ))}
         </p>
 
         {authError && <Notice tone="danger">{authError}</Notice>}
         {formError && <Notice tone="danger">{formError}</Notice>}
-        {fileWarning && (
-          <Notice tone="warn" title={t('reg.doneTitle')}>
-            <p>{fileWarning}</p>
-            <p><Link to="/documents">{t('doc.upload')}</Link></p>
-          </Notice>
+
+        {/* Every problem on this step, in screen order, each a link to its
+            field. Not role="alert": refuse() moves focus here, which reads it,
+            and an alert as well would read it twice — over the per-field
+            alerts that are already speaking. Gone once the list is empty. */}
+        {summaryOpen && listed.length > 0 && (
+          <div
+            ref={summary}
+            className="error-summary"
+            tabIndex={-1}
+            aria-labelledby="reg-summary-title"
+          >
+            <h2 id="reg-summary-title">{t('reg.summary', { n: listed.length })}</h2>
+            <ul>
+              {listed.map(k => (
+                <li key={k}>
+                  <a
+                    href={`#field-${k}`}
+                    onClick={e => { e.preventDefault(); focusField(k) }}
+                  >
+                    {fieldNames[k]}: {problems[k]}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         <form ref={form} onSubmit={submit} noValidate>
-          <h2 className="register-section">{t('reg.personal')}</h2>
+          {/* hidden rather than unmounted: the certificate and photo inputs hold
+              their chosen files in the DOM, and a step that unmounted them would
+              show "no file chosen" on the way back while a file was still held. */}
+          <section hidden={step !== 1} aria-labelledby="reg-step-1">
+          {stepHead(1)}
+          <h3 className="register-section">{t('reg.personal')}</h3>
 
           <Field label={t('reg.name')} error={problems.name || undefined} required>
             {props => (
               <input
                 {...props}
                 type="text"
+                data-field="name"
                 autoComplete="name"
                 placeholder={t('reg.namePlaceholder')}
                 value={name}
@@ -619,6 +863,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                       <input
                         {...props}
                         ref={phoneInput}
+                        data-field="phone"
                         type="tel"
                         inputMode="numeric"
                         autoComplete="tel-national"
@@ -654,6 +899,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                       <div className="phone-otp">
                         <input
                           ref={codeInput}
+                          data-field="phone"
                           type="text"
                           /* one-time-code lets the phone offer the digits
                              straight from the message, which saves the
@@ -745,7 +991,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               * front of this audience — "Prefer not to say" is a stored answer
               * that stops the matcher asking again, which is the honest way to
               * let somebody decline. */}
-          <div className="field">
+          <div className="field" data-field="gender">
             <span className="field-label" id="reg-gender">
               {t('reg.gender')}
               {/* Required, and checked as such — a star that does not stop a
@@ -805,7 +1051,24 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             </p>
           )}
 
-          <h2 className="register-section">{t('reg.disability')}</h2>
+          <div className="register-actions">
+            <span />
+            <button type="submit" className="primary">{t('reg.continue')}</button>
+          </div>
+          {/* Why Continue will refuse, before it is pressed — the phone code is
+              the one answer that cannot be typed, and the reason a student is
+              held on this step. */}
+          {!verified && (
+            <p className="register-gate">
+              <span className="mark" aria-hidden="true">!</span>
+              <span>{t('reg.verifyToContinue')}</span>
+            </p>
+          )}
+          </section>
+
+          <section hidden={step !== 2} aria-labelledby="reg-step-2">
+          {stepHead(2)}
+          <h3 className="register-section">{t('reg.disability')}</h3>
 
           {/* Which certificate, first: it decides whether there is a UDID
               number to ask for and what the upload is. Two options, so two
@@ -841,6 +1104,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                 <input
                   {...props}
                   type="text"
+                  data-field="udid"
                   placeholder={t('reg.udidPlaceholder')}
                   value={udid}
                   onChange={e => { setUdid(e.target.value); clearProblem('udid') }}
@@ -859,6 +1123,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               <input
                 {...props}
                 ref={fileInput}
+                data-field="file"
                 type="file"
                 className="file-input"
                 accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -893,6 +1158,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             {props => (
               <select
                 {...props}
+                data-field="disability"
                 value={disabilities[0] ?? ''}
                 onChange={e => {
                   setDisabilities(e.target.value ? [e.target.value] : [])
@@ -919,6 +1185,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                 type="number"
                 inputMode="numeric"
                 className="input-short"
+                data-field="percent"
                 // step 1 so the spinner moves in whole numbers and a phone
                 // keypad offers no decimal point: disability_percent is an int
                 // on the API, and 40.5 fails to decode.
@@ -932,10 +1199,11 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             )}
           </Field>
 
-          <h2 className="register-section">{t('reg.education')}</h2>
+          <h3 className="register-section">{t('reg.education')}</h3>
 
           <Field label={t('reg.state')} error={problems.state || undefined} required>
             {props => (
+              <div data-field="state">
               <SearchableSelect
                 {...props}
                 options={stateChoices(t)}
@@ -952,6 +1220,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                 }}
                 placeholder={t('reg.statePlaceholder')}
               />
+              </div>
             )}
           </Field>
 
@@ -966,6 +1235,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             required
           >
             {props => (
+              <div data-field="district">
               <DistrictPicker
                 id={props.id}
                 stateCode={state}
@@ -974,6 +1244,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                 describedBy={props['aria-describedby']}
                 invalid={!!problems.district}
               />
+              </div>
             )}
           </Field>
 
@@ -986,6 +1257,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             {props => (
               <select
                 {...props}
+                data-field="program"
                 value={program}
                 onChange={e => { setProgram(e.target.value); setYear(''); setPassYear(''); clearProblem('program') }}
               >
@@ -1013,6 +1285,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                 <input
                   {...props}
                   type="text"
+                  data-field="programOther"
                   maxLength={160}
                   autoComplete="off"
                   value={programOther}
@@ -1037,6 +1310,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               {props => (
                 <select
                   {...props}
+                  data-field="year"
                   value={year}
                   disabled={!program}
                   onChange={e => { setYear(e.target.value); clearProblem('year') }}
@@ -1059,6 +1333,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                 <select
                   {...props}
                   className="input-short"
+                  data-field="passYear"
                   value={passYear}
                   onChange={e => { setPassYear(e.target.value); clearProblem('passYear') }}
                 >
@@ -1105,6 +1380,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
                 // decimal, unlike the disability percentage: 76.5% and a CGPA
                 // of 8.2 are both ordinary answers here.
                 inputMode="decimal"
+                data-field="marks"
                 className="input-short"
                 step={0.01}
                 min={0}
@@ -1133,6 +1409,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               <input
                 {...props}
                 type="text"
+                data-field="institution"
                 placeholder={t('reg.institutionPlaceholder')}
                 value={institution}
                 onChange={e => { setInstitution(e.target.value); clearProblem('institution') }}
@@ -1140,31 +1417,84 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             )}
           </Field>
 
-          {/* Held by its own save, not by the OTP exchange happening above it.
-              `busy` here would have covered both, and both are on screen at
-              once until the number is verified — so pressing "Send OTP" turned
-              this button grey for the length of an SMS round trip, which is the
-              blink this whole state split exists to remove, on the largest
-              control on the page.
+          <div className="register-actions">
+            <button type="button" onClick={() => goTo(1)}>{t('reg.back')}</button>
+            <button type="submit" className="primary">{t('reg.toReview')}</button>
+          </div>
+          </section>
 
-              Nothing is lost by leaving it pressable meanwhile: an unverified
-              submit is already refused in words by the note below and by
-              submit() itself, which is the deliberate choice recorded there —
-              a button that cannot be pressed and does not say why is where
-              forms get abandoned. */}
+          <section hidden={step !== 3} aria-labelledby="reg-step-3">
+          {stepHead(3)}
+          <p className="register-sub">{t('reg.reviewLead')}</p>
+
+          {/* What will be sent, as the student will be judged on it. A
+              description list, so each answer is read with its question. */}
+          <div className="review-block">
+            <h3>{t('reg.step1')}</h3>
+            <dl>
+              {row(t('reg.name'), name.trim())}
+              {row(t('auth.phone'), pendingCode ? formatE164(pendingCode.phone) : verified ? t('reg.verified') : '')}
+              {row(t('reg.gender'), gender && choiceLabel(genderChoices(t), gender))}
+              {row(t('reg.email'), email.trim())}
+              {row(t('q.annual_family_income'), income !== '' ? money(Number(income)) : '')}
+            </dl>
+            <button type="button" onClick={() => goTo(1)}>{t('reg.editStep', { step: t('reg.step1') })}</button>
+          </div>
+
+          <div className="review-block">
+            <h3>{t('reg.step2')}</h3>
+            <dl>
+              {row(t('reg.certShort'), t(certKind === 'UDID' ? 'reg.certUdid' : 'reg.certMedical'))}
+              {certKind === 'UDID' && row(t('reg.udid'), udid.trim())}
+              {row(t('reg.certFile'), file?.name ?? (profile ? t('reg.fileKept') : ''))}
+              {row(t('reg.photo'), photo?.name)}
+              {row(t('reg.disabilityType'), disabilities[0] && choiceLabel(disabilityChips(t), disabilities[0]))}
+              {row(t('reg.percent'), percent !== '' ? `${percent}%` : '')}
+              {row(t('reg.state'), state && choiceLabel(stateChoices(t), state))}
+              {row(t('reg.district'), district)}
+              {row(t('reg.program'), isOther ? programOther.trim() : program.replace(/^PG: /, ''))}
+              {category !== 'phd' && row(t('reg.year'), yearText)}
+              {row(t('q.academic_percentage'), marksText)}
+              {row(t('reg.institution'), institution.trim())}
+            </dl>
+            <button type="button" onClick={() => goTo(2)}>{t('reg.editStep', { step: t('reg.step2') })}</button>
+          </div>
+
+          {/* A real checkbox in a fieldset, so the legend is read with it and
+              the whole sentence is its label — the box and the words are one
+              48px target. */}
+          <fieldset className="register-declaration" data-field="declaration">
+            <legend>
+              {t('reg.declarationLegend')}
+              <span className="req" aria-hidden="true"> *</span>
+              <span className="sr-only"> ({t('common.required')})</span>
+            </legend>
+            <label className="declaration-choice">
+              <input
+                type="checkbox"
+                checked={declared}
+                aria-invalid={problems.declaration ? true : undefined}
+                aria-describedby={problems.declaration ? 'reg-declaration-error' : undefined}
+                onChange={e => { setDeclared(e.target.checked); clearProblem('declaration') }}
+              />
+              <span>{t('reg.declaration')}</span>
+            </label>
+            {problems.declaration && (
+              <span className="error" id="reg-declaration-error" role="alert">{problems.declaration}</span>
+            )}
+          </fieldset>
+
+          {/* Held by its own save only. Left pressable otherwise: a button
+              that cannot be pressed and does not say why is where forms get
+              abandoned, and submit() refuses in words. */}
           <button type="submit" className="primary wide register-cta" disabled={working === 'save'} aria-busy={working === 'save' || undefined}>
-            {busy ? t('reg.saving') : profile ? t('reg.saveChanges') : t('reg.cta')}
+            {working === 'save' ? t('reg.saving') : profile ? t('reg.saveChanges') : t('reg.cta')}
           </button>
 
-          {/* Said in words rather than only by a disabled button, because a
-              button that cannot be pressed and does not say why is the single
-              most common reason a form is abandoned at the last step. */}
-          {!verified && (
-            <p className="register-gate">
-              <span className="mark" aria-hidden="true">!</span>
-              <span>{t('reg.verifyFirst')}</span>
-            </p>
-          )}
+          <div className="register-actions">
+            <button type="button" onClick={() => goTo(2)} disabled={working === 'save'}>{t('reg.back')}</button>
+          </div>
+          </section>
         </form>
 
         {!verified && (
@@ -1172,6 +1502,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             {t('reg.already')} <Link to="/signin">{t('reg.login')}</Link>
           </p>
         )}
+      </div>
       </div>
     </div>
   )

@@ -9,6 +9,8 @@ import { useQuery } from '../lib/hooks'
 import { SOCIAL } from '../lib/social'
 import { useI18n } from '../lib/i18n-context'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { AccessibilityPanel } from './AccessibilityPanel'
+import { ReadingGuide } from './ReadingGuide'
 import { hadSession } from '../lib/session-hint'
 import { forgetAvatar } from '../lib/avatar'
 import { HELPLINE } from '../lib/helpline'
@@ -444,6 +446,22 @@ export default function Layout() {
               conditional below, because it is the one control in this bar that
               a visitor needs before they can read any of the others. The
               reasoning is in the component. */}
+          {/* Beside the language, and for the same reason: both are what a
+              reader may need before they can use anything else in the bar.
+              The shared Menu, so it closes on Escape and returns focus like
+              the account menu does. */}
+          {/* The symbol alone on the control: the bar has no room for another
+              word at 1280px, and ♿ is the one mark this audience already
+              looks for. "Accessibility" is its accessible name (hint), and
+              its title for a pointer that hovers. */}
+          <Menu
+            label=""
+            hint={t('a11y.menu')}
+            className="a11y"
+            leading={<span className="a11y-mark" aria-hidden="true" title={t('a11y.menu')}>♿</span>}
+          >
+            <AccessibilityPanel />
+          </Menu>
           <LanguageSwitcher />
 
           {signedIn
@@ -497,6 +515,8 @@ export default function Layout() {
           * Inside <main>, the worst a slow chunk can do is swap the content
           * region. The bar stays put, the footer stays put, and .route-loading
           * holds the height so neither moves while the chunk arrives. */}
+      {/* Drawn only while Reading Guide is on (accessibility panel). */}
+      <ReadingGuide />
       <main id="main" tabIndex={-1} ref={mainRef}>
         <Suspense fallback={<div className="route-loading"><Loading /></div>}>
           {/* Keyed on the path, so navigating away from a page that failed

@@ -45,6 +45,7 @@
 @import "./styles/shell/nav.css";
 @import "./styles/components/card.css";
 @import "./styles/components/controls.css";
+@import "./styles/components/a11y-panel.css";
 @import "./styles/components/eligibility.css";
 @import "./styles/components/wizard.css";
 @import "./styles/components/timeline.css";
@@ -74,4 +75,6 @@
 @import "./styles/pages/matches.css";
 @import "./styles/components/district-picker.css";
 @import "./styles/foundation/i18n.css";
+/* Last: the reader's own text size and contrast override everything above. */
+@import "./styles/foundation/display.css";
 
