@@ -265,14 +265,38 @@ function load(): Promise<void> {
  * waits for it, then blames the network or their own phone.
  *
  * So the envelope is inspected rather than trusted, and anything that says it
- * failed is rejected however it arrived. */
+ * failed is rejected however it arrived.
+ *
+ * That envelope is one of two. MSG91's API-level refusals — no credit left, a
+ * number it will not send to, a widget it has disabled — come back as
+ *
+ *   {"type":"error","message":"<the reason>"}
+ *
+ * with neither hasError nor status set, and checking only those let every one
+ * of them through as a send: the screen said "enter the code we sent" for a
+ * code nobody sent, on SMS and then on every channel under "try another way",
+ * because a refusal for the account refuses all three alike.
+ *
+ * A send with nothing in `message` is refused too. A real send carries its
+ * request id there, and a real verify carries the access token; an empty one is
+ * not a success of either kind, and resolving it only moves the failure later,
+ * to a step that can no longer say what went wrong. */
 function settle(
   data: WidgetResult,
   resolve: (token: string) => void,
   reject: (err: Error) => void,
 ) {
-  if (data?.hasError || data?.status === 'fail') {
-    const detail = typeof data.errors === 'string' ? data.errors : data.message
+  const refused = data?.hasError
+    || data?.status === 'fail'
+    || data?.type?.toLowerCase() === 'error'
+    || !data?.message
+  if (refused) {
+    /* MSG91's own words, for whoever opens the console. They name the cause —
+       "insufficient balance", "IP not whitelisted" — that the screen can only
+       paraphrase, and the request id beside it is what the dashboard log is
+       searched by. */
+    console.warn('[otp] the verification service refused:', data)
+    const detail = typeof data?.errors === 'string' ? data.errors : data?.message
     reject(new ProviderError(
       detail
         ? `The verification service refused to send the code: ${detail}`
