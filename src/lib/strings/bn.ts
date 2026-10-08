@@ -11,7 +11,7 @@
 import type { Dict } from '../i18n-strings'
 
 const bn: Dict = {
-  'app.name': 'ইন্ডিক এআই বৃত্তি',
+  'app.name': 'বৃত্তি পোর্টাল',
   'app.tagline': 'প্রতিবন্ধী শিক্ষার্থীদের জন্য',
   'app.yourApplication': 'আপনার আবেদন · {title}',
 

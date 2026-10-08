@@ -26,7 +26,7 @@
 import type { Dict } from '../i18n-strings'
 
 const ks: Dict = {
-  'app.name': 'انڈِک اے آی وظیفہٕ',
+  'app.name': 'وظیفہٕ پورٹل',
   'app.tagline': 'معذور طالِب عِلمَن خٲطرٕ',
   'app.yourApplication': 'توٚہُنٛز درخواست · {title}',
 

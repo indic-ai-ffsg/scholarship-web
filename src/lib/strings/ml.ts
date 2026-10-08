@@ -12,7 +12,7 @@
 import type { Dict } from '../i18n-strings'
 
 const ml: Dict = {
-  'app.name': 'ഇൻഡിക് എഐ സ്കോളർഷിപ്പ്',
+  'app.name': 'സ്കോളർഷിപ്പ് പോർട്ടൽ',
   'app.tagline': 'ഭിന്നശേഷി വിദ്യാർഥികൾക്കായി',
   'app.yourApplication': 'നിങ്ങളുടെ അപേക്ഷ · {title}',
 

@@ -15,7 +15,7 @@
 import type { Dict } from '../i18n-strings'
 
 const asm: Dict = {
-  'app.name': 'ইণ্ডিক এআই বৃত্তি',
+  'app.name': 'বৃত্তি পৰ্টেল',
   'app.tagline': 'দিব্যাং শিক্ষাৰ্থীসকলৰ বাবে',
   'app.yourApplication': 'আপোনাৰ আবেদন · {title}',
 

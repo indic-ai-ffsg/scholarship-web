@@ -12,7 +12,7 @@
 import type { Dict } from '../i18n-strings'
 
 const pa: Dict = {
-  'app.name': 'ਇੰਡਿਕ ਏਆਈ ਵਜ਼ੀਫ਼ਾ',
+  'app.name': 'ਵਜ਼ੀਫ਼ਾ ਪੋਰਟਲ',
   'app.tagline': 'ਦਿਵਿਆਂਗ ਵਿਦਿਆਰਥੀਆਂ ਲਈ',
   'app.yourApplication': 'ਤੁਹਾਡੀ ਅਰਜ਼ੀ · {title}',
 

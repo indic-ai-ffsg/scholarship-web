@@ -11,7 +11,7 @@
 import type { Dict } from '../i18n-strings'
 
 const te: Dict = {
-  'app.name': 'ఇండిక్ ఏఐ ఉపకారవేతనం',
+  'app.name': 'ఉపకారవేతన పోర్టల్',
   'app.tagline': 'దివ్యాంగ విద్యార్థుల కోసం',
   'app.yourApplication': 'మీ దరఖాస్తు · {title}',
 

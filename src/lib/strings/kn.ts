@@ -12,7 +12,7 @@
 import type { Dict } from '../i18n-strings'
 
 const kn: Dict = {
-  'app.name': 'ಇಂಡಿಕ್ ಎಐ ವಿದ್ಯಾರ್ಥಿವೇತನ',
+  'app.name': 'ವಿದ್ಯಾರ್ಥಿವೇತನ ಪೋರ್ಟಲ್',
   'app.tagline': 'ವಿಕಲಚೇತನ ವಿದ್ಯಾರ್ಥಿಗಳಿಗಾಗಿ',
   'app.yourApplication': 'ನಿಮ್ಮ ಅರ್ಜಿ · {title}',
 

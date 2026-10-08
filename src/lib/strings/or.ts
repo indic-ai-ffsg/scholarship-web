@@ -11,7 +11,7 @@
 import type { Dict } from '../i18n-strings'
 
 const or: Dict = {
-  'app.name': 'ଇଣ୍ଡିକ୍ ଏଆଇ ଛାତ୍ରବୃତ୍ତି',
+  'app.name': 'ଛାତ୍ରବୃତ୍ତି ପୋର୍ଟାଲ',
   'app.tagline': 'ଦିବ୍ୟାଙ୍ଗ ଛାତ୍ରଛାତ୍ରୀଙ୍କ ପାଇଁ',
   'app.yourApplication': 'ଆପଣଙ୍କ ଆବେଦନ · {title}',
 

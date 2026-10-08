@@ -12,7 +12,7 @@
 import type { Dict } from '../i18n-strings'
 
 const ta: Dict = {
-  'app.name': 'இண்டிக் ஏஐ உதவித்தொகை',
+  'app.name': 'உதவித்தொகை போர்டல்',
   'app.tagline': 'மாற்றுத்திறனாளி மாணவர்களுக்காக',
   'app.yourApplication': 'உங்கள் விண்ணப்பம் · {title}',
 

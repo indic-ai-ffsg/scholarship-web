@@ -17,7 +17,7 @@
 import type { Dict } from '../i18n-strings'
 
 const ur: Dict = {
-  'app.name': 'انڈک اے آئی وظیفہ',
+  'app.name': 'وظیفہ پورٹل',
   'app.tagline': 'معذور طلبہ کے لیے',
   'app.yourApplication': 'آپ کی درخواست · {title}',
 

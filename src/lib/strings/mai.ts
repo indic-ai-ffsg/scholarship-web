@@ -17,7 +17,7 @@
 import type { Dict } from '../i18n-strings'
 
 const mai: Dict = {
-  'app.name': 'इंडिक एआइ छात्रवृत्ति',
+  'app.name': 'छात्रवृत्ति पोर्टल',
   'app.tagline': 'दिव्यांग विद्यार्थी सभक लेल',
   'app.yourApplication': 'अहाँक आवेदन · {title}',
 

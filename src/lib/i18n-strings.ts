@@ -24,11 +24,12 @@
 export type Dict = Record<string, string>
 
 export const en: Dict = {
-  /* The name under the mark in the bar, and the tail of every tab title. The
-   * foundation's name and what this site of theirs is — "Scholarships" alone
-   * named a category rather than a service, and said nothing about whose it
-   * was. */
-  'app.name': 'Indic AI scholarship',
+  /* The name under the mark in the bar, and the tail of every tab title.
+   * "Scholarships" alone named a category rather than a service. It was
+   * "Indic AI scholarship" after that, and the foundation's name has gone from
+   * it (2026-10-08): the mark beside it already reads "Indic-ai" in its own
+   * lettering, so the bar said the name twice, and a portal is what this is. */
+  'app.name': 'Scholarship Portal',
   /* Still used: the tab title for a page that has no name of its own. */
   'app.tagline': 'For students with disabilities',
   /* The tab name for one application, which is not the same page as the public

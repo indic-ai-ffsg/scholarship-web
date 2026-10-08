@@ -11,7 +11,7 @@
 import type { Dict } from '../i18n-strings'
 
 const gu: Dict = {
-  'app.name': 'ઇન્ડિક એઆઈ શિષ્યવૃત્તિ',
+  'app.name': 'શિષ્યવૃત્તિ પોર્ટલ',
   'app.tagline': 'દિવ્યાંગ વિદ્યાર્થીઓ માટે',
   'app.yourApplication': 'તમારી અરજી · {title}',
 
