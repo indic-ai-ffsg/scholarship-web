@@ -1,0 +1,35 @@
+/* --- sharing a scheme (components/ShareScheme.tsx) ------------------------------
+ *
+ * A row of equal buttons that wraps. Not icons alone: a chat bubble does not say
+ * "WhatsApp" to everybody, and the words are what a screen reader and a reader
+ * who does not know the glyph both need. Each keeps the 48px target every
+ * control here has.
+ */
+.share-actions {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+}
+/* Two to a row on a phone, all five on one row where there is room. */
+.share-actions > * { flex: 1 1 8.5rem; }
+
+/* A link waiting for its words. Not pointer-events: none on its own, which a
+   keyboard ignores — the href is absent until then, so there is nowhere for
+   it to go, and this only says so to the eye. */
+.share-actions a[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* The QR code, held out across a desk. White behind it whatever the theme: a
+   code drawn on a dark ground does not scan. */
+.share-qr {
+  margin: 1rem 0 0;
+  display: grid; justify-items: start; gap: 0.5rem;
+}
+.share-qr img {
+  width: min(15rem, 100%); height: auto;
+  background: #fff;
+  padding: 0.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  image-rendering: pixelated;
+}

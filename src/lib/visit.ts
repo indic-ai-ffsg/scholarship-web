@@ -53,7 +53,7 @@
  */
 
 import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { setting } from './runtime-config'
 
@@ -89,10 +89,16 @@ export function isPublicPath(path: string): boolean {
   return path.indexOf('/', 1) === -1
 }
 
-export function recordVisit(path: string): void {
+/* The channels a shared link can name (backend share.Channels). Anything else
+ * in ?ref= is not ours — somebody's own tracking tag — and is not sent. */
+const SHARE_CHANNELS = new Set(['wa', 'mail', 'link', 'app', 'qr'])
+
+export function recordVisit(path: string, ref?: string | null): void {
   if (!isPublicPath(path)) return
 
-  const body = JSON.stringify({ path })
+  /* Where the link that brought them was shared, when it was one of ours
+     (0072). Only the channel goes, never the rest of the query string. */
+  const body = JSON.stringify(ref && SHARE_CHANNELS.has(ref) ? { path, ref } : { path })
 
   /* sendBeacon when it exists, because it survives the page being closed — a
    * visitor who reads one page and leaves is precisely the one this figure
@@ -134,8 +140,30 @@ export function recordVisit(path: string): void {
  */
 export function usePageVisit(): void {
   const location = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
-    recordVisit(location.pathname)
+    const params = new URLSearchParams(location.search)
+    const ref = params.get('ref')
+    recordVisit(location.pathname, ref)
+
+    /* Then the ref comes off the address, in place.
+     *
+     * Counted once is the point: left on, a reload counts the same open
+     * again, and a student who copies the address from the bar to send it on
+     * sends "?ref=wa" with it — so their email is counted as WhatsApp. The
+     * share buttons build a fresh link anyway. Replace, not push, so Back
+     * does not walk through the address with the ref still on it. */
+    if (ref !== null) {
+      params.delete('ref')
+      const qs = params.toString()
+      navigate(
+        { pathname: location.pathname, search: qs ? `?${qs}` : '', hash: location.hash },
+        { replace: true, state: location.state },
+      )
+    }
+    // Keyed on the path alone, as before: the ref's removal changes only the
+    // search, and must not count the page a second time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname])
 }

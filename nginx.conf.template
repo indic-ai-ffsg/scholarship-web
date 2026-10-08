@@ -16,7 +16,7 @@
 # substitutes it at container start.
 #
 # The nginx image renders /etc/nginx/templates/*.template into /etc/nginx/conf.d
-# with envsubst before starting. Only the five names in NGINX_ENVSUBST_FILTER
+# with envsubst before starting. Only the names in NGINX_ENVSUBST_FILTER
 # are substituted, which is what keeps $host, $request_uri and the rest of
 # nginx's own variables below from being replaced by the empty string.
 #
@@ -28,6 +28,40 @@
 #
 # See docker-entrypoint.d/16-api-target.envsh for the derivation and the
 # defaults, and README.md for when each needs setting.
+#
+#   API_VERSION    the API's path segment, for the link-preview subrequest
+#                  below; the Dockerfile sets it, as config.js already uses it
+
+# --- link previews ----------------------------------------------------------
+#
+# Which scheme an address names, if any. WhatsApp, Gmail and every other link
+# preview read index.html as it leaves here and run no JavaScript, so the
+# scheme's title and picture have to be in the file itself. index.html asks for
+# them with an SSI include of /__share-head/$share_slug, below; empty means
+# "not a scheme", and the site's own tags come back instead.
+#
+# $request_uri rather than $uri: by the time index.html is being served, $uri
+# has been rewritten to /index.html by try_files, while $request_uri is still
+# the address the reader asked for. The pattern is the slug's whole alphabet —
+# lowercase, digits, hyphens, 220 at most (registry.uniqueSlug) — so nothing a
+# visitor types reaches the subrequest's path unless it could be a slug.
+map $request_uri $share_slug {
+    default "";
+    "~^/scholarships/(?<share_s>[a-z0-9][a-z0-9-]{0,219})/?(?:[?#].*)?$" $share_s;
+}
+
+# Where the subrequest goes: a scheme's head, or the site's.
+map $share_req $share_upstream {
+    ""      /api/${API_VERSION}/public/share/head;
+    default /api/${API_VERSION}/public/scholarships/$share_req/head;
+}
+
+# A minute of cache in front of it. Every page view of a scheme's address asks
+# for its head, and a link forwarded to a WhatsApp group of three hundred is
+# three hundred of them in the same minute; this makes that one database read.
+# Short enough that a corrected title reaches a preview almost at once.
+proxy_cache_path /var/cache/nginx/share-head levels=1 keys_zone=share_head:1m
+                 max_size=16m inactive=10m use_temp_path=off;
 
 server {
     # The port comes from the environment because container platforms assign one
@@ -128,6 +162,50 @@ server {
     # covers every client-side route as well as the file itself.
     location = /index.html {
         add_header Cache-Control "no-store";
+        # The head's per-address tags, from the API. See the maps at the top.
+        # Silent errors, so a failure the fallback below did not catch leaves
+        # the head without its tags rather than printing nginx's error text
+        # into it.
+        ssi               on;
+        ssi_silent_errors on;
+    }
+
+    # The subrequest index.html's SSI include makes. Internal: a visitor asking
+    # for /__share-head/ directly gets a 404, because this is not an address.
+    #
+    # On any failure — the scheme is not public, the API is down or slow — the
+    # page gets the site's own tags from a static file, so a link always has a
+    # title. The API is given two seconds and not the /api/ block's sixty:
+    # index.html waits on this, and a page that arrives without a scheme's
+    # picture is better than a page that does not arrive.
+    location ~ ^/__share-head/(?<share_req>[a-z0-9-]*)$ {
+        internal;
+        set $api_share ${API_TARGET};
+        proxy_pass $api_share$share_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host ${API_HOST};
+        proxy_ssl_server_name on;
+        proxy_set_header X-Real-IP       $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # Same reason as the /api/ block below.
+        proxy_set_header CF-Connecting-IP "";
+        proxy_set_header CF-Ray           "";
+        proxy_set_header CF-IPCountry     "";
+        proxy_set_header CF-Visitor       "";
+        proxy_set_header CDN-Loop         "";
+        # Plain text back: SSI pastes the body into the page as it stands, and
+        # a gzipped one would be pasted as bytes.
+        proxy_set_header Accept-Encoding  "";
+
+        proxy_cache           share_head;
+        proxy_cache_key       $share_upstream;
+        proxy_cache_valid     200 60s;
+        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+
+        proxy_connect_timeout 2s;
+        proxy_read_timeout    2s;
+        proxy_intercept_errors on;
+        error_page 404 500 502 503 504 = /share-head-default.html;
     }
 
     # The manifest names the launcher icons and is read once at install time.

@@ -99,7 +99,7 @@ ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 # absent from it is copied through verbatim, and nginx then refuses to start
 # on a directive containing a literal ${...}. Adding a variable to the
 # template means adding it here.
-ENV NGINX_ENVSUBST_FILTER='^(API_TARGET|API_HOST|DNS_RESOLVER|LISTEN_PORT|LISTEN_IPV6|RESOLVER_IPV6)$'
+ENV NGINX_ENVSUBST_FILTER='^(API_TARGET|API_HOST|DNS_RESOLVER|LISTEN_PORT|LISTEN_IPV6|RESOLVER_IPV6|API_VERSION)$'
 
 # worker_processes auto means one worker per CPU the *host* has, which on a big
 # machine is dozens of processes serving one small static site. This makes the

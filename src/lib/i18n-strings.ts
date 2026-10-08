@@ -284,6 +284,17 @@ export const en: Dict = {
      a new tab, which is otherwise one of the most disorienting things a screen
      reader user can meet. */
   'common.newTab': 'opens in a new tab',
+  /* Sharing a scheme (components/ShareScheme.tsx). The message itself is the
+     API's, in English or Hindi; these are only the buttons around it. */
+  'share.title': 'Tell someone about it',
+  'share.native': 'Share',
+  'share.whatsapp': 'WhatsApp',
+  'share.email': 'Email',
+  'share.copy': 'Copy link',
+  'share.copied': 'Link copied',
+  'share.qr': 'QR code',
+  'share.qrAlt': 'QR code for {title}. Scanning it opens this scholarship.',
+  'share.qrHint': 'Scan with a phone camera to open this scholarship.',
   'public.applyHelp': 'We check your profile and your documents against this scholarship first, and tell you if anything is missing. Nothing is sent until you confirm.',
   'public.ctaHelp': 'Tell us about yourself once and we will show you every scholarship you qualify for.',
   'public.back': 'Back to all scholarships',

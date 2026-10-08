@@ -182,3 +182,39 @@ export const IconSignOut = (p: IconProps) => (
     <path d="M10.5 12H20M16.5 8.5 20 12l-3.5 3.5" />
   </Svg>
 )
+
+/** Three joined nodes: hand this to the phone's own share sheet. */
+export const IconShare = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="18" cy="5.5" r="2.5" />
+    <circle cx="6" cy="12" r="2.5" />
+    <circle cx="18" cy="18.5" r="2.5" />
+    <path d="M8.2 10.8l7.6-4.1M8.2 13.2l7.6 4.1" />
+  </Svg>
+)
+
+/** An envelope: send it by email. */
+export const IconMail = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="1.5" />
+    <path d="M3.5 6l8.5 7 8.5-7" />
+  </Svg>
+)
+
+/** Two links of a chain: copy the address. */
+export const IconLink = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+    <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+  </Svg>
+)
+
+/** Three finder squares: show it as a QR code. */
+export const IconQR = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3.5" y="3.5" width="6" height="6" rx="0.5" />
+    <rect x="14.5" y="3.5" width="6" height="6" rx="0.5" />
+    <rect x="3.5" y="14.5" width="6" height="6" rx="0.5" />
+    <path d="M14.5 14.5h2.5v2.5M20.5 14.5v.01M14.5 20.5h.01M17 20.5h3.5V17" />
+  </Svg>
+)

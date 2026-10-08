@@ -11,6 +11,7 @@ import { recordReferral } from '../../lib/referral'
 import { asLines, awardLabel, date, orgKind, orgKindKey, stripNumbering } from '../../lib/format'
 import { Deadline, ErrorState, Loading, SponsorLogo } from '../../components/ui'
 import { Sheet } from '../../components/Sheet'
+import { ShareScheme } from '../../components/ShareScheme'
 import { usePageTitle } from '../../lib/page-title'
 import { renderInline, renderRichText } from '../../lib/richtext'
 import { isBenefitTable, parseBenefits } from '../../lib/benefits'
@@ -346,6 +347,15 @@ export function SchemeSheet({
           <div className="richtext">{renderRichText(s.important_notes)}</div>
         </div>
       )}
+
+      {/* Sending it on, after everything that would be sent. Last rather than
+          beside the Apply button: the footer holds the one action this panel
+          exists for, and a row of five share buttons next to it would make
+          sharing look like the thing to do. Somebody who has read this far and
+          thought of a friend finds it here. Keyed on the slug, not on `s`, so
+          the words load with the panel and are ready before the press — see
+          ShareScheme on why that matters to a WhatsApp link. */}
+      <ShareScheme slug={slug} />
 
       {/* Only when the fetch failed outright. A failure here costs the reader
           nothing they had — the row's own copy is already on screen — so it is
