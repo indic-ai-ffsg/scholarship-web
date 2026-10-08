@@ -117,8 +117,12 @@
 
 /* Two rows between a phone and a monitor, and the break is chosen.
  *
- * Everything in one row needs about 70rem: the lockup, the destinations, the
- * credit, the language and the two actions. Below that the bar used to wrap
+ * Everything in one row needs about 76rem: the lockup, the destinations, the
+ * credit, the accessibility menu, the language and the two actions. It was 70
+ * until the accessibility menu joined the bar, and the break stayed at 72 —
+ * so between 1152px and 1210px the bar wrapped wherever it ran out again. The
+ * break sits two rem above the measured edge, because the measurement is the
+ * English labels and the other languages are not shorter. Below that the bar used to wrap
  * wherever it ran out, and at 900px what ran out was the actions — Register and
  * Login alone on a second row at the left edge, under the brand, the most
  * important controls in the bar looking like leftovers.
@@ -128,7 +132,7 @@
  * edge where they are at every other width, which is what makes the bar
  * predictable as the window changes. Before the phone rules below, which
  * refine this rather than undo it. */
-@media (max-width: 72rem) {
+@media (max-width: 78rem) {
   .masthead .brand { margin-inline-end: auto; }
   .masthead .nav-main {
     order: 1; flex-basis: 100%;
@@ -141,11 +145,16 @@
 /* The same two rows for a signed-in student, from a wider window.
  *
  * Their bar holds four destinations and the account menu where a visitor's has
- * two and a pair of buttons, and it runs out of room at about 86rem rather than
- * 72: at 1280px "My account" wrapped onto a second row by itself at the left
+ * two and a pair of buttons, and it runs out of room at about 92rem rather than
+ * 76: at 1280px "My account" wrapped onto a second row by itself at the left
  * edge, under the logo. Keyed on the account menu being there, so the visitor's
- * bar keeps its single row down to 72rem. */
-@media (max-width: 86rem) {
+ * bar keeps its single row down to 78rem.
+ *
+ * This was 86rem, measured before the accessibility menu took 77px of the row,
+ * and the same wrap came back at 1440px — the width of most laptops. Measured
+ * again with it in: one row fits from about 1465px, so the break is two rem
+ * above that, as the visitor's is. Anything added to this bar moves both. */
+@media (max-width: 94rem) {
   .masthead:has(.account) .brand { margin-inline-end: auto; }
   .masthead:has(.account) .nav-main {
     order: 1; flex-basis: 100%;
