@@ -917,6 +917,9 @@ export const en: Dict = {
   'reg.yearDone': 'Completed / passed out',
   'reg.passYear': 'Year of passing',
   'reg.certificateHint': 'PDF or image, 5 MB or smaller.',
+  /* Shown when one is already held: the field stays marked required, since
+     the profile needs it, and this says the requirement is already met. */
+  'reg.certificateOnFile': 'Already on file. Choose a new file only to replace it. PDF or image, 5 MB or smaller.',
   'reg.fileType': 'That file must be a PDF, a JPEG or a PNG.',
   'reg.fileSize': 'That file is larger than 5 MB. A photo taken on a phone is usually smaller if you scan it rather than photograph it.',
   /* Said instead of an error, because the profile did save. The registration

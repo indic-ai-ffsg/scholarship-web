@@ -165,6 +165,15 @@ export default function Register() {
 
 function RegisterForm({ profile }: { profile: Profile | null }) {
   const { t } = useI18n()
+  /* Whether a disability certificate or UDID card is already held, from the
+     profile's uploaded_documents (backend 0071). An API older than that sends
+     no list, and then an existing profile is taken to hold one, as this form
+     always assumed — so the form never demands a file the server cannot say
+     it is missing. */
+  const proofOnFile = profile
+    ? (profile.uploaded_documents ?? ['DISABILITY_CERTIFICATE'])
+        .some(d => d === 'DISABILITY_CERTIFICATE' || d === 'UDID_CARD')
+    : false
   const {
     requestCode, submitCode, resendCode, cancelCode, clearError,
     status, pendingCode, error: authError, refreshProfile,
@@ -442,10 +451,14 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     if (!gender) found.gender = required
     if (!verified) found.phone = t('reg.verifyToContinue')
     if (certKind === 'UDID' && !udid.trim()) found.udid = required
-    /* Only on a first registration. An edit is re-opening a form whose
-       certificate was uploaded the first time through, and demanding the file
-       again to change a state code would be asking for the document twice. */
-    if (!file && !profile) found.file = required
+    /* Required until one is on file — not "on a first registration", which is
+       what this was. That rule assumed a profile meant a certificate, and it
+       did not: the upload runs after the profile saves and is allowed to fail
+       on its own, so a student whose upload failed reopened this form to find
+       the one document the score needs marked optional. Once a certificate or
+       UDID card is held, the field is satisfied and an edit to a state code
+       does not ask for it twice. */
+    if (!file && !proofOnFile) found.file = required
     if (disabilities.length === 0) found.disability = required
 
     const pct = Number(percent)
@@ -1115,13 +1128,17 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
 
           <Field
             label={t(certKind === 'UDID' ? 'reg.certificate' : 'reg.medicalCertificate')}
-            hint={t('reg.certificateHint')}
+            hint={proofOnFile ? t('reg.certificateOnFile') : t('reg.certificateHint')}
             error={problems.file || undefined}
-            required={!profile}
+            required
           >
             {props => (
               <input
                 {...props}
+                // Not required to the browser or a screen reader once one is
+                // on file: the label's star says the profile needs it, the
+                // hint says it has it, and an empty picker is not a gap.
+                required={!proofOnFile}
                 ref={fileInput}
                 data-field="file"
                 type="file"
