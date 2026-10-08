@@ -63,7 +63,7 @@ interface Eligibility {
 export default function Apply() {
   const { scholarshipId } = useParams()
   const { t } = useI18n()
-  const { profile } = useAuth()
+  const { profile, refreshProfile } = useAuth()
   const announce = useAnnounce()
   const navigate = useNavigate()
 
@@ -284,6 +284,12 @@ export default function Apply() {
       await api.upload('/me/documents', body)
       announce(`${label} ${t('apply.uploaded')}`, 'ok')
       query.reload()
+      /* The profile's score counts the disability proof and the photograph
+         (backend 0071), and the session holds the profile it was read with —
+         so without this the bar in the masthead's menu and on the dashboard
+         says the upload has not happened until the next sign-in. Not awaited:
+         the file is stored, and a slow refresh must not hold the page. */
+      void refreshProfile()
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'))
     } finally {

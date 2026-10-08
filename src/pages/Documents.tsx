@@ -36,7 +36,7 @@ const DOC_LABEL_KEY = (type: string) => `field.doc.${type}`
 
 export default function Documents() {
   const { t } = useI18n()
-  const { profile } = useAuth()
+  const { profile, refreshProfile } = useAuth()
   const announce = useAnnounce()
 
   const [docType, setDocType] = useState('')
@@ -71,6 +71,12 @@ export default function Documents() {
       setDocType('')
       if (fileInput.current) fileInput.current.value = ''
       query.reload()
+      /* The profile's score counts the disability proof and the photograph
+         (backend 0071), and the session holds the profile it was read with —
+         so without this the bar in the masthead's menu and on the dashboard
+         says the upload has not happened until the next sign-in. Not awaited:
+         the file is stored, and a slow refresh must not hold the page. */
+      void refreshProfile()
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'))
     } finally {

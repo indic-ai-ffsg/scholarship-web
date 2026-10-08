@@ -346,6 +346,9 @@ export interface Profile {
   pincode?: string
   completeness_score: number
   verified_fields: string[]
+  /** Document types held in a readable copy; the score counts the
+      disability proof and the photograph among them (backend 0071). */
+  uploaded_documents?: string[]
   /** What the platform decided about each answer. A REFUSED one with
       `current` true is waiting for the student to correct it. */
   field_reviews?: FieldReview[]

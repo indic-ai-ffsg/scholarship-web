@@ -5,7 +5,7 @@ import * as api from '../lib/api'
 import { useAuth } from '../lib/auth-context'
 import { useQuery } from '../lib/hooks'
 import { useI18n } from '../lib/i18n-context'
-import { stepDestination } from '../lib/questions'
+import { isDocumentStep, stepDestination } from '../lib/questions'
 import { trackOf } from '../lib/track'
 import { money, shortDate } from '../lib/format'
 import { Empty, ErrorState, Loading, Notice } from '../components/ui'
@@ -120,7 +120,7 @@ export default function Dashboard() {
               the wrong ones for a document somebody has to upload. */}
           <div className="actions">
             <Link className="btn primary" to={stepDestination(nextField)}>
-              {nextField === 'documents' ? t('doc.upload') : t('profile.continue')}
+              {isDocumentStep(nextField) ? t('doc.upload') : t('profile.continue')}
             </Link>
           </div>
         </section>

@@ -28,7 +28,7 @@ import { Link, Navigate } from 'react-router-dom'
 
 import { useAuth } from '../lib/auth-context'
 import { useI18n } from '../lib/i18n-context'
-import { buildQuestions, displayValue, seedValue, type Answers } from '../lib/questions'
+import { buildQuestions, displayValue, isDocumentStep, seedValue, type Answers } from '../lib/questions'
 import { IconForm, IconGraduate, IconShield } from '../components/icons'
 import { Avatar } from '../components/Avatar'
 
@@ -155,11 +155,11 @@ export default function Profile() {
           ) : null}
 
           <div className="actions">
-            {/* Documents are the one next step the form cannot answer: it is
-                answered by uploading a certificate and waiting for an
-                organisation to check it, and sending somebody to the form for
-                that would reopen every answer and change nothing. */}
-            {profile.next_steps?.[0]?.field === 'documents' ? (
+            {/* The two documents are the next steps the form cannot answer:
+                each is answered by uploading a file, and sending somebody to
+                the form for that would reopen every answer and change
+                nothing. */}
+            {isDocumentStep(profile.next_steps?.[0]?.field ?? '') ? (
               <Link className="btn primary" to="/documents">{t('doc.upload')}</Link>
             ) : (
               <Link className="btn primary" to="/register?edit">{t('profile.continue')}</Link>

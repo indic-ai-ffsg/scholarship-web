@@ -37,7 +37,8 @@ export interface Question {
    * question four of eleven.
    *
    * Both of these are safe to leave: neither is scored by compute_completeness
-   * (0031, 0036), so skipping one still reaches 100%, and no scheme filters on
+   * (0071 scores only what the form requires, and the two documents), so
+   * skipping one still reaches 100%, and no scheme filters on
    * either — they identify a student and corroborate what they claimed, which
    * is work that happens after a match, not before one. */
   optional?: boolean
@@ -396,5 +397,12 @@ export function seedValue(q: Question, raw: unknown): string {
  * The documents exception outlives it unchanged.
  */
 export function stepDestination(field: string): string {
-  return field === 'documents' ? '/documents' : '/register?edit'
+  return isDocumentStep(field) ? '/documents' : '/register?edit'
+}
+
+/* The two steps answered by uploading rather than by answering: the disability
+ * proof and the photograph, both on My documents. Since 0071 the photograph is
+ * scored too, so "documents" is no longer the only one. */
+export function isDocumentStep(field: string): boolean {
+  return field === 'documents' || field === 'photograph'
 }
