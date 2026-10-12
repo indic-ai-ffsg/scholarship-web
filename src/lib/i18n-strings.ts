@@ -823,7 +823,7 @@ export const en: Dict = {
   'home.step4': 'Fill in your details',
   'home.step4Body': 'Your name, your certificate and where you study — one question at a time, and every answer is saved as you give it.',
   'home.step5': 'Upload your documents',
-  'home.step5Body': 'Disability certificate, UDID card, income certificate and the rest. Once each, not once for every scholarship.',
+  'home.step5Body': 'Disability certificate or UDID card. Once, not again for every scholarship.',
   'home.step6': 'See your matches',
   'home.step6Body': 'My matches lists the scholarships you qualify for — and where one is closed to you, it says why.',
   'home.step7': 'Apply',

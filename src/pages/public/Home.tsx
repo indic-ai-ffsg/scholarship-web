@@ -10,7 +10,7 @@ import { Deadline, Field } from '../../components/ui'
 import Slides, { Illustration, LeadWords } from '../../components/Slides'
 import OrgMark from '../../components/OrgMark'
 import { HELPLINE } from '../../lib/helpline'
-import { IconAward, IconCalendar, IconProvider } from '../../components/icons'
+import { IconCalendar, IconGraduate, IconProvider } from '../../components/icons'
 import type { Facet, Listing } from '../../lib/types'
 
 /* The landing page.
@@ -134,7 +134,9 @@ export default function Home() {
           {/* On a panel of its own, so it reads as the second way in rather than
               as a form field loose on the hero's wash. */}
           <form onSubmit={search} className="hero-search" role="search">
-            <Field label={t('home.search')}>
+            {/* Not "(optional)": a search box is not a question on a form, and
+                nobody reads one as compulsory. */}
+            <Field label={t('home.search')} optional={false}>
               {props => (
                 <input
                   {...props}
@@ -349,7 +351,10 @@ export default function Home() {
                 {facets.course_level.map(f => (
                   <li key={f.value}>
                     <Link className="browse-tile" to={`/scholarships?course_level=${f.value}`}>
-                      <span className="browse-icon" aria-hidden="true"><IconAward /></span>
+                      {/* A mortarboard: a level of study. This was IconAward,
+                          the rupee in a ring, which says money — beside
+                          "Postgraduate" it read as an amount. */}
+                      <span className="browse-icon" aria-hidden="true"><IconGraduate /></span>
                       <span className="browse-label">{f.label}</span>
                       {/* The count in brackets, as it always was, so a screen
                           reader still hears "Corporate (3)"; the badge is

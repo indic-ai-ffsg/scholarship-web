@@ -416,7 +416,16 @@
 .step-card:hover { box-shadow: var(--shadow-2); border-inline-start-color: var(--step-hue, var(--accent)); }
 .steps > li::before { top: 0.5rem; }
 .steps h3 { margin: 0 0 0.25rem; font-size: var(--step-0); }
-.steps p { margin: 0; color: var(--text-muted); max-width: var(--measure); font-size: var(--step--1); }
+/* The section's own width for its one-sentence introduction, as for the step
+   bodies below: one line where the window has room for it, rather than two
+   lines inside a 38rem cap with half the section empty beside them. */
+#how-it-works > .lede { max-width: none; }
+
+/* The card's width, not the 38rem measure. The measure keeps paragraphs of
+   prose trackable, and a step's body is one or two sentences — capped, the
+   longest of them broke onto a second line with a third of the card empty
+   beside it. On a narrow window the card is the cap. */
+.steps p { margin: 0; color: var(--text-muted); font-size: var(--step--1); max-width: none; }
 
 /* What the steps cannot say: the three things you do not need, and the number
    to call when one of them goes wrong. A card, because it is an aside to the
