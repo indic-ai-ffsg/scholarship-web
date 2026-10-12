@@ -683,6 +683,13 @@ export const en: Dict = {
   'auth.closedSoon': 'Request support (soon)',
 
   'reg.district': 'District',
+  'reg.homeAddress': 'Home address',
+  'reg.address': 'House, street and town',
+  'reg.addressHint': 'Where you live, as you would write it on a letter.',
+  'reg.addressPlaceholder': 'House no., street, locality, village or town',
+  'reg.pincode': 'PIN code',
+  'reg.pincodeHint': 'The six-digit postal code.',
+  'reg.pincodeInvalid': 'Enter all six digits of the PIN code.',
   'reg.districtHint': 'Helps match you to schemes run in your area.',
 
   'privacy.requested': 'Requested',

@@ -128,7 +128,7 @@ type Step = 1 | 2 | 3
 const STEP_OF: Record<string, Step> = {
   name: 1, phone: 1, gender: 1,
   udid: 2, file: 2, disability: 2, percent: 2,
-  state: 2, district: 2, program: 2, programOther: 2, year: 2, passYear: 2,
+  address: 2, state: 2, district: 2, pincode: 2, program: 2, programOther: 2, year: 2, passYear: 2,
   marks: 2, institution: 2,
   declaration: 3,
 }
@@ -222,8 +222,15 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const [percent, setPercent] = useState(
     profile?.disability_percent != null ? String(profile.disability_percent) : '',
   )
+  /* The home address: the house and street as one free-text line, and the PIN
+     code beside the state and district it narrows. Optional, like income and
+     marks — no scheme matches on a street, and a sponsor who needs one for a
+     disbursement letter can ask. Stored in address_line and pincode, columns
+     since 0003 that nothing asked for until now. */
+  const [address, setAddress] = useState(profile?.address_line ?? '')
   const [state, setState] = useState(profile?.state_code ?? '')
   const [district, setDistrict] = useState(profile?.district ?? '')
+  const [pincode, setPincode] = useState(profile?.pincode ?? '')
   /* course_name holds the chip that was picked; the postgraduate ones are
      stored prefixed, and programCategory needs the prefix back to know which
      year chips apply. course_level is what says which group it came from. */
@@ -472,6 +479,8 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
        still disabled would name a field the student cannot reach — two errors
        for one mistake, and the second one unactionable. */
     if (state && !district) found.district = required
+    // Optional; the API takes exactly six digits or nothing.
+    if (pincode !== '' && !/^\d{6}$/.test(pincode)) found.pincode = t('reg.pincodeInvalid')
     if (!program) found.program = required
     if (isOther && !programOther.trim()) found.programOther = required
     // PhD is the one program with no year to give.
@@ -610,6 +619,10 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     // accepts, and sending it fails the whole form on a question nobody has to
     // answer.
     if (gender) payload.gender = gender
+    // Only when answered. The API coalesces, so leaving these out keeps what is
+    // on file rather than blanking it.
+    if (address.trim()) payload.address_line = address.trim()
+    if (pincode) payload.pincode = pincode
     // Only when answered. A number, which is what the API decodes it as.
     if (income !== '') payload.annual_family_income = Number(income)
     // Only when answered, and always as the percentage the column holds.
@@ -703,8 +716,10 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     file: t(certKind === 'UDID' ? 'reg.certificate' : 'reg.medicalCertificate'),
     disability: t('reg.disabilityType'),
     percent: t('reg.percent'),
+    address: t('reg.address'),
     state: t('reg.state'),
     district: t('reg.district'),
+    pincode: t('reg.pincode'),
     program: t('reg.program'),
     programOther: t('reg.programOther'),
     year: t('reg.year'),
@@ -1207,7 +1222,27 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             )}
           </Field>
 
-          <h3 className="register-section">{t('reg.education')}</h3>
+          {/* The home address, then education. State and district used to open
+              the education section, which is where they were asked rather than
+              what they are: they say where the student lives, and they sit with
+              the street and the PIN code now. */}
+          <h3 className="register-section">{t('reg.homeAddress')}</h3>
+
+          <Field label={t('reg.address')} hint={t('reg.addressHint')} required={false}>
+            {props => (
+              <textarea
+                {...props}
+                data-field="address"
+                rows={3}
+                // address_line is validate:"max=500" on the API.
+                maxLength={500}
+                autoComplete="street-address"
+                placeholder={t('reg.addressPlaceholder')}
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+              />
+            )}
+          </Field>
 
           <Field label={t('reg.state')} error={problems.state || undefined} required>
             {props => (
@@ -1255,6 +1290,32 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               </div>
             )}
           </Field>
+
+          <Field
+            label={t('reg.pincode')}
+            hint={t('reg.pincodeHint')}
+            error={problems.pincode || undefined}
+            required={false}
+          >
+            {props => (
+              <input
+                {...props}
+                type="text"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                className="input-short"
+                data-field="pincode"
+                maxLength={6}
+                placeholder="110001"
+                value={pincode}
+                // Digits only, as typed: a space or a dash from habit is dropped
+                // rather than refused.
+                onChange={e => { setPincode(e.target.value.replace(/\D/g, '').slice(0, 6)); clearProblem('pincode') }}
+              />
+            )}
+          </Field>
+
+          <h3 className="register-section">{t('reg.education')}</h3>
 
           {/* The program as one dropdown with its groups as <optgroup>s —
               "Graduation" and "Post-Graduation / Masters" are headings the
@@ -1458,8 +1519,10 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
               {row(t('reg.photo'), photo?.name)}
               {row(t('reg.disabilityType'), disabilities[0] && choiceLabel(disabilityChips(t), disabilities[0]))}
               {row(t('reg.percent'), percent !== '' ? `${percent}%` : '')}
+              {row(t('reg.address'), address.trim())}
               {row(t('reg.state'), state && choiceLabel(stateChoices(t), state))}
               {row(t('reg.district'), district)}
+              {row(t('reg.pincode'), pincode)}
               {row(t('reg.program'), isOther ? programOther.trim() : program.replace(/^PG: /, ''))}
               {category !== 'phd' && row(t('reg.year'), yearText)}
               {row(t('q.academic_percentage'), marksText)}
