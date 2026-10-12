@@ -142,7 +142,24 @@
   background: var(--surface);
   box-shadow: var(--shadow-1);
   font-size: 1.25rem;
+  color: var(--accent);
 }
+.dash-funding-icon .icon { width: 1.375rem; height: 1.375rem; }
+
+/* --- skeletons (Dashboard's FiguresSkeleton, FundingSkeleton, RecentSkeleton)
+ * Text-shaped: the bars sit inside the real elements and take their line
+ * boxes, so the sizes are the loaded page's own. What is left here is only
+ * what the loaded markup gets from being a link or from having content. */
+/* The badge's outline in the border's grey, not a status colour: the colour
+   is the answer, and it has not arrived. */
+.dash-recent .state-badge.sk-badge { color: var(--border); background: var(--surface); }
+
+/* The empty state's stand-in: centred, as Empty is. */
+.sk-empty { display: grid; justify-items: center; gap: 0.75rem; padding: 2rem 1.25rem; }
+.sk-empty-title { width: 12rem; height: 1.25rem; }
+.sk-empty-hint { width: min(22rem, 80%); }
+.sk-empty-action { width: 11rem; }
+
 .dash-funding h2 { font-size: var(--step-0); margin: 0; color: var(--text-muted); font-weight: var(--w-medium); }
 .dash-funding-amount {
   margin: 0;

@@ -17,7 +17,8 @@ import { HELPLINE } from '../lib/helpline'
 import { Avatar } from './Avatar'
 import { IconShield, IconSignOut, IconUser } from './icons'
 import { PageTitleContext } from '../lib/page-title'
-import { Loading, OfflineBanner } from './ui'
+import { OfflineBanner } from './ui'
+import { SkeletonPage } from './Skeleton'
 
 /* The shell.
  *
@@ -518,7 +519,7 @@ export default function Layout() {
       {/* Drawn only while Reading Guide is on (accessibility panel). */}
       <ReadingGuide />
       <main id="main" tabIndex={-1} ref={mainRef}>
-        <Suspense fallback={<div className="route-loading"><Loading /></div>}>
+        <Suspense fallback={<div className="route-loading"><SkeletonPage /></div>}>
           {/* Keyed on the path, so navigating away from a page that failed
               clears the fallback instead of carrying it to every screen after
               it. The masthead and the navigation sit outside, which is the

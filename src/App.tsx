@@ -6,7 +6,7 @@ import { withNext } from './lib/next'
 import { usePageVisit } from './lib/visit'
 import { usePageAnalytics } from './lib/analytics'
 import Layout from './components/Layout'
-import { Loading } from './components/ui'
+import { SkeletonPage } from './components/Skeleton'
 /* Eager: the three screens somebody arrives on.
  *
  * A lazy route costs a second round trip — the main chunk has to arrive before
@@ -164,7 +164,7 @@ function RequireProfile({ children }: { children: React.ReactNode }) {
 
   // Still asking. Redirecting here would throw a signed-in student out to the
   // sign-in page every time they reloaded a portal page.
-  if (status === 'loading') return <div className="page"><Loading /></div>
+  if (status === 'loading') return <SkeletonPage />
   /* The destination travels on this branch too, and it did not.
    *
    * The paragraph above this function says it does, and the !profile branch
@@ -185,7 +185,7 @@ function RequireProfile({ children }: { children: React.ReactNode }) {
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { status } = useAuth()
-  if (status === 'loading') return <div className="page"><Loading /></div>
+  if (status === 'loading') return <SkeletonPage />
   // Sent to register rather than sign-in: somebody reaching a student page
   // without an account is far more likely not to have one than to have
   // forgotten they are signed out.

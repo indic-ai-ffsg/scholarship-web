@@ -6,7 +6,8 @@ import { useQuery } from '../lib/hooks'
 import { useAnnounce } from '../lib/announce'
 import { useI18n } from '../lib/i18n-context'
 import { date, humanise } from '../lib/format'
-import { Empty, ErrorState, Loading, Notice } from '../components/ui'
+import { Empty, ErrorState, Notice } from '../components/ui'
+import { SkeletonRows } from '../components/Skeleton'
 import type { AccessEntry, Consent, DataRequest } from '../lib/types'
 
 /* The access log, as the student reads it: by day, and within a day each
@@ -160,7 +161,7 @@ export default function MyData() {
       <section className="card mydata-log" aria-labelledby="access">
         <h2 id="access">{t('privacy.access')}</h2>
 
-        {access.loading && !access.data && <Loading />}
+        {access.loading && !access.data && <SkeletonRows className="sk-rows mydata-sk" count={4} />}
         {access.error ? <ErrorState error={access.error} onRetry={access.reload} /> : null}
 
         {access.data && entries.length === 0 && (
@@ -201,7 +202,7 @@ export default function MyData() {
       <section className="card mydata-consents" aria-labelledby="consents">
         <h2 id="consents">{t('privacy.consents')}</h2>
 
-        {consents.loading && !consents.data && <Loading />}
+        {consents.loading && !consents.data && <SkeletonRows className="sk-rows mydata-sk" count={2} />}
         {grants.length === 0 && !consents.loading && (
           <p className="muted mydata-none">—</p>
         )}

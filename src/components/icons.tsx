@@ -193,6 +193,16 @@ export const IconSignOut = (p: IconProps) => (
   </Svg>
 )
 
+/** A wallet: money received. Drawn rather than the 💰 emoji the dashboard
+    used, which each phone draws its own way and none in this line weight. */
+export const IconWallet = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3" />
+    <rect x="4" y="7.5" width="16" height="11.5" rx="2" />
+    <path d="M16 13.25h.01" />
+  </Svg>
+)
+
 /** Three joined nodes: hand this to the phone's own share sheet. */
 export const IconShare = (p: IconProps) => (
   <Svg {...p}>

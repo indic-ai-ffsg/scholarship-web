@@ -12,7 +12,8 @@ import { applyRoute } from '../../lib/apply'
 import { useApplied } from '../../lib/applied'
 import { recordReferral } from '../../lib/referral'
 import { awardLabel, orgKind, orgKindKey, shortDate } from '../../lib/format'
-import { Deadline, Empty, ErrorState, Field, Loading, SponsorLogo } from '../../components/ui'
+import { Deadline, Empty, ErrorState, Field, SponsorLogo } from '../../components/ui'
+import { SkeletonCards } from '../../components/Skeleton'
 import { IconAward, IconForm } from '../../components/icons'
 import { SchemeSheet } from './SchemeSheet'
 import type { Facet, Listing } from '../../lib/types'
@@ -359,7 +360,7 @@ export default function Directory() {
         )}
 
         <div className="directory-results">
-      {query.loading && !query.data && <Loading />}
+      {query.loading && !query.data && <SkeletonCards listClassName="listing-list" mark lines={2} action count={4} />}
       {query.error ? <ErrorState error={query.error} onRetry={query.reload} /> : null}
 
       {query.data && (

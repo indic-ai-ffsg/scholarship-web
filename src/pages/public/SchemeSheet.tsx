@@ -9,7 +9,8 @@ import { applyRoute, externalHelpKey } from '../../lib/apply'
 import { useApplied } from '../../lib/applied'
 import { recordReferral } from '../../lib/referral'
 import { asLines, awardLabel, date, orgKind, orgKindKey, stripNumbering } from '../../lib/format'
-import { Deadline, ErrorState, Loading, SponsorLogo } from '../../components/ui'
+import { Deadline, ErrorState, SponsorLogo } from '../../components/ui'
+import { SkeletonStatus } from '../../components/Skeleton'
 import { Sheet } from '../../components/Sheet'
 import { ShareScheme } from '../../components/ShareScheme'
 import { usePageTitle } from '../../lib/page-title'
@@ -97,7 +98,24 @@ export function SchemeSheet({
       <Sheet open onClose={onClose} title={t('sheet.loading')}>
         {query.error
           ? <ErrorState error={query.error} onRetry={query.reload} />
-          : <Loading />}
+          : (
+            <>
+              <SkeletonStatus />
+              <div className="sk-sheet" aria-hidden="true">
+                <div className="sk-head">
+                  <span className="skeleton-line sk-mark" />
+                  <span className="sk-text">
+                    <span className="skeleton-line head" />
+                    <span className="skeleton-line sk-meta" />
+                  </span>
+                </div>
+                <span className="skeleton-line" />
+                <span className="skeleton-line" />
+                <span className="skeleton-line short" />
+                <span className="skeleton-line button" />
+              </div>
+            </>
+          )}
       </Sheet>
     )
   }

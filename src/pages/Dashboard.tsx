@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 
 import * as api from '../lib/api'
@@ -8,8 +8,10 @@ import { useI18n } from '../lib/i18n-context'
 import { isDocumentStep, stepDestination } from '../lib/questions'
 import { trackOf } from '../lib/track'
 import { money, shortDate } from '../lib/format'
-import { Empty, ErrorState, Loading, Notice } from '../components/ui'
-import { IconForm, IconShield, IconYes } from '../components/icons'
+import { readDashShape, writeDashShape, type DashShape } from '../lib/dash-shape'
+import { Empty, ErrorState, Notice } from '../components/ui'
+import { SkeletonStatus } from '../components/Skeleton'
+import { IconForm, IconShield, IconWallet, IconYes } from '../components/icons'
 import OrgMark from '../components/OrgMark'
 import type { Application, Summary } from '../lib/types'
 
@@ -55,6 +57,21 @@ export default function Dashboard() {
     [profile?.profile_id],
   )
 
+  /* The lower half's shape from the last visit, for the skeleton to take — see
+     lib/dash-shape. Read once; written again whenever both answers are in. */
+  const [remembered] = useState(readDashShape)
+  const summaryData = summary.data
+  const recentData = recent.data
+  useEffect(() => {
+    if (!summaryData || !recentData) return
+    writeDashShape({
+      funding: summaryData.total_received > 0 || summaryData.total_sanctioned > 0,
+      recent: recentData.length,
+      blocked: summaryData.matches.blocked > 0,
+      decided: summaryData.applications.approved + summaryData.applications.rejected > 0,
+    })
+  }, [summaryData, recentData])
+
   /* RequireProfile already turns a profile-less student away at the route, so
      this is unreachable in practice. It is kept as the same redirect rather
      than as a second, differently-worded empty state: if the guard is ever
@@ -68,6 +85,10 @@ export default function Dashboard() {
   /* next_steps is ordered by how many schemes each missing field unlocks, so
      the first is the highest-value thing this student could do next. */
   const nextField = profile.next_steps?.[0]?.field ?? ''
+  /* Whether the funding card is there — the answer once it is in, and until
+     then what it was last time, so the skeleton has the page's real columns. */
+  const hasFunding = s ? s.total_received > 0 || s.total_sanctioned > 0 : remembered.funding
+  const recentLoading = recent.loading && !recent.data
 
   return (
     <div className="page dash">
@@ -150,7 +171,7 @@ export default function Dashboard() {
       </div>
       )}
 
-      {summary.loading && !s && <Loading />}
+      {summary.loading && !s && <FiguresSkeleton shape={remembered} />}
       {summary.error ? <ErrorState error={summary.error} onRetry={summary.reload} /> : null}
 
       {s && (
@@ -201,10 +222,11 @@ export default function Dashboard() {
           window: the total is one number and a line, and on its own full-width
           row it was a card of white space with a figure in the corner. The
           classes replace inline styles that sized it by hand. */}
-      <div className={`dash-split${s && (s.total_received > 0 || s.total_sanctioned > 0) ? '' : ' one'}`}>
-      {s && (s.total_received > 0 || s.total_sanctioned > 0) && (
+      <div className={`dash-split${hasFunding ? '' : ' one'}`}>
+      {!s && hasFunding && summary.loading && <FundingSkeleton />}
+      {s && hasFunding && (
         <section className="card dash-funding" aria-labelledby="dash-funding">
-          <span className="dash-funding-icon" aria-hidden="true">💰</span>
+          <span className="dash-funding-icon" aria-hidden="true"><IconWallet /></span>
           <h2 id="dash-funding">{t('dash.funding')}</h2>
           <p className="dash-funding-amount">{money(s.total_received)}</p>
           <p className="muted dash-funding-hint">
@@ -216,12 +238,16 @@ export default function Dashboard() {
       <section className="dash-recent-section">
         <div className="dash-head">
           <h2>{t('dash.recent')}</h2>
-          {applications.length > 0 && (
+          {/* Drawn while loading too when there were rows last time, so the
+              heading's line does not gain its link a moment later. */}
+          {(applications.length > 0 || (recentLoading && remembered.recent > 0)) && (
             <Link to="/applications">{t('dash.allApplications')}</Link>
           )}
         </div>
 
-        {recent.loading && !recent.data && <Loading />}
+        {recentLoading && (remembered.recent > 0
+          ? <RecentSkeleton count={remembered.recent} />
+          : <EmptySkeleton />)}
         {recent.error ? <ErrorState error={recent.error} onRetry={recent.reload} /> : null}
 
         {/* The empty state carries the only "find scholarships" on the page.
@@ -268,13 +294,121 @@ export default function Dashboard() {
   )
 }
 
+/* The dashboard's shape while its two answers are on the way.
+ *
+ * Text-shaped, not box-shaped. Each stand-in is a bar inside the element its
+ * text will occupy — the tile's label, its <strong>, the hint, the link; the
+ * card's <h2> and amount; a row's <h3> and date — with that element's classes.
+ * The bar is drawn shorter than the line it sits on (see .sk-bar), so it reads
+ * as a line of type rather than a slab, and the line box around it is the
+ * text's own: the same font size, the same line height, the same margins. The
+ * sizes match because they are the same CSS, not because numbers were tuned
+ * by eye — which is what the first version did, and why it looked like a
+ * collection of grey rectangles and still moved by six pixels.
+ *
+ * Widths vary per tile and per row, roughly as the real words do, so the page
+ * reads as content arriving rather than a stamp repeated. */
+/* The three tiles while the counts are on the way are the real tiles: label,
+   icon and link are words the page always has, so they are drawn — and work —
+   from the first frame. Only the number and the line under it wait. That is
+   also what keeps the layout still at every width: a label that wraps to two
+   lines in a narrow tile wraps the same way here, because it is the same
+   label. */
+function FiguresSkeleton({ shape }: { shape: DashShape }) {
+  const { t } = useI18n()
+  return (
+    <>
+      <SkeletonStatus />
+      <ul role="list" className="figures">
+        <Figure to="/matches" label={t('dash.matches')} go={t('dash.matchesGo')} icon={<IconYes />}
+                value={<Bar width="1.3em" />} hint={<Masked text={shape.blocked ? t('dash.matchesBlocked', { n: 1 }) : t('dash.matchesHint')} />} />
+        <Figure to="/applications" label={t('dash.applications')} go={t('dash.applicationsGo')} icon={<IconForm />}
+                value={<Bar width="1.3em" />} hint={<Masked text={shape.decided ? t('dash.applicationsHint', { approved: 0, rejected: 0 }) : t('dash.applicationsNone')} />} />
+        <Figure to="/documents" label={t('dash.documents')} go={t('dash.documentsGo')} icon={<IconShield />}
+                value={<Bar width="1.3em" />} hint={<Masked text={t('dash.documentsHint')} />} />
+      </ul>
+    </>
+  )
+}
+
+/* The funding card: its tinted ground, its icon and its label — words, not
+   data — and the amount and the line under it waiting at their own sizes. */
+function FundingSkeleton() {
+  const { t } = useI18n()
+  return (
+    <section className="card dash-funding" aria-busy="true">
+      <span className="dash-funding-icon" aria-hidden="true"><IconWallet /></span>
+      <h2>{t('dash.funding')}</h2>
+      <p className="dash-funding-amount"><Bar width="4.2em" /></p>
+      <p className="muted dash-funding-hint"><Masked text={t('dash.fundingHint', { sanctioned: money(0) })} /></p>
+    </section>
+  )
+}
+
+/* Recent applications, row for row as the loaded list draws them: the
+   sponsor's mark, the scheme's name over its date, and the status badge at the
+   row's end — a badge-shaped outline, neutral, since the colour is the answer. */
+const RECENT_WIDTHS = ['15em', '11em', '17em', '12.5em', '14em']
+
+function RecentSkeleton({ count }: { count: number }) {
+  return (
+    <>
+      <SkeletonStatus />
+      <ul className="card dash-recent" aria-hidden="true">
+        {RECENT_WIDTHS.slice(0, count).map((title, i) => (
+          <li key={i}>
+            <span className="org-mark" />
+            <div className="dash-recent-text">
+              <h3><Bar width={title} /></h3>
+              <span className="muted"><Bar width="5.5em" /></span>
+            </div>
+            <span className="state-badge sk-badge"><Bar width="4.5em" /></span>
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
+/* A sentence, waiting: the likely words, transparent, with the shimmer behind
+   each line they wrap to. A bar cannot wrap, and the line under each count
+   runs to two lines in a narrow tile — so a bar there left the tile a line
+   short and the page moved when the real sentence landed. These wrap where
+   the real ones will, because they are the same words at the same size. */
+function Masked({ text }: { text: string }) {
+  return <span className="skeleton-line sk-mask" aria-hidden="true">{text}</span>
+}
+
+/* One line of type, waiting. */
+function Bar({ width }: { width: string }) {
+  return <span className="skeleton-line sk-bar" style={{ width }} aria-hidden="true" />
+}
+
+/* The empty state's shape — a card with a title, a line and a button,
+   centred — for a student who had no applications last time. */
+function EmptySkeleton() {
+  return (
+    <>
+      <SkeletonStatus />
+      <div className="card sk-empty" aria-hidden="true">
+        <span className="skeleton-line sk-empty-title" />
+        <span className="skeleton-line sk-empty-hint" />
+        <span className="skeleton-line button sk-empty-action" />
+      </div>
+    </>
+  )
+}
+
 /* A stat card that is also a doorway.
  *
  * Reuses the .figure pattern in components/figure.css, so the dashboard
  * inherits its spacing, its accent rule and its dark-mode handling rather than
  * growing a parallel set of tile styles that drift apart later. */
 function Figure({ to, label, value, hint, go, icon }: {
-  to: string; label: string; value: number; hint: string; go: string
+  to: string; label: string; go: string
+  /* Nodes rather than a number and a string, so the skeleton can pass a bar
+     for each while the label, icon and link — which are not data — are real. */
+  value: ReactNode; hint: ReactNode
   /* A glyph beside the label, decorative: the label says what is counted. */
   icon?: ReactNode
 }) {

@@ -6,7 +6,8 @@ import { useQuery } from '../lib/hooks'
 import { useAnnounce } from '../lib/announce'
 import { useI18n } from '../lib/i18n-context'
 import { fileSize, shortDate } from '../lib/format'
-import { Empty, ErrorState, Field, Loading, Notice } from '../components/ui'
+import { Empty, ErrorState, Field, Notice } from '../components/ui'
+import { SkeletonCards } from '../components/Skeleton'
 import type { Document } from '../lib/types'
 
 /* The document vault.
@@ -141,7 +142,7 @@ export default function Documents() {
         </button>
       </section>
 
-      {query.loading && !query.data && <Loading />}
+      {query.loading && !query.data && <SkeletonCards listClassName="doc-grid" preview lines={1} count={2} />}
       {query.error ? <ErrorState error={query.error} onRetry={query.reload} /> : null}
 
       {query.data && docs.length === 0 && <Empty title={t('doc.none')} />}

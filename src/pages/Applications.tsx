@@ -6,7 +6,8 @@ import { useQuery } from '../lib/hooks'
 import { useI18n } from '../lib/i18n-context'
 import { dateTime } from '../lib/format'
 import { trackOf } from '../lib/track'
-import { Empty, ErrorState, Loading } from '../components/ui'
+import { Empty, ErrorState } from '../components/ui'
+import { SkeletonCards } from '../components/Skeleton'
 import ApplicationTrack from '../components/ApplicationTrack'
 import OrgMark from '../components/OrgMark'
 import type { Application, Referral } from '../lib/types'
@@ -60,7 +61,7 @@ export default function Applications() {
         <h1>{t('appl.title')}</h1>
       </header>
 
-      {query.loading && !query.data && <Loading />}
+      {query.loading && !query.data && <SkeletonCards listClassName="appl-list" mark badge lines={1} />}
       {query.error ? <ErrorState error={query.error} onRetry={query.reload} /> : null}
 
       {query.data && apps.length === 0 && sent.length === 0 && (

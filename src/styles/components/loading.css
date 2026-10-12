@@ -11,12 +11,12 @@
  * 60vh rather than 100vh. A full viewport would push the footer off the bottom
  * of a genuinely short page once it loaded, trading a flash for a scrollbar
  * that appears and disappears. 60vh is past the fold on every screen this
- * product targets, which is all the reservation has to achieve. */
-.route-loading {
-  min-height: 60vh;
-  display: grid; place-items: center;
-  padding: 1.5rem clamp(1.25rem, 2.5vw, 3rem);
-}
+ * product targets, which is all the reservation has to achieve.
+ *
+ * Neither centred nor padded since it holds a SkeletonPage rather than one
+ * line of text: the skeleton is a .page with its own padding, and centring
+ * shrank it to the width of its shortest line. */
+.route-loading { min-height: 60vh; }
 
 /* --- skeletons ---------------------------------------------------------------
  *
@@ -64,6 +64,70 @@
 .skeleton-line.head { height: 1.5rem; width: 45%; }
 .skeleton-line.short { width: 60%; }
 .skeleton-line.button { height: 48px; border-radius: var(--radius); margin-top: 0.5rem; }
+
+/* A line of type, waiting: a bar inside the element the text will occupy.
+   Inline-block on the text's baseline area, 0.7em tall — about the height of
+   lowercase-to-cap in this face — so it reads as a line rather than a slab,
+   and the line box around it keeps the text's own height. Width in em, so it
+   scales with the type it stands for. */
+.skeleton-line.sk-bar {
+  display: inline-block;
+  vertical-align: middle;
+  height: 0.7em;
+  max-width: 100%;
+  border-radius: 0.35em;
+}
+
+/* A sentence, waiting: real words, transparent, the sheen painted line by
+   line behind them. box-decoration-break gives each wrapped line its own
+   rounded bar rather than one box torn across the break. */
+.skeleton-line.sk-mask {
+  display: inline;
+  height: auto;
+  color: transparent;
+  border-radius: 0.35em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  user-select: none;
+}
+
+/* --- the shared shapes (components/Skeleton.tsx) ------------------------------ */
+
+.sk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--gap); }
+/* In a list the list's gap spaces the cards; their own margin would double it. */
+.sk-list .skeleton-card, ul[aria-hidden="true"] > li > .sk-card { margin: 0; }
+.sk-card { border-radius: var(--radius-lg, var(--radius)); }
+.sk-head { display: flex; align-items: center; gap: 0.875rem; }
+.sk-text { display: grid; gap: 0.5rem; flex: 1 1 auto; min-width: 0; }
+.sk-text .skeleton-line.head { width: 70%; }
+/* The sizes of the things they stand for: the sponsor's mark (.org-mark), a
+   state badge, a document preview (.doc-preview), a line of metadata. */
+.sk-mark { flex: none; width: 2.75rem; height: 2.75rem; border-radius: var(--radius); }
+.sk-badge { flex: none; width: 5.5rem; height: 1.75rem; border-radius: 999px; }
+.sk-meta { width: 8rem; height: 0.75rem; }
+.sk-preview { height: 13rem; border-radius: var(--radius); }
+.sk-action { width: 10rem; }
+
+/* Rows sharing one card, divided as the real rows are. */
+.sk-rows { list-style: none; margin: 0; padding: 0.25rem 1.25rem; }
+.sk-row {
+  display: flex; align-items: center; gap: 0.875rem;
+  padding: 0.875rem 0;
+  border-top: 1px solid var(--border);
+}
+.sk-row:first-child { border-top: 0; }
+
+/* The scheme sheet's body while the scheme is fetched. */
+.sk-sheet { display: grid; gap: 0.75rem; padding: 0.25rem 0 1rem; }
+
+/* My data's log and consents: plain rows inside a card that already has its
+   own heading and padding. */
+.mydata-sk { padding: 0; }
+
+/* A page's own head while it waits: the title band's two lines. */
+.sk-page-head { display: grid; gap: 0.75rem; margin: 0.5rem 0 1.5rem; }
+.sk-title { height: 2.25rem; width: min(22rem, 70%); }
+.sk-lede { width: min(30rem, 90%); }
 
 @keyframes skeleton-sweep {
   from { background-position: 100% 50%; }

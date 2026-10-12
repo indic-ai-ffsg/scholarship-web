@@ -6,7 +6,8 @@ import { useI18n } from '../lib/i18n-context'
 import { usePageTitle } from '../lib/page-title'
 import { dateTime, money, sentenceCase } from '../lib/format'
 import { trackOf } from '../lib/track'
-import { ErrorState, Loading } from '../components/ui'
+import { ErrorState } from '../components/ui'
+import { SkeletonPage } from '../components/Skeleton'
 import ApplicationTrack from '../components/ApplicationTrack'
 import OrgMark from '../components/OrgMark'
 import type { Application, TimelineEvent } from '../lib/types'
@@ -68,7 +69,7 @@ export default function ApplicationDetail() {
     ? t('app.yourApplication', { title: query.data.application.scholarship_title ?? query.data.application.reference_code })
     : null)
 
-  if (query.loading) return <div className="page"><Loading /></div>
+  if (query.loading) return <SkeletonPage />
   if (query.error) return <div className="page"><ErrorState error={query.error} onRetry={query.reload} /></div>
   if (!query.data) return null
 

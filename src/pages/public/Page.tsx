@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import * as api from '../../lib/api'
 import { useQuery } from '../../lib/hooks'
 import { usePageTitle } from '../../lib/page-title'
-import { ErrorState, Loading } from '../../components/ui'
+import { ErrorState } from '../../components/ui'
+import { SkeletonPage } from '../../components/Skeleton'
 import NotFound from '../NotFound'
 
 /* A page written in the admin panel rather than in this repository.
@@ -67,7 +68,7 @@ export default function Page() {
   /* Inside .page, both of these. Returned bare they sat flush against the
    * viewport edges — the one error box on the site with no margin — because
    * every other screen draws its states inside its own page container. */
-  if (query.loading) return <div className="page"><Loading /></div>
+  if (query.loading) return <SkeletonPage narrow />
   /* A missing page arrives here as a 404 from the API: this route matches every
    * address, so a mistyped one lands here too. It gets the NotFound screen,
    * rendered in place rather than redirected to, so the address bar keeps what
