@@ -412,7 +412,7 @@ const pa: Dict = {
   'reg.emailHint': 'ਤਾਂ ਜੋ ਅਸੀਂ ਆਖ਼ਰੀ ਤਾਰੀਖ਼ ਯਾਦ ਕਰਵਾ ਸਕੀਏ। ਅਸੀਂ ਇਹ ਕਦੇ ਸਾਂਝਾ ਨਹੀਂ ਕਰਦੇ।',
   'reg.emailPlaceholder': 'your.email@example.com',
   'reg.gender': 'ਲਿੰਗ',
-  'reg.genderHint': '(ਕੁਝ ਵਜ਼ੀਫ਼ੇ ਸਿਰਫ਼ ਔਰਤਾਂ ਜਾਂ ਟਰਾਂਸਜੈਂਡਰ ਵਿਦਿਆਰਥੀਆਂ ਲਈ ਹਨ)',
+  'reg.genderHint': '(ਕੁਝ ਵਜ਼ੀਫ਼ੇ ਸਿਰਫ਼ ਔਰਤਾਂ ਲਈ ਹਨ)',
   'reg.udid': 'UDID ਨੰਬਰ',
   'reg.udidHint': 'ਤੁਹਾਡੇ UDID (ਵਿਲੱਖਣ ਦਿਵਿਆਂਗਤਾ ਪਛਾਣ) ਕਾਰਡ ਉੱਤੇ ਲਿਖਿਆ ਨੰਬਰ।',
   'reg.udidPlaceholder': 'ਆਪਣਾ UDID ਨੰਬਰ ਭਰੋ',
@@ -536,8 +536,6 @@ const pa: Dict = {
 
   'field.gender.FEMALE': 'ਔਰਤ',
   'field.gender.MALE': 'ਮਰਦ',
-  'field.gender.TRANSGENDER': 'ਟਰਾਂਸਜੈਂਡਰ',
-  'field.gender.UNDISCLOSED': 'ਦੱਸਣਾ ਨਹੀਂ ਚਾਹੁੰਦੇ',
   'field.genderFilter.TRANSGENDER': 'ਤੀਜਾ ਲਿੰਗ / ਟਰਾਂਸਜੈਂਡਰ',
 
   'field.year.below9': 'ਜਮਾਤ 9 ਤੋਂ ਹੇਠਾਂ',
@@ -555,7 +553,7 @@ const pa: Dict = {
   'q.full_name': 'ਤੁਹਾਡਾ ਨਾਂ ਕੀ ਹੈ?',
   'q.full_name.help': 'ਬਿਲਕੁਲ ਜਿਵੇਂ ਤੁਹਾਡੇ ਦਿਵਿਆਂਗਤਾ ਸਰਟੀਫਿਕੇਟ ਉੱਤੇ ਲਿਖਿਆ ਹੈ। ਦੇਣ ਵਾਲੀਆਂ ਸੰਸਥਾਵਾਂ ਦੋਵੇਂ ਮਿਲਾ ਕੇ ਵੇਖਦੀਆਂ ਹਨ।',
   'q.gender': 'ਤੁਹਾਡਾ ਲਿੰਗ ਕੀ ਹੈ?',
-  'q.gender.help': 'ਕੁਝ ਵਜ਼ੀਫ਼ੇ ਸਿਰਫ਼ ਔਰਤਾਂ ਲਈ ਹਨ, ਜਾਂ ਟਰਾਂਸਜੈਂਡਰ ਵਿਦਿਆਰਥੀਆਂ ਲਈ। ਦੱਸਣਾ ਨਾ ਚਾਹੋ ਤਾਂ ਛੱਡ ਦਿਓ।',
+  'q.gender.help': 'ਕੁਝ ਵਜ਼ੀਫ਼ੇ ਸਿਰਫ਼ ਔਰਤਾਂ ਲਈ ਹਨ।',
   'q.disability_type': 'ਤੁਹਾਡੀ ਦਿਵਿਆਂਗਤਾ ਕੀ ਹੈ?',
   'q.disability_type.help': 'ਜਿਵੇਂ ਤੁਹਾਡੇ ਸਰਟੀਫਿਕੇਟ ਉੱਤੇ ਲਿਖਿਆ ਹੈ। ਬਹੁਤੇ ਵਜ਼ੀਫ਼ੇ ਇਸੇ ਉੱਤੇ ਛਾਂਟੀ ਕਰਦੇ ਹਨ।',
   'q.disability_percent': 'ਤੁਹਾਡੇ ਸਰਟੀਫਿਕੇਟ ਉੱਤੇ ਕਿੰਨੀ ਫ਼ੀਸਦੀ ਹੈ?',

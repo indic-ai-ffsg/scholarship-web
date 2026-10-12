@@ -417,7 +417,7 @@ const ur: Dict = {
   'reg.emailHint': 'تاکہ ہم آخری تاریخ یاد دلا سکیں۔ ہم اسے کبھی ساجھا نہیں کرتے۔',
   'reg.emailPlaceholder': 'your.email@example.com',
   'reg.gender': 'جنس',
-  'reg.genderHint': '(کچھ وظائف صرف خواتین یا ٹرانس جینڈر طلبہ کے لیے ہیں)',
+  'reg.genderHint': '(کچھ وظائف صرف خواتین طلبہ کے لیے ہیں)',
   'reg.udid': 'یو ڈی آئی ڈی نمبر',
   'reg.udidHint': 'آپ کے یو ڈی آئی ڈی (منفرد معذوری شناخت) کارڈ پر لکھا نمبر۔',
   'reg.udidPlaceholder': 'اپنا یو ڈی آئی ڈی نمبر لکھیں',
@@ -541,8 +541,6 @@ const ur: Dict = {
 
   'field.gender.FEMALE': 'خاتون',
   'field.gender.MALE': 'مرد',
-  'field.gender.TRANSGENDER': 'ٹرانس جینڈر',
-  'field.gender.UNDISCLOSED': 'بتانا نہیں چاہتے',
   'field.genderFilter.TRANSGENDER': 'تیسری جنس / ٹرانس جینڈر',
 
   'field.year.below9': 'جماعت 9 سے نیچے',
@@ -560,7 +558,7 @@ const ur: Dict = {
   'q.full_name': 'آپ کا نام کیا ہے؟',
   'q.full_name.help': 'بالکل جیسا آپ کے معذوری سرٹیفکیٹ پر لکھا ہے۔ دینے والے ادارے دونوں کا ملان کرتے ہیں۔',
   'q.gender': 'آپ کی جنس کیا ہے؟',
-  'q.gender.help': 'کچھ وظائف صرف خواتین کے لیے ہیں، یا ٹرانس جینڈر طلبہ کے لیے۔ بتانا نہ چاہیں تو چھوڑ دیں۔',
+  'q.gender.help': 'کچھ وظائف صرف خواتین کے لیے ہیں۔',
   'q.disability_type': 'آپ کی معذوری کیا ہے؟',
   'q.disability_type.help': 'جیسا آپ کے سرٹیفکیٹ پر لکھا ہے۔ زیادہ تر وظائف اسی پر چھانٹی کرتے ہیں۔',
   'q.disability_percent': 'آپ کے سرٹیفکیٹ پر کتنے فیصد ہیں؟',

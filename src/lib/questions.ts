@@ -187,13 +187,8 @@ export function buildQuestions(t: T): Question[] {
       help: t('q.full_name.help'),
     },
     {
-      /* Optional, and it is the one question here where that word carries a
-         meaning beyond convenience: UNDISCLOSED is an answer, so a student who
-         declines is not left with a permanent gap the dashboard keeps
-         nagging about. */
       field: 'gender',
       kind: 'choice',
-      optional: true,
       question: t('q.gender'),
       help: t('q.gender.help'),
       options: genderChoices(t),

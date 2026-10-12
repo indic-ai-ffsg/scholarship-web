@@ -411,7 +411,7 @@ const gu: Dict = {
   'reg.emailHint': 'જેથી અમે છેલ્લી તારીખ યાદ કરાવી શકીએ. અમે તે ક્યારેય વહેંચતા નથી.',
   'reg.emailPlaceholder': 'your.email@example.com',
   'reg.gender': 'લિંગ',
-  'reg.genderHint': '(કેટલીક શિષ્યવૃત્તિઓ માત્ર મહિલા કે ટ્રાન્સજેન્ડર વિદ્યાર્થીઓ માટે છે)',
+  'reg.genderHint': '(કેટલીક શિષ્યવૃત્તિઓ માત્ર મહિલા વિદ્યાર્થીઓ માટે છે)',
   'reg.udid': 'UDID નંબર',
   'reg.udidHint': 'તમારા UDID (વિશિષ્ટ દિવ્યાંગતા ઓળખ) કાર્ડ પરનો નંબર.',
   'reg.udidPlaceholder': 'તમારો UDID નંબર લખો',
@@ -535,8 +535,6 @@ const gu: Dict = {
 
   'field.gender.FEMALE': 'સ્ત્રી',
   'field.gender.MALE': 'પુરુષ',
-  'field.gender.TRANSGENDER': 'ટ્રાન્સજેન્ડર',
-  'field.gender.UNDISCLOSED': 'કહેવા માગતા નથી',
   'field.genderFilter.TRANSGENDER': 'ત્રીજી જાતિ / ટ્રાન્સજેન્ડર',
 
   'field.year.below9': 'ધોરણ 9 થી નીચે',
@@ -554,7 +552,7 @@ const gu: Dict = {
   'q.full_name': 'તમારું નામ શું છે?',
   'q.full_name.help': 'બરાબર જેમ તમારા દિવ્યાંગતા પ્રમાણપત્ર પર લખ્યું છે. પ્રદાતાઓ બંને મળે છે કે નહીં તે તપાસે છે.',
   'q.gender': 'તમારું લિંગ શું છે?',
-  'q.gender.help': 'કેટલીક શિષ્યવૃત્તિઓ ફક્ત મહિલાઓ માટે છે, અથવા ટ્રાન્સજેન્ડર વિદ્યાર્થીઓ માટે. કહેવા ન માગતા હો તો છોડી દો.',
+  'q.gender.help': 'કેટલીક શિષ્યવૃત્તિઓ ફક્ત મહિલાઓ માટે છે.',
   'q.disability_type': 'તમારી દિવ્યાંગતા શું છે?',
   'q.disability_type.help': 'જેમ તમારા પ્રમાણપત્ર પર લખ્યું છે. મોટાભાગની શિષ્યવૃત્તિઓ આના આધારે જ ગાળે છે.',
   'q.disability_percent': 'તમારા પ્રમાણપત્ર પર કેટલા ટકા છે?',

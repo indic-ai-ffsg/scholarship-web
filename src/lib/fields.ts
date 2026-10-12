@@ -167,21 +167,17 @@ export function subjectChoices(t: T): Choice[] {
   return SUBJECTS.map(v => ({ value: v, label: t(`field.subject.${v}`) }))
 }
 
-/* Gender, as the directory filters it.
+/* Gender, as the directory filters schemes by it.
  *
- * The same four stored values GENDERS carries, minus UNDISCLOSED: a scheme is
- * never restricted to students who declined to say, so offering it here would
- * be a filter with no possible match. A student who declined still sees every
- * unrestricted scheme, because the query treats a scheme naming no gender as
- * open to all.
+ * Not GENDERS: this filters what a scheme is restricted to, not what a student
+ * answered, and a scheme can still be written for transgender students. A
+ * scheme naming no gender is open to all and appears under every choice.
  */
 export function genderFilterChoices(t: T): Choice[] {
   return [
     { value: 'FEMALE', label: t('field.gender.FEMALE') },
     { value: 'MALE', label: t('field.gender.MALE') },
-    /* Not field.gender.TRANSGENDER: the filter names the census category a
-       scheme is written against, and the profile question asks the student how
-       they describe themselves. Same stored value, two different questions. */
+    // The census category a scheme is written against.
     { value: 'TRANSGENDER', label: t('field.genderFilter.TRANSGENDER') },
   ]
 }
@@ -382,24 +378,15 @@ export function disabilityTypeFor(selected: string[]): string | null {
   return selected.length === 1 ? selected[0] : 'MULTIPLE_DISABILITIES'
 }
 
-/* Gender, which the profile has always accepted and no screen has ever asked.
+/* The genders registration offers, Female and Male (2026-10-12).
  *
- * profile.UpsertInput validates `oneof=MALE FEMALE TRANSGENDER UNDISCLOSED`,
- * the matching engine filters on it (a women-only scheme is an eligibility_rule
- * with field 'gender'), and compute_completeness counts it — so the API can and
- * does answer "Add your gender to your profile" as a student's single most
- * valuable next step. There was no control anywhere in this app to do it. The
- * wizard's question list never included it and neither did the form that
- * replaced the wizard, so the instruction was a wall: the one thing standing
- * between a student and a scholarship, and no way to supply it.
+ * The matching engine filters on gender — a women-only scheme is an
+ * eligibility_rule with field 'gender' — and compute_completeness scores it.
  *
- * UNDISCLOSED is offered as a real answer rather than as the absence of one,
- * and that is the point of including it. Without it the only way past this
- * question is to state something, and a question that cannot be declined is
- * worse than one that can — the enum has always had the value, so declining is
- * a stored answer here rather than a blank the matcher keeps asking about.
- */
-export const GENDERS = ['FEMALE', 'MALE', 'TRANSGENDER', 'UNDISCLOSED'] as const
+ * The API's enum still holds TRANSGENDER and UNDISCLOSED, and profiles saved
+ * with either keep that value; this form no longer offers them, so editing one
+ * of those profiles asks the question again. */
+export const GENDERS = ['FEMALE', 'MALE'] as const
 
 export function genderChoices(t: T): Choice[] {
   return GENDERS.map(v => ({ value: v, label: t(`field.gender.${v}`) }))

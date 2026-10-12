@@ -411,7 +411,7 @@ const bn: Dict = {
   'reg.emailHint': 'যাতে আমরা শেষ তারিখের কথা মনে করিয়ে দিতে পারি। আমরা কখনও এটি ভাগ করি না।',
   'reg.emailPlaceholder': 'your.email@example.com',
   'reg.gender': 'লিঙ্গ',
-  'reg.genderHint': '(কিছু বৃত্তি কেবল নারী বা রূপান্তরকামী শিক্ষার্থীদের জন্য)',
+  'reg.genderHint': '(কিছু বৃত্তি কেবল নারী শিক্ষার্থীদের জন্য)',
   'reg.udid': 'ইউডিআইডি নম্বর',
   'reg.udidHint': 'আপনার ইউডিআইডি (অনন্য প্রতিবন্ধকতা পরিচয়) কার্ডে লেখা নম্বর।',
   'reg.udidPlaceholder': 'আপনার ইউডিআইডি নম্বর লিখুন',
@@ -535,8 +535,6 @@ const bn: Dict = {
 
   'field.gender.FEMALE': 'মহিলা',
   'field.gender.MALE': 'পুরুষ',
-  'field.gender.TRANSGENDER': 'রূপান্তরকামী',
-  'field.gender.UNDISCLOSED': 'বলতে চাই না',
   'field.genderFilter.TRANSGENDER': 'তৃতীয় লিঙ্গ / রূপান্তরকামী',
 
   'field.year.below9': 'নবম শ্রেণির নিচে',
@@ -554,7 +552,7 @@ const bn: Dict = {
   'q.full_name': 'আপনার নাম কী?',
   'q.full_name.help': 'ঠিক যেমনটি আপনার প্রতিবন্ধকতার শংসাপত্রে লেখা আছে। প্রদানকারীরা দুটি মিলিয়ে দেখেন।',
   'q.gender': 'আপনার লিঙ্গ কী?',
-  'q.gender.help': 'কিছু বৃত্তি কেবল মহিলাদের জন্য, বা রূপান্তরকামী শিক্ষার্থীদের জন্য। বলতে না চাইলে ছেড়ে দিন।',
+  'q.gender.help': 'কিছু বৃত্তি কেবল মহিলাদের জন্য।',
   'q.disability_type': 'আপনার প্রতিবন্ধকতা কী?',
   'q.disability_type.help': 'যেমনটি আপনার শংসাপত্রে লেখা আছে। বেশিরভাগ বৃত্তি এর উপরেই বাছাই করে।',
   'q.disability_percent': 'আপনার শংসাপত্রে কত শতাংশ আছে?',

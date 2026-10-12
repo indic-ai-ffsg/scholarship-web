@@ -415,7 +415,7 @@ const asm: Dict = {
   'reg.emailHint': 'যাতে আমি শেষ তাৰিখৰ কথা মনত পেলাই দিব পাৰোঁ। আমি ইয়াক কেতিয়াও ভাগ নকৰোঁ।',
   'reg.emailPlaceholder': 'your.email@example.com',
   'reg.gender': 'লিংগ',
-  'reg.genderHint': '(কিছুমান বৃত্তি কেৱল মহিলা বা ৰূপান্তৰকামী শিক্ষাৰ্থীৰ বাবে)',
+  'reg.genderHint': '(কিছুমান বৃত্তি কেৱল মহিলা শিক্ষাৰ্থীৰ বাবে)',
   'reg.udid': 'ইউডিআইডি নম্বৰ',
   'reg.udidHint': 'আপোনাৰ ইউডিআইডি (অনন্য দিব্যাংগতা পৰিচয়) কাৰ্ডত লিখা নম্বৰ।',
   'reg.udidPlaceholder': 'আপোনাৰ ইউডিআইডি নম্বৰ লিখক',
@@ -539,8 +539,6 @@ const asm: Dict = {
 
   'field.gender.FEMALE': 'মহিলা',
   'field.gender.MALE': 'পুৰুষ',
-  'field.gender.TRANSGENDER': 'ৰূপান্তৰকামী',
-  'field.gender.UNDISCLOSED': 'কোব নিবিচাৰোঁ',
   'field.genderFilter.TRANSGENDER': 'তৃতীয় লিংগ / ৰূপান্তৰকামী',
 
   'field.year.below9': 'নৱম শ্ৰেণীৰ তলত',
@@ -558,7 +556,7 @@ const asm: Dict = {
   'q.full_name': 'আপোনাৰ নাম কি?',
   'q.full_name.help': 'ঠিক যেনেকৈ আপোনাৰ দিব্যাংগতাৰ প্ৰমাণপত্ৰত লিখা আছে। প্ৰদানকাৰীসকলে দুয়োটা মিলাই চায়।',
   'q.gender': 'আপোনাৰ লিংগ কি?',
-  'q.gender.help': 'কিছুমান বৃত্তি কেৱল মহিলাৰ বাবে, বা ৰূপান্তৰকামী শিক্ষাৰ্থীৰ বাবে। কোব নিবিচাৰিলে এৰি দিয়ক।',
+  'q.gender.help': 'কিছুমান বৃত্তি কেৱল মহিলাৰ বাবে।',
   'q.disability_type': 'আপোনাৰ দিব্যাংগতা কি?',
   'q.disability_type.help': 'যেনেকৈ আপোনাৰ প্ৰমাণপত্ৰত লিখা আছে। বেছিভাগ বৃত্তিয়ে ইয়াৰ ওপৰতে বাছনি কৰে।',
   'q.disability_percent': 'আপোনাৰ প্ৰমাণপত্ৰত কিমান শতাংশ আছে?',

@@ -910,7 +910,7 @@ export const en: Dict = {
   'reg.emailPlaceholder': 'your.email@example.com',
 
   'reg.gender': 'Gender',
-  'reg.genderHint': '(some scholarships are for women or transgender students only)',
+  'reg.genderHint': '(some scholarships are for women only)',
   'reg.udid': 'UDID number',
   'reg.udidHint': 'The number on your UDID (Unique Disability ID) card.',
   'reg.udidPlaceholder': 'Enter your UDID number',
@@ -1181,8 +1181,6 @@ export const en: Dict = {
 
   'field.gender.FEMALE': 'Female',
   'field.gender.MALE': 'Male',
-  'field.gender.TRANSGENDER': 'Transgender',
-  'field.gender.UNDISCLOSED': 'Prefer not to say',
   /* The filter's wording, not the profile question's: this one names the
      category a scheme is written against. */
   'field.genderFilter.TRANSGENDER': 'Third gender / transgender',
@@ -1209,7 +1207,7 @@ export const en: Dict = {
   'q.full_name': 'What is your name?',
   'q.full_name.help': 'Exactly as it appears on your disability certificate. Providers check the two match.',
   'q.gender': 'What is your gender?',
-  'q.gender.help': 'Some scholarships are open to women only, or to transgender students. Leave it if you would rather not say.',
+  'q.gender.help': 'Some scholarships are open to women only.',
   'q.disability_type': 'What is your disability?',
   'q.disability_type.help': 'As written on your certificate. Most scholarships filter on this.',
   'q.disability_percent': 'What percentage is on your certificate?',

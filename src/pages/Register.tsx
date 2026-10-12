@@ -991,28 +991,19 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             )}
           </Field>
 
-          {/* Chips rather than a select, and four of them fit one row.
+          {/* Chips rather than a select, and both fit one row.
               *
               * Asked because the matching engine asks for it: a women-only
               * scheme is a rule on this field, and a profile without it is told
               * "Add your gender to your profile" as its top next step. Until
               * now that instruction pointed at a control that did not exist
-              * anywhere in the app.
-              *
-              * Not marked required. The API does not require it, and a question
-              * about gender that cannot be passed is the wrong thing to put in
-              * front of this audience — "Prefer not to say" is a stored answer
-              * that stops the matcher asking again, which is the honest way to
-              * let somebody decline. */}
+              * anywhere in the app. */}
           <div className="field" data-field="gender">
             <span className="field-label" id="reg-gender">
               {t('reg.gender')}
               {/* Required, and checked as such — a star that does not stop a
                   submission is the same broken promise as a sentence describing
-                  a star that is not there. "Prefer not to say" is why asking can
-                  be compulsory without compelling a disclosure: it is a stored
-                  answer that stops the matcher asking again, so nobody has to
-                  give a fact about themselves to get past this question. */}
+                  a star that is not there. */}
               <span className="req" aria-hidden="true"> *</span>
               <span className="sr-only"> ({t('common.required')})</span>
               <span className="hint"> {t('reg.genderHint')}</span>
