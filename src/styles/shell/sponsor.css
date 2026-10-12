@@ -24,14 +24,17 @@
   border-inline-end: 1px solid var(--border);
 }
 
-/* 10px and muted. Subordinate on purpose — a caption on the mark below it, not
-   a heading, and anything larger competes with the site's own name across the
-   bar. */
+/* Small and muted. Subordinate on purpose — a caption on the mark below it,
+   not a heading, and anything larger competes with the site's own name across
+   the bar.
+
+   Sentence case, as written: "Supported by". It was set in capitals with
+   tracking, which shouted a caption and read as a label stamped on the mark.
+   11px rather than 10, because lowercase letters at the same size are smaller
+   than capitals, and the line still has to be read. */
 .masthead-sponsor .label {
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--text-muted);
   white-space: nowrap;
 }

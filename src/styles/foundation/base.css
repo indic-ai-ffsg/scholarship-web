@@ -1,6 +1,19 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; }
+/* The scrollbar's room, kept whether or not there is a scrollbar in it.
+ *
+ * Without it the masthead shook. A page loads short — a skeleton, a guard
+ * waiting on the session — and grows past the window when its answer lands;
+ * the browser then adds a scrollbar, the page narrows by its width, and
+ * everything aligned to the right edge (the account menu, the language
+ * switch, the accessibility button, the sponsor) jumps 15px left at once.
+ * Navigating from a long page to a short one jumped it back. Measured on
+ * /dashboard: one layout shift at ~400ms, every source in the masthead, all
+ * of them 15px. Phones and macOS's default overlay scrollbars take no room,
+ * so this costs them nothing; where the scrollbar does take room, the page is
+ * the same width from the first paint to the last. */
+html { scrollbar-gutter: stable; }
 /* min-height rather than height.
  *
  * A sticky element can only stick inside its own containing block, and #root at
@@ -108,4 +121,10 @@ a:hover { text-decoration-thickness: 3px; }
   position: absolute; width: 1px; height: 1px;
   padding: 0; margin: -1px; overflow: hidden;
   clip-path: inset(50%); white-space: nowrap; border: 0;
+  /* Out of a copy, as it is out of sight. Selecting a page and pasting it
+     carried every hidden word along — a skeleton's "Loading" read as though
+     the page had printed it, and "Clear<sr> district</sr>" pasted as
+     "Cleardistrict". A screen reader reads the accessibility tree, which
+     user-select does not touch. */
+  user-select: none;
 }
