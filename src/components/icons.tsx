@@ -143,6 +143,16 @@ export const IconChat = (p: IconProps) => (
   </Svg>
 )
 
+/** A speech bubble with a handset in it: WhatsApp's own shape, drawn in the
+    house line. The share row shows icons without words, and a bare bubble
+    reads as "chat" rather than as the app a student would send this through. */
+export const IconWhatsApp = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3.5a8.5 8.5 0 0 0-7.4 12.7L3.5 20.5l4.4-1.1A8.5 8.5 0 1 0 12 3.5z" />
+    <path d="M9.2 8.6c-.3.6-.4 1.6.4 3 .8 1.3 2 2.4 3.3 3 .9.4 1.6.3 2.1-.1l.6-.7-1.6-1-.8.6c-.7-.3-1.5-1-1.9-1.8l.6-.8-.9-1.7-.6.1c-.5.2-.9.6-1.2 1.4z" />
+  </Svg>
+)
+
 /** A handset receiver: the code read out in a call. */
 export const IconCall = (p: IconProps) => (
   <Svg {...p}>

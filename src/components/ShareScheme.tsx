@@ -4,7 +4,7 @@ import * as api from '../lib/api'
 import { useAnnounce } from '../lib/announce'
 import { useI18n } from '../lib/i18n-context'
 import { useQuery } from '../lib/hooks'
-import { IconChat, IconLink, IconMail, IconQR, IconShare } from './icons'
+import { IconLink, IconMail, IconQR, IconShare, IconWhatsApp, IconYes } from './icons'
 
 /* Sending a scheme to somebody: WhatsApp, email, the phone's own share sheet,
  * a copied link, and a QR code to hold out across a desk.
@@ -101,14 +101,20 @@ export function ShareScheme({ slug }: { slug: string }) {
     ? `mailto:?subject=${encodeURIComponent(m.mail.email_subject)}&body=${encodeURIComponent(m.mail.email_body)}`
     : undefined
 
+  /* Icons without words, on request (2026-10-12). The name is still in each
+     control — in sr-only text a screen reader reads and a translation reaches,
+     rather than an aria-label that would stay English — and in a title, so a
+     mouse that hovers is told what it is pointing at. */
+  const copyName = copied ? t('share.copied') : t('share.copy')
+
   return (
     <section aria-labelledby="sheet-share" className="share-scheme">
       <h3 id="sheet-share">{t('share.title')}</h3>
 
       <div className="share-actions">
         {canNative && (
-          <button type="button" onClick={native} disabled={!m}>
-            <IconShare /> {t('share.native')}
+          <button type="button" onClick={native} disabled={!m} title={t('share.native')}>
+            <IconShare /><span className="sr-only">{t('share.native')}</span>
           </button>
         )}
         {/* Links rather than buttons, because that is what they are: each
@@ -120,15 +126,17 @@ export function ShareScheme({ slug }: { slug: string }) {
           target="_blank"
           rel="noopener noreferrer"
           aria-disabled={!m || undefined}
+          title={t('share.whatsapp')}
         >
-          <IconChat /> {t('share.whatsapp')}
-          <span className="sr-only"> ({t('common.newTab')})</span>
+          <IconWhatsApp />
+          <span className="sr-only">{t('share.whatsapp')} ({t('common.newTab')})</span>
         </a>
-        <a className="btn" href={mail} aria-disabled={!m || undefined}>
-          <IconMail /> {t('share.email')}
+        <a className="btn" href={mail} aria-disabled={!m || undefined} title={t('share.email')}>
+          <IconMail /><span className="sr-only">{t('share.email')}</span>
         </a>
-        <button type="button" onClick={copy} disabled={!m}>
-          <IconLink /> {copied ? t('share.copied') : t('share.copy')}
+        {/* The tick is the visible "Copied"; the announcement says it aloud. */}
+        <button type="button" onClick={copy} disabled={!m} title={copyName}>
+          {copied ? <IconYes /> : <IconLink />}<span className="sr-only">{copyName}</span>
         </button>
         <button
           type="button"
@@ -136,8 +144,9 @@ export function ShareScheme({ slug }: { slug: string }) {
           aria-expanded={showQR}
           aria-controls="share-qr"
           disabled={!m}
+          title={t('share.qr')}
         >
-          <IconQR /> {t('share.qr')}
+          <IconQR /><span className="sr-only">{t('share.qr')}</span>
         </button>
       </div>
 

@@ -1,15 +1,22 @@
 /* --- sharing a scheme (components/ShareScheme.tsx) ------------------------------
  *
- * A row of equal buttons that wraps. Not icons alone: a chat bubble does not say
- * "WhatsApp" to everybody, and the words are what a screen reader and a reader
- * who does not know the glyph both need. Each keeps the 48px target every
- * control here has.
+ * A row of square icon buttons. Icons alone, on request (2026-10-12) — this
+ * used to argue for words beside them, and the argument has not gone away, so
+ * the name is still in every control as sr-only text and a hover title, and
+ * WhatsApp has its own glyph rather than a bubble that says only "chat". Each
+ * is the 48px target every control here has.
  */
 .share-actions {
   display: flex; flex-wrap: wrap; gap: 0.5rem;
 }
-/* Two to a row on a phone, all five on one row where there is room. */
-.share-actions > * { flex: 1 1 8.5rem; }
+.share-actions > * {
+  flex: none;
+  inline-size: 3rem; block-size: 3rem;
+  min-inline-size: 48px; min-block-size: 48px;
+  padding: 0;
+  display: inline-grid; place-items: center;
+}
+.share-actions .icon { inline-size: 1.4rem; block-size: 1.4rem; }
 
 /* A link waiting for its words. Not pointer-events: none on its own, which a
    keyboard ignores — the href is absent until then, so there is nowhere for
