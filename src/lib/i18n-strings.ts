@@ -683,9 +683,7 @@ export const en: Dict = {
   'auth.closedSoon': 'Request support (soon)',
 
   'reg.district': 'District',
-  'reg.homeAddress': 'Home address',
-  'reg.address': 'House, street and town',
-  'reg.addressHint': 'Where you live, as you would write it on a letter.',
+  'reg.address': 'Permanent address',
   'reg.addressPlaceholder': 'House no., street, locality, village or town',
   'reg.pincode': 'PIN code',
   'reg.pincodeHint': 'The six-digit postal code.',
@@ -907,6 +905,9 @@ export const en: Dict = {
 
   'reg.name': 'Full name',
   'reg.namePlaceholder': 'Enter your full name',
+  'reg.firstName': 'First name',
+  'reg.middleName': 'Middle name',
+  'reg.lastName': 'Last name',
   'reg.phoneHint': 'We send a 6-digit code to this number. The same number signs you in every time.',
   'reg.sendOtp': 'Send OTP',
   'reg.otpPlaceholder': 'Enter 6-digit OTP',
@@ -921,7 +922,7 @@ export const en: Dict = {
   'reg.udid': 'UDID number',
   'reg.udidHint': 'The number on your UDID (Unique Disability ID) card.',
   'reg.udidPlaceholder': 'Enter your UDID number',
-  'reg.certificate': 'Upload UDID certificate',
+  'reg.certificate': 'Upload UDID card',
   /* Which certificate the student holds. A UDID card is not the only proof: many
      students still hold the older disability certificate issued by AIIMS or
      another authorised medical board, and the form must not turn them away. */
@@ -938,13 +939,17 @@ export const en: Dict = {
   'reg.certificateHint': 'PDF or image, 5 MB or smaller.',
   /* Shown when one is already held: the field stays marked required, since
      the profile needs it, and this says the requirement is already met. */
+  'reg.onFileView': 'View',
+  'reg.onFileReplace': 'Upload a new one',
+  'reg.onFileKeep': 'Keep the one on file',
+  'reg.onFileReplacing': 'This replaces the one on file when you submit.',
   'reg.certificateOnFile': 'Already on file. Choose a new file only to replace it. PDF or image, 5 MB or smaller.',
   'reg.fileType': 'That file must be a PDF, a JPEG or a PNG.',
   'reg.fileSize': 'That file is larger than 5 MB. A photo taken on a phone is usually smaller if you scan it rather than photograph it.',
   /* Said instead of an error, because the profile did save. The registration
      is not undone by a certificate that has to be retried. */
   'reg.photo': 'Your photograph',
-  'reg.photoHint': 'Optional. A clear, recent photo of your face. JPG or PNG, 5 MB or smaller.',
+  'reg.photoHint': 'A clear, recent photo of your face. JPG or PNG, 5 MB or smaller.',
   'reg.fileLater': 'You are registered, and your details are saved. The certificate did not upload — add it from My documents and nothing else needs doing again.',
   'reg.disabilityType': 'Disability type',
   'reg.percent': 'Disability percentage',
@@ -981,7 +986,7 @@ export const en: Dict = {
   'reg.progress': 'Registration progress',
   'reg.stepOf': 'Step {n} of 3',
   'reg.step1': 'About you',
-  'reg.step1Note': 'Name, phone and gender',
+  'reg.step1Note': 'Name, contact and address',
   'reg.step2': 'Eligibility',
   'reg.step2Note': 'Disability and education',
   'reg.step3': 'Review and submit',

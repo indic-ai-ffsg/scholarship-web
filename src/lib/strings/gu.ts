@@ -415,7 +415,7 @@ const gu: Dict = {
   'reg.udid': 'UDID નંબર',
   'reg.udidHint': 'તમારા UDID (વિશિષ્ટ દિવ્યાંગતા ઓળખ) કાર્ડ પરનો નંબર.',
   'reg.udidPlaceholder': 'તમારો UDID નંબર લખો',
-  'reg.certificate': 'UDID પ્રમાણપત્ર અપલોડ કરો',
+  'reg.certificate': 'UDID કાર્ડ અપલોડ કરો',
   'reg.certificateHint': 'PDF કે ચિત્ર, 5 MB કે તેથી ઓછું.',
   'reg.fileType': 'તે ફાઇલ PDF, JPEG કે PNG હોવી જોઈએ.',
   'reg.fileSize': 'તે ફાઇલ 5 MB થી મોટી છે. ફોનથી લીધેલો ફોટો સામાન્ય રીતે નાનો હોય છે જો તમે ફોટો પાડવાને બદલે સ્કૅન કરો.',

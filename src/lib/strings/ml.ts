@@ -416,7 +416,7 @@ const ml: Dict = {
   'reg.udid': 'UDID നമ്പർ',
   'reg.udidHint': 'നിങ്ങളുടെ UDID (വിശിഷ്ട ഭിന്നശേഷി തിരിച്ചറിയൽ) കാർഡിലെ നമ്പർ.',
   'reg.udidPlaceholder': 'നിങ്ങളുടെ UDID നമ്പർ നൽകൂ',
-  'reg.certificate': 'UDID സർട്ടിഫിക്കറ്റ് അപ്‌ലോഡ് ചെയ്യൂ',
+  'reg.certificate': 'UDID കാർഡ് അപ്‌ലോഡ് ചെയ്യൂ',
   'reg.certificateHint': 'PDF അല്ലെങ്കിൽ ചിത്രം, 5 MB അല്ലെങ്കിൽ കുറവ്.',
   'reg.fileType': 'ആ ഫയൽ PDF, JPEG അല്ലെങ്കിൽ PNG ആയിരിക്കണം.',
   'reg.fileSize': 'ആ ഫയൽ 5 MB-യിൽ വലുതാണ്. ഫോണിൽ എടുത്ത ചിത്രം ഫോട്ടോ എടുക്കുന്നതിനുപകരം സ്കാൻ ചെയ്താൽ സാധാരണ ചെറുതായിരിക്കും.',

@@ -416,7 +416,7 @@ const pa: Dict = {
   'reg.udid': 'UDID ਨੰਬਰ',
   'reg.udidHint': 'ਤੁਹਾਡੇ UDID (ਵਿਲੱਖਣ ਦਿਵਿਆਂਗਤਾ ਪਛਾਣ) ਕਾਰਡ ਉੱਤੇ ਲਿਖਿਆ ਨੰਬਰ।',
   'reg.udidPlaceholder': 'ਆਪਣਾ UDID ਨੰਬਰ ਭਰੋ',
-  'reg.certificate': 'UDID ਸਰਟੀਫਿਕੇਟ ਅੱਪਲੋਡ ਕਰੋ',
+  'reg.certificate': 'UDID ਕਾਰਡ ਅੱਪਲੋਡ ਕਰੋ',
   'reg.certificateHint': 'PDF ਜਾਂ ਤਸਵੀਰ, 5 MB ਜਾਂ ਘੱਟ।',
   'reg.fileType': 'ਉਹ ਫ਼ਾਈਲ PDF, JPEG ਜਾਂ PNG ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ।',
   'reg.fileSize': 'ਉਹ ਫ਼ਾਈਲ 5 MB ਤੋਂ ਵੱਡੀ ਹੈ। ਫ਼ੋਨ ਨਾਲ ਲਈ ਤਸਵੀਰ ਆਮ ਤੌਰ ਉੱਤੇ ਛੋਟੀ ਹੁੰਦੀ ਹੈ ਜੇ ਤੁਸੀਂ ਫ਼ੋਟੋ ਖਿੱਚਣ ਦੀ ਬਜਾਏ ਸਕੈਨ ਕਰੋ।',

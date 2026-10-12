@@ -416,7 +416,7 @@ const kn: Dict = {
   'reg.udid': 'UDID ಸಂಖ್ಯೆ',
   'reg.udidHint': 'ನಿಮ್ಮ UDID (ವಿಶಿಷ್ಟ ವಿಕಲಚೇತನ ಗುರುತು) ಕಾರ್ಡ್‌ನಲ್ಲಿರುವ ಸಂಖ್ಯೆ.',
   'reg.udidPlaceholder': 'ನಿಮ್ಮ UDID ಸಂಖ್ಯೆ ನಮೂದಿಸಿ',
-  'reg.certificate': 'UDID ಪ್ರಮಾಣಪತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
+  'reg.certificate': 'UDID ಕಾರ್ಡ್ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
   'reg.certificateHint': 'PDF ಅಥವಾ ಚಿತ್ರ, 5 MB ಅಥವಾ ಅದಕ್ಕಿಂತ ಕಡಿಮೆ.',
   'reg.fileType': 'ಆ ಫೈಲ್ PDF, JPEG ಅಥವಾ PNG ಆಗಿರಬೇಕು.',
   'reg.fileSize': 'ಆ ಫೈಲ್ 5 MB ಗಿಂತ ದೊಡ್ಡದು. ಫೋನ್‌ನಲ್ಲಿ ತೆಗೆದ ಚಿತ್ರವನ್ನು ಫೋಟೋ ತೆಗೆಯುವ ಬದಲು ಸ್ಕ್ಯಾನ್ ಮಾಡಿದರೆ ಸಾಮಾನ್ಯವಾಗಿ ಚಿಕ್ಕದಾಗಿರುತ್ತದೆ.',

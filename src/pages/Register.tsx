@@ -64,12 +64,14 @@ import {
   type Choice,
 } from '../lib/fields'
 import { ChipSelector } from '../components/ChipSelector'
-import { SearchableSelect } from '../components/SearchableSelect'
+import { StatePicker } from '../components/StatePicker'
 import { DistrictPicker } from '../components/DistrictPicker'
+import { OnFileDocument } from '../components/OnFileDocument'
 import { Field, Notice } from '../components/ui'
 import { SCALES, marksProblem, scaleOf, toPercent, type ScaleId } from '../lib/questions'
 import { money } from '../lib/format'
-import type { Profile } from '../lib/types'
+import { useQuery } from '../lib/hooks'
+import type { Document, Profile } from '../lib/types'
 
 /* Same rule as the sign-in screen, checked here as well so the complaint can
  * land on the field being typed into rather than in a banner at the top. */
@@ -126,10 +128,10 @@ type Step = 1 | 2 | 3
    error summary lists them in this order, so it reads top to bottom the way the
    form does rather than in the order the checks happen to run. */
 const STEP_OF: Record<string, Step> = {
-  name: 1, phone: 1, gender: 1,
-  udid: 2, file: 2, disability: 2, percent: 2,
-  address: 2, state: 2, district: 2, pincode: 2, program: 2, programOther: 2, year: 2, passYear: 2,
-  marks: 2, institution: 2,
+  firstName: 1, lastName: 1, phone: 1, gender: 1, address: 1, district: 1, state: 1, pincode: 1,
+  disability: 2, percent: 2, udid: 2, file: 2,
+  institution: 2, program: 2, programOther: 2, year: 2, passYear: 2,
+  marks: 2,
   declaration: 3,
 }
 
@@ -165,15 +167,14 @@ export default function Register() {
 
 function RegisterForm({ profile }: { profile: Profile | null }) {
   const { t } = useI18n()
-  /* Whether a disability certificate or UDID card is already held, from the
-     profile's uploaded_documents (backend 0071). An API older than that sends
-     no list, and then an existing profile is taken to hold one, as this form
-     always assumed — so the form never demands a file the server cannot say
-     it is missing. */
-  const proofOnFile = profile
-    ? (profile.uploaded_documents ?? ['DISABILITY_CERTIFICATE'])
-        .some(d => d === 'DISABILITY_CERTIFICATE' || d === 'UDID_CARD')
-    : false
+  /* What the profile says is held (backend 0071's uploaded_documents) — only
+     a stand-in until the documents themselves arrive below, which are what
+     decides. An API older than 0071 sends no list, and then an existing
+     profile is taken to hold both while it loads, so the form never flashes a
+     demand for a file the server is about to say it has. */
+  const profileSaysHeld = profile
+    ? (profile.uploaded_documents ?? ['DISABILITY_CERTIFICATE', 'UDID_CARD'])
+    : []
   const {
     requestCode, submitCode, resendCode, cancelCode, clearError,
     status, pendingCode, error: authError, refreshProfile,
@@ -190,7 +191,22 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const verified = status === 'authenticated'
   const awaitingCode = status === 'awaiting_code' && pendingCode
 
-  const [name, setName] = useState(profile?.full_name ?? '')
+  /* The name in three parts, stored as one. student_profile has full_name and
+     nothing finer, and every consumer — the panel, a sponsor's applicant list,
+     a certificate checked against it — reads it whole, so the parts are joined
+     with single spaces on the way out and split on the way back in: the first
+     word, the last, and whatever is between. A saved name of one word reopens
+     as a first name with the last name still to give. */
+  const [names] = useState(() => {
+    const words = (profile?.full_name ?? '').trim().split(/\s+/).filter(Boolean)
+    return words.length < 2
+      ? { first: words[0] ?? '', middle: '', last: '' }
+      : { first: words[0], middle: words.slice(1, -1).join(' '), last: words[words.length - 1] }
+  })
+  const [firstName, setFirstName] = useState(names.first)
+  const [middleName, setMiddleName] = useState(names.middle)
+  const [lastName, setLastName] = useState(names.last)
+  const name = [firstName, middleName, lastName].map(p => p.trim()).filter(Boolean).join(' ')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [email, setEmail] = useState('')
@@ -207,9 +223,36 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     profile && !profile.udid_number ? 'MEDICAL' : 'UDID',
   )
   const [file, setFile] = useState<File | null>(null)
-  /* The student's photograph, optional (2026-10-05). Asked here with the
-     certificate because it is the other document every application uses, so
-     it is uploaded once rather than met for the first time on an Apply page. */
+  const kindOnFile = certKind === 'UDID' ? 'UDID_CARD' : 'DISABILITY_CERTIFICATE'
+
+  /* The student's documents, as the database holds them — the answer to "is
+     it on file", per kind. Both choices used to read as uploaded whenever the
+     profile's summary was missing or stale, because the summary's fallback
+     was "both". Fetched for any existing profile; a first registration has
+     none. Counted the way 0071's trigger counts them: not deleted (the API
+     already leaves those out), and not QUARANTINED, which a scan has held
+     back and nobody can use. */
+  const docsQuery = useQuery<Document[]>(
+    signal => (profile
+      ? api.get<Document[]>('/me/documents', undefined, signal)
+      : Promise.resolve({ data: [] })),
+    [profile?.profile_id ?? ''],
+  )
+  const usableDocs = docsQuery.data
+    ?.filter(d => d.status !== 'QUARANTINED' && d.status !== 'DELETED')
+  const proofHeld = usableDocs ? usableDocs.map(d => d.doc_type) : profileSaysHeld
+
+  /* Whether the certificate the student says they hold is on file — that kind,
+     not either. A UDID card on file does not answer "upload your disability
+     certificate": switching to the medical board's certificate asks for it,
+     and the UDID card is not shown in its place. */
+  const proofOnFile = proofHeld.includes(kindOnFile)
+  /* The student's photograph, optional (2026-10-05). Asked at registration
+     because it is the other document every application uses, so it is
+     uploaded once rather than met for the first time on an Apply page. With
+     the personal details since 2026-10-13, beside the name, rather than with
+     the certificate: it says who the student is, not what their disability is.
+     It is uploaded after the profile saves, with the certificate. */
   const [photo, setPhoto] = useState<File | null>(null)
   /* One stored enum becomes a one-item selection. A profile saved as
      MULTIPLE_DISABILITIES reopens as that single chip rather than as the set it
@@ -222,11 +265,12 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const [percent, setPercent] = useState(
     profile?.disability_percent != null ? String(profile.disability_percent) : '',
   )
-  /* The home address: the house and street as one free-text line, and the PIN
-     code beside the state and district it narrows. Optional, like income and
-     marks — no scheme matches on a street, and a sponsor who needs one for a
-     disbursement letter can ask. Stored in address_line and pincode, columns
-     since 0003 that nothing asked for until now. */
+  /* The permanent address: the house and street as one free-text line, and the PIN
+     code beside the state and district it narrows. Both required: no scheme
+     matches on a street, but a sponsor paying an award needs somewhere to write
+     to, and asking after the award is a delay the student pays for. Stored in
+     address_line and pincode, columns since 0003 that nothing asked for until
+     now. */
   const [address, setAddress] = useState(profile?.address_line ?? '')
   const [state, setState] = useState(profile?.state_code ?? '')
   const [district, setDistrict] = useState(profile?.district ?? '')
@@ -322,6 +366,31 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
   const phoneInput = useRef<HTMLInputElement>(null)
   const codeInput = useRef<HTMLInputElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  /* The certificate on file, to show rather than describe: the newest of the
+     kind the student says they hold. Never the other kind — that put a UDID
+     card under "Upload your disability certificate" as though it were one. */
+  const onFileDoc = (usableDocs ?? [])
+    .filter(d => d.doc_type === kindOnFile)
+    .sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at))[0]
+
+  /* Back to the one on file: the chosen file goes, and the picker is emptied
+     so choosing the same file again still fires a change. */
+  function keepOnFile() {
+    setFile(null)
+    clearProblem('file')
+    if (fileInput.current) fileInput.current.value = ''
+  }
+
+  /* The photograph on file, shown the same way and for the same reason. */
+  const photoInput = useRef<HTMLInputElement>(null)
+  const onFilePhoto = (usableDocs ?? [])
+    .filter(d => d.doc_type === 'PHOTOGRAPH')
+    .sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at))[0]
+  function keepPhotoOnFile() {
+    setPhoto(null)
+    if (photoInput.current) photoInput.current.value = ''
+  }
   const form = useRef<HTMLFormElement>(null)
   const summary = useRef<HTMLDivElement>(null)
   const stepHeads = useRef<(HTMLHeadingElement | null)[]>([])
@@ -454,7 +523,8 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     const found: Record<string, string> = {}
     const required = t('reg.required')
 
-    if (!name.trim()) found.name = required
+    if (!firstName.trim()) found.firstName = required
+    if (!lastName.trim()) found.lastName = required
     if (!gender) found.gender = required
     if (!verified) found.phone = t('reg.verifyToContinue')
     if (certKind === 'UDID' && !udid.trim()) found.udid = required
@@ -475,12 +545,13 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     }
 
     if (!state) found.state = required
-    /* Only once a state is chosen. Asking for a district while the control is
-       still disabled would name a field the student cannot reach — two errors
-       for one mistake, and the second one unactionable. */
-    if (state && !district) found.district = required
-    // Optional; the API takes exactly six digits or nothing.
-    if (pincode !== '' && !/^\d{6}$/.test(pincode)) found.pincode = t('reg.pincodeInvalid')
+    /* Whether or not a state is chosen: the picker searches every state's
+       districts until one is, so the field is always reachable. */
+    if (!district) found.district = required
+    if (!address.trim()) found.address = required
+    // The API takes exactly six digits.
+    if (!pincode) found.pincode = required
+    else if (!/^\d{6}$/.test(pincode)) found.pincode = t('reg.pincodeInvalid')
     if (!program) found.program = required
     if (isOther && !programOther.trim()) found.programOther = required
     // PhD is the one program with no year to give.
@@ -599,7 +670,7 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
      * string in either fails to decode before any handler runs, and the reply
      * is the generic "We could not read that request" naming no field. */
     const payload: Record<string, unknown> = {
-      full_name: name.trim(),
+      full_name: name,
       disability_type: disabilityTypeFor(disabilities),
       disability_percent: Number(percent),
       // Only for a UDID holder; an empty string would be stored as a number.
@@ -619,10 +690,9 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
     // accepts, and sending it fails the whole form on a question nobody has to
     // answer.
     if (gender) payload.gender = gender
-    // Only when answered. The API coalesces, so leaving these out keeps what is
-    // on file rather than blanking it.
-    if (address.trim()) payload.address_line = address.trim()
-    if (pincode) payload.pincode = pincode
+    // Required, so check() has already refused the form without them.
+    payload.address_line = address.trim()
+    payload.pincode = pincode
     // Only when answered. A number, which is what the API decodes it as.
     if (income !== '') payload.annual_family_income = Number(income)
     // Only when answered, and always as the percentage the column holds.
@@ -709,7 +779,8 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
      a link reads "Full name: This one is needed" and lands on the box with that
      label. */
   const fieldNames: Record<string, string> = {
-    name: t('reg.name'),
+    firstName: t('reg.firstName'),
+    lastName: t('reg.lastName'),
     phone: t('auth.phone'),
     gender: t('reg.gender'),
     udid: t('reg.udid'),
@@ -850,17 +921,83 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
           {stepHead(1)}
           <h3 className="register-section">{t('reg.personal')}</h3>
 
-          <Field label={t('reg.name')} error={problems.name || undefined} required>
+          {/* Three boxes, as the certificate prints the name. full_name is
+              at most 120 characters on the API, so the three share that between
+              them: 40, 38 and 40, and the two spaces that join them. One row
+              where there is room — they are one question — and stacked on a
+              phone, where three side by side would be too narrow to type in. */}
+          <div className="register-names">
+          <Field label={t('reg.firstName')} error={problems.firstName || undefined} required>
             {props => (
               <input
                 {...props}
                 type="text"
-                data-field="name"
-                autoComplete="name"
-                placeholder={t('reg.namePlaceholder')}
-                value={name}
-                onChange={e => { setName(e.target.value); clearProblem('name') }}
+                data-field="firstName"
+                autoComplete="given-name"
+                maxLength={40}
+                value={firstName}
+                onChange={e => { setFirstName(e.target.value); clearProblem('firstName') }}
               />
+            )}
+          </Field>
+
+          <Field label={t('reg.middleName')} required={false}>
+            {props => (
+              <input
+                {...props}
+                type="text"
+                autoComplete="additional-name"
+                maxLength={38}
+                value={middleName}
+                onChange={e => setMiddleName(e.target.value)}
+              />
+            )}
+          </Field>
+
+          <Field label={t('reg.lastName')} error={problems.lastName || undefined} required>
+            {props => (
+              <input
+                {...props}
+                type="text"
+                data-field="lastName"
+                autoComplete="family-name"
+                maxLength={40}
+                value={lastName}
+                onChange={e => { setLastName(e.target.value); clearProblem('lastName') }}
+              />
+            )}
+          </Field>
+          </div>
+
+          {/* Beside the name it is a picture of. */}
+          <Field label={t('reg.photo')} hint={t('reg.photoHint')}>
+            {props => (
+              <div className="onfile-field">
+              {/* As the certificate below: what is on file until a new one is
+                  chosen, with the picker mounted and hidden beneath it. */}
+              {onFilePhoto && !photo && (
+                <OnFileDocument
+                  doc={onFilePhoto}
+                  label={t('reg.photo')}
+                  onReplace={() => photoInput.current?.click()}
+                />
+              )}
+              <input
+                {...props}
+                ref={photoInput}
+                hidden={!!onFilePhoto && !photo}
+                type="file"
+                className="file-input"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={e => setPhoto(e.target.files?.[0] ?? null)}
+              />
+              {onFilePhoto && photo && (
+                <div className="onfile-replacing">
+                  <p className="muted">{t('reg.onFileReplacing')}</p>
+                  <button type="button" onClick={keepPhotoOnFile}>{t('reg.onFileKeep')}</button>
+                </div>
+              )}
+              </div>
             )}
           </Field>
 
@@ -1070,6 +1207,106 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             </p>
           )}
 
+          {/* The permanent address, not where the student is staying now —
+              a hostel or a rented room changes and the family home is what a
+              certificate and a sponsor's letter use. Whole, with the rest of the personal details:
+              the street, the district and state it is in, and the PIN code —
+              in the order an Indian address is written. The district can be
+              found before the state is chosen, and choosing it fills the
+              state in — see DistrictPicker.
+              State and district used to open Education details on step 2,
+              which is where they were asked rather than what they are — they
+              say where the student lives. Schemes still match on them. */}
+          <Field label={t('reg.address')} error={problems.address || undefined} required>
+            {props => (
+              <textarea
+                {...props}
+                data-field="address"
+                rows={3}
+                // address_line is validate:"max=500" on the API.
+                maxLength={500}
+                autoComplete="street-address"
+                placeholder={t('reg.addressPlaceholder')}
+                value={address}
+                onChange={e => { setAddress(e.target.value); clearProblem('address') }}
+              />
+            )}
+          </Field>
+
+          {/* Required. Fourteen states' lists are cut short in the data file,
+              so the picker lets those states type a district instead — see
+              DistrictPicker. Without that escape, requiring this would stop a
+              student from Lucknow registering at all. */}
+          <Field
+            label={t('reg.district')}
+            hint={t('reg.districtHint')}
+            error={problems.district || undefined}
+            required
+          >
+            {props => (
+              <div data-field="district">
+              <DistrictPicker
+                id={props.id}
+                stateCode={state}
+                value={district}
+                onChange={v => { setDistrict(v); clearProblem('district') }}
+                onState={v => { setState(v); clearProblem('state') }}
+                describedBy={props['aria-describedby']}
+                invalid={!!problems.district}
+              />
+              </div>
+            )}
+          </Field>
+
+          <Field label={t('reg.state')} error={problems.state || undefined} required>
+            {props => (
+              <div data-field="state">
+              <StatePicker
+                id={props.id}
+                describedBy={props['aria-describedby']}
+                invalid={!!problems.state}
+                options={stateChoices(t)}
+                value={state}
+                /* Changing the state clears the district: the districts
+                   belonged to the old one, and a Kerala student who corrects
+                   their state to Karnataka must not keep Wayanad. Clearing it
+                   is a change like any other. */
+                onChange={v => {
+                  setState(v)
+                  setDistrict('')
+                  clearProblem('state')
+                  // The old district is gone, so its error is stale too.
+                  clearProblem('district')
+                }}
+              />
+              </div>
+            )}
+          </Field>
+
+          <Field
+            label={t('reg.pincode')}
+            hint={t('reg.pincodeHint')}
+            error={problems.pincode || undefined}
+            required
+          >
+            {props => (
+              <input
+                {...props}
+                type="text"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                className="input-short"
+                data-field="pincode"
+                maxLength={6}
+                placeholder="110001"
+                value={pincode}
+                // Digits only, as typed: a space or a dash from habit is dropped
+                // rather than refused.
+                onChange={e => { setPincode(e.target.value.replace(/\D/g, '').slice(0, 6)); clearProblem('pincode') }}
+              />
+            )}
+          </Field>
+
           <div className="register-actions">
             <span />
             <button type="submit" className="primary">{t('reg.continue')}</button>
@@ -1088,87 +1325,6 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
           <section hidden={step !== 2} aria-labelledby="reg-step-2">
           {stepHead(2)}
           <h3 className="register-section">{t('reg.disability')}</h3>
-
-          {/* Which certificate, first: it decides whether there is a UDID
-              number to ask for and what the upload is. Two options, so two
-              radios — a dropdown would hide one of them for no gain. */}
-          <div className="field">
-            <span className="field-label" id="reg-certkind">
-              {t('reg.certKind')}
-              <span className="req" aria-hidden="true"> *</span>
-              <span className="sr-only"> ({t('common.required')})</span>
-            </span>
-            <ChipSelector
-              legend={t('reg.certKind')}
-              name="certkind"
-              options={[
-                { value: 'UDID', label: t('reg.certUdid') },
-                { value: 'MEDICAL', label: t('reg.certMedical') },
-              ]}
-              selected={[certKind]}
-              onChange={v => {
-                if (v[0]) { setCertKind(v[0] as 'UDID' | 'MEDICAL'); clearProblem('udid') }
-              }}
-            />
-            {/* Says which certificates count, under the choice it explains:
-                the legacy certificate is the one a student is unsure about. */}
-            <span className="hint">
-              {t(certKind === 'UDID' ? 'reg.certUdidSub' : 'reg.certMedicalSub')}
-            </span>
-          </div>
-
-          {certKind === 'UDID' && (
-            <Field label={t('reg.udid')} hint={t('reg.udidHint')} error={problems.udid || undefined} required>
-              {props => (
-                <input
-                  {...props}
-                  type="text"
-                  data-field="udid"
-                  placeholder={t('reg.udidPlaceholder')}
-                  value={udid}
-                  onChange={e => { setUdid(e.target.value); clearProblem('udid') }}
-                />
-              )}
-            </Field>
-          )}
-
-          <Field
-            label={t(certKind === 'UDID' ? 'reg.certificate' : 'reg.medicalCertificate')}
-            hint={proofOnFile ? t('reg.certificateOnFile') : t('reg.certificateHint')}
-            error={problems.file || undefined}
-            required
-          >
-            {props => (
-              <input
-                {...props}
-                // Not required to the browser or a screen reader once one is
-                // on file: the label's star says the profile needs it, the
-                // hint says it has it, and an empty picker is not a gap.
-                required={!proofOnFile}
-                ref={fileInput}
-                data-field="file"
-                type="file"
-                className="file-input"
-                accept="application/pdf,image/jpeg,image/png,image/webp"
-                // capture is deliberately absent: offering the camera by
-                // default is wrong for somebody who has already scanned the
-                // certificate, and the picker offers the camera anyway.
-                onChange={e => chooseFile(e.target.files?.[0] ?? null)}
-              />
-            )}
-          </Field>
-
-          <Field label={t('reg.photo')} hint={t('reg.photoHint')}>
-            {props => (
-              <input
-                {...props}
-                type="file"
-                className="file-input"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={e => setPhoto(e.target.files?.[0] ?? null)}
-              />
-            )}
-          </Field>
 
           {/* A dropdown, not twenty-one chips: the list is long, a student
               chooses one, and a native <select> is the most accessible control
@@ -1222,100 +1378,114 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             )}
           </Field>
 
-          {/* The home address, then education. State and district used to open
-              the education section, which is where they were asked rather than
-              what they are: they say where the student lives, and they sit with
-              the street and the PIN code now. */}
-          <h3 className="register-section">{t('reg.homeAddress')}</h3>
+          {/* Which certificate, after the type and percentage it backs up:
+              the claim first, then the evidence for it. It decides whether
+              there is a UDID number to ask for and what the upload is. Two options, so two
+              radios — a dropdown would hide one of them for no gain. */}
+          <div className="field">
+            <span className="field-label" id="reg-certkind">
+              {t('reg.certKind')}
+              <span className="req" aria-hidden="true"> *</span>
+              <span className="sr-only"> ({t('common.required')})</span>
+            </span>
+            <ChipSelector
+              legend={t('reg.certKind')}
+              name="certkind"
+              options={[
+                { value: 'UDID', label: t('reg.certUdid') },
+                { value: 'MEDICAL', label: t('reg.certMedical') },
+              ]}
+              selected={[certKind]}
+              onChange={v => {
+                if (v[0]) { setCertKind(v[0] as 'UDID' | 'MEDICAL'); clearProblem('udid') }
+              }}
+            />
+            {/* Says which certificates count, under the choice it explains:
+                the legacy certificate is the one a student is unsure about. */}
+            <span className="hint">
+              {t(certKind === 'UDID' ? 'reg.certUdidSub' : 'reg.certMedicalSub')}
+            </span>
+          </div>
 
-          <Field label={t('reg.address')} hint={t('reg.addressHint')} required={false}>
-            {props => (
-              <textarea
-                {...props}
-                data-field="address"
-                rows={3}
-                // address_line is validate:"max=500" on the API.
-                maxLength={500}
-                autoComplete="street-address"
-                placeholder={t('reg.addressPlaceholder')}
-                value={address}
-                onChange={e => setAddress(e.target.value)}
-              />
-            )}
-          </Field>
+          {certKind === 'UDID' && (
+            <Field label={t('reg.udid')} hint={t('reg.udidHint')} error={problems.udid || undefined} required>
+              {props => (
+                <input
+                  {...props}
+                  type="text"
+                  data-field="udid"
+                  placeholder={t('reg.udidPlaceholder')}
+                  value={udid}
+                  onChange={e => { setUdid(e.target.value); clearProblem('udid') }}
+                />
+              )}
+            </Field>
+          )}
 
-          <Field label={t('reg.state')} error={problems.state || undefined} required>
-            {props => (
-              <div data-field="state">
-              <SearchableSelect
-                {...props}
-                options={stateChoices(t)}
-                value={state}
-                /* Changing the state clears the district: the districts
-                   belonged to the old one, and a Kerala student who corrects
-                   their state to Karnataka must not keep Wayanad. */
-                onChange={v => {
-                  setState(v)
-                  setDistrict('')
-                  clearProblem('state')
-                  // The old district is gone, so its error is stale too.
-                  clearProblem('district')
-                }}
-                placeholder={t('reg.statePlaceholder')}
-              />
-              </div>
-            )}
-          </Field>
-
-          {/* Required. Fourteen states' lists are cut short in the data file,
-              so the picker lets those states type a district instead — see
-              DistrictPicker. Without that escape, requiring this would stop a
-              student from Lucknow registering at all. */}
           <Field
-            label={t('reg.district')}
-            hint={t('reg.districtHint')}
-            error={problems.district || undefined}
+            label={t(certKind === 'UDID' ? 'reg.certificate' : 'reg.medicalCertificate')}
+            /* With the file shown, the hint is only the format a replacement
+               must be; "already on file" is what the preview itself says. */
+            hint={proofOnFile && !onFileDoc ? t('reg.certificateOnFile') : t('reg.certificateHint')}
+            error={problems.file || undefined}
             required
           >
             {props => (
-              <div data-field="district">
-              <DistrictPicker
-                id={props.id}
-                stateCode={state}
-                value={district}
-                onChange={v => { setDistrict(v); clearProblem('district') }}
-                describedBy={props['aria-describedby']}
-                invalid={!!problems.district}
-              />
-              </div>
-            )}
-          </Field>
-
-          <Field
-            label={t('reg.pincode')}
-            hint={t('reg.pincodeHint')}
-            error={problems.pincode || undefined}
-            required={false}
-          >
-            {props => (
+              <div data-field="file" className="onfile-field">
+              {/* What is on file, until a replacement is chosen. The picker
+                  stays mounted and hidden beneath it, so Replace can open it
+                  and a chosen file survives the step being hidden. */}
+              {onFileDoc && !file && (
+                <OnFileDocument
+                  doc={onFileDoc}
+                  label={t(certKind === 'UDID' ? 'reg.certUdid' : 'reg.certMedical')}
+                  onReplace={() => fileInput.current?.click()}
+                />
+              )}
               <input
                 {...props}
-                type="text"
-                inputMode="numeric"
-                autoComplete="postal-code"
-                className="input-short"
-                data-field="pincode"
-                maxLength={6}
-                placeholder="110001"
-                value={pincode}
-                // Digits only, as typed: a space or a dash from habit is dropped
-                // rather than refused.
-                onChange={e => { setPincode(e.target.value.replace(/\D/g, '').slice(0, 6)); clearProblem('pincode') }}
+                // Not required to the browser or a screen reader once one is
+                // on file: the label's star says the profile needs it, the
+                // preview shows it has it, and an empty picker is not a gap.
+                required={!proofOnFile}
+                hidden={!!onFileDoc && !file}
+                ref={fileInput}
+                type="file"
+                className="file-input"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                // capture is deliberately absent: offering the camera by
+                // default is wrong for somebody who has already scanned the
+                // certificate, and the picker offers the camera anyway.
+                onChange={e => chooseFile(e.target.files?.[0] ?? null)}
               />
+              {/* A replacement chosen: say what it does, and offer the way
+                  back. Nothing is replaced until the form is submitted. */}
+              {onFileDoc && file && (
+                <div className="onfile-replacing">
+                  <p className="muted">{t('reg.onFileReplacing')}</p>
+                  <button type="button" onClick={keepOnFile}>{t('reg.onFileKeep')}</button>
+                </div>
+              )}
+              </div>
             )}
           </Field>
 
           <h3 className="register-section">{t('reg.education')}</h3>
+
+          {/* Where, before what and how far: the school or college is the
+              answer a student knows without thinking, so it opens the section. */}
+          <Field label={t('reg.institution')} error={problems.institution || undefined} required>
+            {props => (
+              <input
+                {...props}
+                type="text"
+                data-field="institution"
+                placeholder={t('reg.institutionPlaceholder')}
+                value={institution}
+                onChange={e => { setInstitution(e.target.value); clearProblem('institution') }}
+              />
+            )}
+          </Field>
 
           {/* The program as one dropdown with its groups as <optgroup>s —
               "Graduation" and "Post-Graduation / Masters" are headings the
@@ -1473,19 +1643,6 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
             </p>
           )}
 
-          <Field label={t('reg.institution')} error={problems.institution || undefined} required>
-            {props => (
-              <input
-                {...props}
-                type="text"
-                data-field="institution"
-                placeholder={t('reg.institutionPlaceholder')}
-                value={institution}
-                onChange={e => { setInstitution(e.target.value); clearProblem('institution') }}
-              />
-            )}
-          </Field>
-
           <div className="register-actions">
             <button type="button" onClick={() => goTo(1)}>{t('reg.back')}</button>
             <button type="submit" className="primary">{t('reg.toReview')}</button>
@@ -1501,11 +1658,16 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
           <div className="review-block">
             <h3>{t('reg.step1')}</h3>
             <dl>
-              {row(t('reg.name'), name.trim())}
+              {row(t('reg.name'), name)}
+              {row(t('reg.photo'), photo?.name ?? (onFilePhoto ? t('reg.fileKept') : ''))}
               {row(t('auth.phone'), pendingCode ? formatE164(pendingCode.phone) : verified ? t('reg.verified') : '')}
               {row(t('reg.gender'), gender && choiceLabel(genderChoices(t), gender))}
               {row(t('reg.email'), email.trim())}
               {row(t('q.annual_family_income'), income !== '' ? money(Number(income)) : '')}
+              {row(t('reg.address'), address.trim())}
+              {row(t('reg.district'), district)}
+              {row(t('reg.state'), state && choiceLabel(stateChoices(t), state))}
+              {row(t('reg.pincode'), pincode)}
             </dl>
             <button type="button" onClick={() => goTo(1)}>{t('reg.editStep', { step: t('reg.step1') })}</button>
           </div>
@@ -1513,20 +1675,15 @@ function RegisterForm({ profile }: { profile: Profile | null }) {
           <div className="review-block">
             <h3>{t('reg.step2')}</h3>
             <dl>
-              {row(t('reg.certShort'), t(certKind === 'UDID' ? 'reg.certUdid' : 'reg.certMedical'))}
-              {certKind === 'UDID' && row(t('reg.udid'), udid.trim())}
-              {row(t('reg.certFile'), file?.name ?? (profile ? t('reg.fileKept') : ''))}
-              {row(t('reg.photo'), photo?.name)}
               {row(t('reg.disabilityType'), disabilities[0] && choiceLabel(disabilityChips(t), disabilities[0]))}
               {row(t('reg.percent'), percent !== '' ? `${percent}%` : '')}
-              {row(t('reg.address'), address.trim())}
-              {row(t('reg.state'), state && choiceLabel(stateChoices(t), state))}
-              {row(t('reg.district'), district)}
-              {row(t('reg.pincode'), pincode)}
+              {row(t('reg.certShort'), t(certKind === 'UDID' ? 'reg.certUdid' : 'reg.certMedical'))}
+              {certKind === 'UDID' && row(t('reg.udid'), udid.trim())}
+              {row(t('reg.certFile'), file?.name ?? (proofOnFile ? t('reg.fileKept') : ''))}
+              {row(t('reg.institution'), institution.trim())}
               {row(t('reg.program'), isOther ? programOther.trim() : program.replace(/^PG: /, ''))}
               {category !== 'phd' && row(t('reg.year'), yearText)}
               {row(t('q.academic_percentage'), marksText)}
-              {row(t('reg.institution'), institution.trim())}
             </dl>
             <button type="button" onClick={() => goTo(2)}>{t('reg.editStep', { step: t('reg.step2') })}</button>
           </div>

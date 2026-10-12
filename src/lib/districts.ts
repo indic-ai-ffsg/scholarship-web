@@ -70,6 +70,30 @@ export function districtsFor(stateCode: string): string[] {
  * one extra sentence under a picker rather than a student blocked — which is
  * the right way round for a guess to fail.
  */
+/* Every district in the file, each with the state it is in.
+
+   For the picker before a state is chosen: registration asks for the district
+   above the state, the order an address is written in, so the district has to
+   be findable on its own and the state follows from it. A name can belong to
+   more than one state — Aurangabad is in Bihar and Maharashtra, Bilaspur in
+   Himachal Pradesh and Chhattisgarh — which is why each row carries its state
+   rather than the name alone. */
+export interface DistrictRow {
+  district: string
+  stateCode: string
+  stateName: string
+}
+
+let everyDistrict: DistrictRow[] | null = null
+
+export function allDistricts(): DistrictRow[] {
+  everyDistrict ??= Object.entries(STATES)
+    .flatMap(([stateCode, stateName]) =>
+      (BY_NAME.get(stateName) ?? []).map(district => ({ district, stateCode, stateName })))
+    .sort((a, b) => a.district.localeCompare(b.district) || a.stateName.localeCompare(b.stateName))
+  return everyDistrict
+}
+
 export function isTruncated(stateCode: string): boolean {
   return districtsFor(stateCode).length === TRUNCATED_AT
 }

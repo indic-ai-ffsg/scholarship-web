@@ -171,6 +171,24 @@
  * progress meter: the meter said "4 of 11", the outline says "you are in
  * Disability details, and Education details is next".
  */
+/* A certificate already on file: the preview, its name, View and Upload a new
+   one. Narrower than the column, since recognising a scan needs a glance. */
+.onfile { display: grid; gap: 0.5rem; max-width: 28rem; }
+.onfile-preview { height: 11rem; }
+.onfile-actions, .onfile-replacing { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.onfile-replacing { margin-top: 0.5rem; }
+.onfile-replacing p { margin: 0; flex: 1 1 14rem; }
+.onfile-full { display: grid; place-items: center; }
+.onfile-full .doc-thumb { max-height: 75vh; max-width: 100%; margin: 0; pointer-events: auto; }
+.onfile-full .doc-thumb-page { width: 100%; height: 75vh; max-height: none; }
+
+/* First, middle and last name: one question, so one row from 40rem up. Top
+   aligned, so an error under one box does not drag the others down with it. */
+.register-names { display: grid; gap: 0 1rem; align-items: start; }
+@media (min-width: 40rem) {
+  .register-names { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 .register-section {
   font-size: var(--step--1);
   font-weight: var(--w-strong);

@@ -415,7 +415,7 @@ const or: Dict = {
   'reg.udid': 'UDID ନମ୍ବର',
   'reg.udidHint': 'ଆପଣଙ୍କ UDID (ଅନନ୍ୟ ଦିବ୍ୟାଙ୍ଗତା ପରିଚୟ) କାର୍ଡରେ ଲେଖାଥିବା ନମ୍ବର।',
   'reg.udidPlaceholder': 'ଆପଣଙ୍କ UDID ନମ୍ବର ଲେଖନ୍ତୁ',
-  'reg.certificate': 'UDID ପ୍ରମାଣପତ୍ର ଅପଲୋଡ୍ କରନ୍ତୁ',
+  'reg.certificate': 'UDID କାର୍ଡ ଅପଲୋଡ୍ କରନ୍ତୁ',
   'reg.certificateHint': 'PDF କିମ୍ବା ଛବି, 5 MB କିମ୍ବା ତାହାଠାରୁ କମ୍।',
   'reg.fileType': 'ସେହି ଫାଇଲ୍ PDF, JPEG କିମ୍ବା PNG ହେବା ଆବଶ୍ୟକ।',
   'reg.fileSize': 'ସେହି ଫାଇଲ୍ 5 MBରୁ ବଡ଼। ଫୋନରେ ନିଆଯାଇଥିବା ଛବି ସାଧାରଣତଃ ଛୋଟ ହୁଏ ଯଦି ଆପଣ ଫଟୋ ନେବା ବଦଳରେ ସ୍କାନ୍ କରନ୍ତି।',

@@ -415,7 +415,7 @@ const te: Dict = {
   'reg.udid': 'UDID నంబర్',
   'reg.udidHint': 'మీ UDID (ప్రత్యేక దివ్యాంగత్వ గుర్తింపు) కార్డుపై ఉన్న నంబర్.',
   'reg.udidPlaceholder': 'మీ UDID నంబర్ ఇవ్వండి',
-  'reg.certificate': 'UDID ధ్రువీకరణ పత్రాన్ని అప్‌లోడ్ చేయండి',
+  'reg.certificate': 'UDID కార్డును అప్‌లోడ్ చేయండి',
   'reg.certificateHint': 'PDF లేదా చిత్రం, 5 MB లేదా అంతకంటే తక్కువ.',
   'reg.fileType': 'ఆ ఫైల్ PDF, JPEG లేదా PNG అయి ఉండాలి.',
   'reg.fileSize': 'ఆ ఫైల్ 5 MB కంటే పెద్దది. ఫోన్‌లో తీసిన ఫోటో, ఫోటో తీయకుండా స్కాన్ చేస్తే సాధారణంగా చిన్నదిగా ఉంటుంది.',

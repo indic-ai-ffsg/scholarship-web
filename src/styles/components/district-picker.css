@@ -15,8 +15,10 @@
  * exactly what the first version of this did.
  */
 .select-like {
+  position: relative;
   font: 400 var(--step-0)/1.5 var(--font);
   padding: 0.75rem;
+  padding-inline-end: 2.5rem;
   min-height: 48px;
   width: 100%;
   justify-content: flex-start;
@@ -26,10 +28,27 @@
   color: var(--text);
   cursor: pointer;
 }
-/* Disabled until a state is chosen. Dimmed AND the label says why — "Choose
-   your state first" — because a greyed control with no explanation is the
-   commonest way a form stalls somebody. */
-.select-like:disabled { color: var(--text-muted); cursor: not-allowed; opacity: 1; }
+/* Unanswered, it reads as a prompt the way an empty box's placeholder does,
+   not as an answer in full ink. --text-muted is 7.4:1, so still AA. */
+.select-like.is-empty { color: var(--text-muted); }
+/* The caret, drawn the way the language switch draws its own: it says this
+   opens a list, which a plain box with words in it does not. */
+.select-like::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: 1rem; top: 50%;
+  width: 0.45rem; height: 0.45rem;
+  border-inline-end: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+.select-like:hover { border-color: var(--accent); }
+
+/* The control and its Clear side by side; Clear takes only what its word needs. */
+.district-control { display: flex; gap: 0.5rem; align-items: stretch; }
+.district-control .select-like { flex: 1 1 auto; min-width: 0; }
+.district-clear { flex: none; min-height: 48px; min-width: 48px; }
 
 .district-picker { display: grid; gap: 0.75rem; }
 .district-partial { display: grid; gap: 0.25rem; justify-items: start; }
@@ -52,6 +71,7 @@
   font: 400 var(--step-0)/1.4 var(--font);
   cursor: pointer;
 }
+.district-list .district-state { color: var(--text-muted); white-space: pre; }
 .district-list button:hover { background: var(--surface-sunken); }
 /* The chosen row carries a border as well as a fill: colour alone would put the
    whole "this is your answer" distinction into a background tint, which a

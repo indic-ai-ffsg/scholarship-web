@@ -1,12 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Sheet } from './Sheet'
-import { districtsFor, isTruncated } from '../lib/districts'
+import { allDistricts, districtsFor, isTruncated, type DistrictRow } from '../lib/districts'
 
-/* Choosing a district, in a sheet, after the state is known.
+/* Choosing a district, in a sheet.
  *
- * A sheet rather than the SearchableSelect the state above it uses, and the
- * reason is the list: a state has up to seventy-five districts with names a
+ * Before a state is chosen it searches every district in the country, each row
+ * naming its state, and picking one answers the state too (onState). The form
+ * asks for the district above the state — the order an address is written in —
+ * so it cannot wait for the state the way it used to: it sat disabled at the
+ * top of the address reading "choose your state below first", which is a
+ * control that looks broken. Once a state is chosen it lists that state alone.
+ *
+ * A sheet rather than a combobox — and StatePicker, below it, is the same
+ * control for the same reason. The reason is the list: a state has up to seventy-five districts with names a
  * student may not be sure how to spell — Chhatrapati Sambhajinagar, Sri Potti
  * Sriramulu Nellore — and a combobox dropdown on a phone shows four of them
  * above the keyboard. The sheet gives the list the whole screen, which is what
@@ -42,13 +49,15 @@ import { districtsFor, isTruncated } from '../lib/districts'
  * everywhere and this path disappears on its own.
  */
 export function DistrictPicker({
-  id, stateCode, value, onChange, describedBy, invalid,
+  id, stateCode, value, onChange, onState, describedBy, invalid,
 }: {
   id: string
-  /** Empty until a state is chosen; the control stays disabled until then. */
+  /** Empty until a state is chosen; the list is then every state's. */
   stateCode: string
   value: string
   onChange: (district: string) => void
+  /** The state of a district picked before any state was chosen. */
+  onState: (stateCode: string) => void
   describedBy?: string
   /** Mirrors the aria-invalid the other controls get from Field, which cannot
    *  reach a button through its render prop. */
@@ -61,15 +70,21 @@ export function DistrictPicker({
   const [typing, setTyping] = useState(false)
   const [typed, setTyped] = useState('')
   const search = useRef<HTMLInputElement>(null)
+  const control = useRef<HTMLButtonElement>(null)
 
-  const districts = useMemo(() => districtsFor(stateCode), [stateCode])
+  const rows = useMemo<DistrictRow[]>(
+    () => (stateCode
+      ? districtsFor(stateCode).map(district => ({ district, stateCode, stateName: '' }))
+      : allDistricts()),
+    [stateCode],
+  )
   const partial = isTruncated(stateCode)
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return districts
-    return districts.filter(d => d.toLowerCase().includes(q))
-  }, [districts, query])
+    if (!q) return rows
+    return rows.filter(r => r.district.toLowerCase().includes(q))
+  }, [rows, query])
 
   /* Focus the search box once the sheet is actually on screen.
      rAF rather than a bare call: <dialog> is shown by an effect in Sheet, and
@@ -97,7 +112,9 @@ export function DistrictPicker({
     if (name) choose(name)
   }
 
-  function choose(district: string) {
+  function choose(district: string, inState = stateCode) {
+    // The state first: the form clears the district when the state changes.
+    if (inState !== stateCode) onState(inState)
     onChange(district)
     setOpen(false)
   }
@@ -107,18 +124,35 @@ export function DistrictPicker({
       {/* A button, not an input. Nothing here is typed — the value is always
           one of the rows — and a text box invites typing that would be thrown
           away. `aria-haspopup="dialog"` says what pressing it does. */}
+      <div className="district-control">
       <button
         id={id}
+        ref={control}
         type="button"
-        className="select-like"
-        disabled={!stateCode}
+        className={value ? 'select-like' : 'select-like is-empty'}
         aria-haspopup="dialog"
         aria-describedby={describedBy}
         aria-invalid={invalid || undefined}
         onClick={openSheet}
       >
-        {value || (stateCode ? 'Choose your district' : 'Choose your state first')}
+        {value || 'Choose your district'}
       </button>
+      {/* Clear, once there is something to clear. The state goes with it, as
+          the district goes with the state's Clear: the two are one answer, and
+          two Clears that undo different amounts are one too many to learn. It
+          also puts the list back to every state's, so a district picked in
+          the wrong state can be found again from the top. Focus goes back to
+          the control, because the button that had it has just gone. */}
+      {value && (
+        <button
+          type="button"
+          className="district-clear"
+          onClick={() => { onChange(''); onState(''); control.current?.focus() }}
+        >
+          Clear<span className="sr-only"> district</span>
+        </button>
+      )}
+      </div>
 
       <Sheet open={open} onClose={() => setOpen(false)} title="Choose your district">
         <div className="district-picker">
@@ -191,6 +225,16 @@ export function DistrictPicker({
             </div>
           )}
 
+          {/* Without a state there is no list to be short of, and so no
+              typing escape — it needs to know which state the district is in.
+              Said, so somebody from a state the file cuts short knows where
+              to go. */}
+          {!stateCode && (
+            <p className="muted">
+              Not in the list? Close this, choose your state, then come back.
+            </p>
+          )}
+
           {!typing && (
           <p className="sr-only" role="status">
             {matches.length} district{matches.length === 1 ? '' : 's'}
@@ -204,15 +248,16 @@ export function DistrictPicker({
             </p>
           ) : (
             <ul className="district-list">
-              {matches.map(d => (
-                <li key={d}>
+              {matches.map(r => (
+                <li key={`${r.stateCode}:${r.district}`}>
                   <button
                     type="button"
-                    className={d === value ? 'is-on' : undefined}
-                    aria-pressed={d === value}
-                    onClick={() => choose(d)}
+                    className={r.district === value && r.stateCode === stateCode ? 'is-on' : undefined}
+                    aria-pressed={r.district === value && r.stateCode === stateCode}
+                    onClick={() => choose(r.district, r.stateCode)}
                   >
-                    {d}
+                    {r.district}
+                    {r.stateName && <span className="district-state">, {r.stateName}</span>}
                   </button>
                 </li>
               ))}
