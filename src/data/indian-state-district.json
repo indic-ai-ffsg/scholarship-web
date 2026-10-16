@@ -34,7 +34,10 @@
       "Sri Sathya Sai",
       "Srikakulam",
       "Tirupati",
-      "Visakhapatnam"
+      "Visakhapatnam",
+      "Vizianagaram",
+      "West Godavari",
+      "YSR Kadapa"
     ]
   },
   {
@@ -64,7 +67,9 @@
       "Tawang",
       "Tirap",
       "Upper Siang",
-      "Upper Subansiri"
+      "Upper Subansiri",
+      "West Kameng",
+      "West Siang"
     ]
   },
   {
@@ -91,10 +96,20 @@
       "Kamrup",
       "Kamrup Metro",
       "Karbi Anglong",
+      "Karimganj",
       "Kokrajhar",
       "Lakhimpur",
       "Majuli",
-      "Marigaon"
+      "Marigaon",
+      "Nagaon",
+      "Nalbari",
+      "Sivasagar",
+      "Sonitpur",
+      "South Salmara-Mankachar",
+      "Tamulpur",
+      "Tinsukia",
+      "Udalguri",
+      "West Karbi Anglong"
     ]
   },
   {
@@ -109,6 +124,7 @@
       "Bhojpur",
       "Buxar",
       "Darbhanga",
+      "East Champaran",
       "Gaya",
       "Gopalganj",
       "Jamui",
@@ -124,7 +140,19 @@
       "Muzaffarpur",
       "Nalanda",
       "Nawada",
-      "Pashchim Champaran"
+      "Pashchim Champaran",
+      "Patna",
+      "Purnia",
+      "Rohtas",
+      "Saharsa",
+      "Samastipur",
+      "Saran",
+      "Sheikhpura",
+      "Sheohar",
+      "Sitamarhi",
+      "Siwan",
+      "Supaul",
+      "Vaishali"
     ]
   },
   {
@@ -151,6 +179,7 @@
       "Janjgir-Champa",
       "Jashpur",
       "Kabeerdham",
+      "Kanker",
       "Khairagarh-Chhuikhadan-Gandai",
       "Kondagaon",
       "Korba",
@@ -160,7 +189,14 @@
       "Mohla-Manpur-Ambagarh Chouki",
       "Mungeli",
       "Narayanpur",
-      "Raigarh"
+      "Raigarh",
+      "Raipur",
+      "Rajnandgaon",
+      "Sakti",
+      "Sarangarh-Bilaigarh",
+      "Sukma",
+      "Surajpur",
+      "Surguja"
     ]
   },
   {
@@ -222,7 +258,16 @@
       "Narmada",
       "Navsari",
       "Panch Mahals",
-      "Patan"
+      "Patan",
+      "Porbandar",
+      "Rajkot",
+      "Sabarkantha",
+      "Surat",
+      "Surendranagar",
+      "Tapi",
+      "Vadodara",
+      "Valsad",
+      "Vav-Tharad"
     ]
   },
   {
@@ -351,7 +396,13 @@
       "Mandya",
       "Mysuru",
       "Raichur",
-      "Shivamogga"
+      "Shivamogga",
+      "Tumakuru",
+      "Udupi",
+      "Uttara Kannada",
+      "Vijayanagara",
+      "Vijayapura",
+      "Yadgir"
     ]
   },
   {
@@ -376,8 +427,13 @@
   {
     "state": "Ladakh",
     "districts": [
+      "Changthang",
+      "Drass",
       "Kargil",
-      "Leh Ladakh"
+      "Leh Ladakh",
+      "Nubra",
+      "Sham",
+      "Zanskar"
     ]
   },
   {
@@ -413,7 +469,37 @@
       "Jabalpur",
       "Jhabua",
       "Katni",
-      "Khandwa (East Nimar)"
+      "Khandwa (East Nimar)",
+      "Khargone",
+      "Maihar",
+      "Mandla",
+      "Mandsaur",
+      "Mauganj",
+      "Morena",
+      "Narmadapuram",
+      "Narsinghpur",
+      "Neemuch",
+      "Niwari",
+      "Pandhurna",
+      "Panna",
+      "Raisen",
+      "Rajgarh",
+      "Ratlam",
+      "Rewa",
+      "Sagar",
+      "Satna",
+      "Sehore",
+      "Seoni",
+      "Shahdol",
+      "Shajapur",
+      "Sheopur",
+      "Shivpuri",
+      "Sidhi",
+      "Singrauli",
+      "Tikamgarh",
+      "Ujjain",
+      "Umaria",
+      "Vidisha"
     ]
   },
   {
@@ -443,7 +529,18 @@
       "Nandurbar",
       "Nashik",
       "Palghar",
-      "Parbhani"
+      "Parbhani",
+      "Pune",
+      "Raigad",
+      "Ratnagiri",
+      "Sangli",
+      "Satara",
+      "Sindhudurg",
+      "Solapur",
+      "Thane",
+      "Wardha",
+      "Washim",
+      "Yavatmal"
     ]
   },
   {
@@ -549,14 +646,21 @@
       "Mayurbhanj",
       "Nabarangpur",
       "Nayagarh",
-      "Nuapada"
+      "Nuapada",
+      "Puri",
+      "Rayagada",
+      "Sambalpur",
+      "Subarnapur",
+      "Sundargarh"
     ]
   },
   {
     "state": "Puducherry",
     "districts": [
       "Karaikal",
-      "Puducherry"
+      "Mahe",
+      "Puducherry",
+      "Yanam"
     ]
   },
   {
@@ -614,7 +718,23 @@
       "Jaisalmer",
       "Jalore",
       "Jhalawar",
-      "Jhunjhunu"
+      "Jhunjhunu",
+      "Jodhpur",
+      "Karauli",
+      "Khairthal-Tijara",
+      "Kota",
+      "Kotputli-Behror",
+      "Nagaur",
+      "Pali",
+      "Phalodi",
+      "Pratapgarh",
+      "Rajsamand",
+      "Salumbar",
+      "Sawai Madhopur",
+      "Sikar",
+      "Sirohi",
+      "Tonk",
+      "Udaipur"
     ]
   },
   {
@@ -648,6 +768,7 @@
       "Mayiladuthurai",
       "Nagapattinam",
       "Namakkal",
+      "Nilgiris",
       "Perambalur",
       "Pudukkottai",
       "Ramanathapuram",
@@ -655,7 +776,19 @@
       "Salem",
       "Sivaganga",
       "Tenkasi",
-      "Thanjavur"
+      "Thanjavur",
+      "Theni",
+      "Thoothukudi",
+      "Tiruchirappalli",
+      "Tirunelveli",
+      "Tirupattur",
+      "Tiruppur",
+      "Tiruvallur",
+      "Tiruvannamalai",
+      "Tiruvarur",
+      "Vellore",
+      "Viluppuram",
+      "Virudhunagar"
     ]
   },
   {
@@ -685,7 +818,15 @@
       "Nirmal",
       "Nizamabad",
       "Peddapalli",
-      "Rajanna Sircilla"
+      "Rajanna Sircilla",
+      "Ranga Reddy",
+      "Sangareddy",
+      "Siddipet",
+      "Suryapet",
+      "Vikarabad",
+      "Wanaparthy",
+      "Warangal",
+      "Yadadri Bhuvanagiri"
     ]
   },
   {
@@ -728,7 +869,57 @@
       "Chitrakoot",
       "Deoria",
       "Etah",
-      "Etawah"
+      "Etawah",
+      "Farrukhabad",
+      "Fatehpur",
+      "Firozabad",
+      "Gautam Buddha Nagar",
+      "Ghaziabad",
+      "Ghazipur",
+      "Gonda",
+      "Gorakhpur",
+      "Hamirpur",
+      "Hapur",
+      "Hardoi",
+      "Hathras",
+      "Jalaun",
+      "Jaunpur",
+      "Jhansi",
+      "Kannauj",
+      "Kanpur Dehat",
+      "Kanpur Nagar",
+      "Kasganj",
+      "Kaushambi",
+      "Kushinagar",
+      "Lakhimpur Kheri",
+      "Lalitpur",
+      "Lucknow",
+      "Maharajganj",
+      "Mahoba",
+      "Mainpuri",
+      "Mathura",
+      "Mau",
+      "Meerut",
+      "Mirzapur",
+      "Moradabad",
+      "Muzaffarnagar",
+      "Pilibhit",
+      "Pratapgarh",
+      "Prayagraj",
+      "Raebareli",
+      "Rampur",
+      "Saharanpur",
+      "Sambhal",
+      "Sant Kabir Nagar",
+      "Shahjahanpur",
+      "Shamli",
+      "Shravasti",
+      "Siddharthnagar",
+      "Sitapur",
+      "Sonbhadra",
+      "Sultanpur",
+      "Unnao",
+      "Varanasi"
     ]
   },
   {

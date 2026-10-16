@@ -7,7 +7,7 @@ import { STATES } from './fields'
  * Bundled rather than fetched
  * ---------------------------------------------------------------------------
  *
- * 13.5 KB of JSON, 3.9 KB over the wire once gzip is on — small enough that
+ * 17 KB of JSON, 4.9 KB over the wire once gzip is on — small enough that
  * splitting it out would trade a real failure for an imaginary saving. A fetch
  * here fails in the worst place: a student half way through registration, on a
  * phone, on a connection that has just dropped, facing a required field with an
@@ -25,19 +25,20 @@ import { STATES } from './fields'
  * side breaks one function rather than a screen.
  *
  * ---------------------------------------------------------------------------
- * The file is incomplete, and this is why the field cannot be required
+ * Every district, and why the spellings are the file's own
  * ---------------------------------------------------------------------------
  *
- * Fourteen states are cut off at exactly 25 districts: Uttar Pradesh lists 25
- * of its 75, Madhya Pradesh 25 of 55, Rajasthan 25 of 50, Bihar 25 of 38. That
- * is the shape of a source that was paginated and never paged, not a judgement
- * about which districts matter.
+ * Fourteen states used to stop at exactly 25 districts — Uttar Pradesh at 25
+ * of its 75 — the shape of a source that was paginated and never paged. The
+ * picker carried a typed-district escape for those states. Students were still
+ * getting stuck at this field, so the missing districts were filled in from the
+ * state-by-state tables (2026-10), and with no state cut short the escape went.
  *
- * So a student from Lucknow or Varanasi opens this picker and their district is
- * not in it. Making the field required would stop them registering — over a
- * data file, for a value nothing in the platform matches on today. It stays
- * optional, and `isTruncated` below lets the picker say so rather than leaving
- * somebody searching for a row that was never there.
+ * Where the two sources spell one district differently, the file's spelling
+ * was kept: it is the LGD form, it already carries the renames (Chhatrapati
+ * Sambhajinagar, Dharashiv, Narmadapuram, Vijayapura), and it is what students
+ * have already saved. So a name moving here is a change to stored values, not
+ * a cosmetic one. If a district is missing, add it; do not respell one.
  */
 
 interface StateDistricts {
@@ -49,12 +50,6 @@ const BY_NAME = new Map<string, string[]>(
   (table as StateDistricts[]).map(s => [s.state, s.districts]),
 )
 
-/* The count every truncated state stopped at. A state holding exactly this many
- * is the signature of the cut, which is why it is a named constant rather than
- * a literal buried in a comparison — when the file is replaced with a complete
- * one, this and isTruncated are what should be deleted. */
-const TRUNCATED_AT = 25
-
 /** Every district the file knows for a state code, in the order it lists them
  *  (alphabetical). Empty for a code with no entry, which no current code has. */
 export function districtsFor(stateCode: string): string[] {
@@ -63,13 +58,6 @@ export function districtsFor(stateCode: string): string[] {
   return BY_NAME.get(name) ?? []
 }
 
-/* Whether this state's list is one of the fourteen that were cut short.
- *
- * A heuristic, and it says so: a state that genuinely has 25 districts would
- * read as truncated. None of the 36 does today, and the cost of being wrong is
- * one extra sentence under a picker rather than a student blocked — which is
- * the right way round for a guess to fail.
- */
 /* Every district in the file, each with the state it is in.
 
    For the picker before a state is chosen: registration asks for the district
@@ -92,8 +80,4 @@ export function allDistricts(): DistrictRow[] {
       (BY_NAME.get(stateName) ?? []).map(district => ({ district, stateCode, stateName })))
     .sort((a, b) => a.district.localeCompare(b.district) || a.stateName.localeCompare(b.stateName))
   return everyDistrict
-}
-
-export function isTruncated(stateCode: string): boolean {
-  return districtsFor(stateCode).length === TRUNCATED_AT
 }

@@ -51,8 +51,6 @@
 .district-clear { flex: none; min-height: 48px; min-width: 48px; }
 
 .district-picker { display: grid; gap: 0.75rem; }
-.district-partial { display: grid; gap: 0.25rem; justify-items: start; }
-.district-partial p { font-size: var(--step--1); margin: 0; }
 
 /* The list fills the sheet and scrolls inside it, so the search box stays put
    while the results move under it. */
@@ -82,11 +80,6 @@
   font-weight: var(--w-medium);
 }
 
-/* The typed-district escape, on the states whose list is cut short. */
-.district-typed { display: grid; gap: 0.5rem; }
-.district-typed > label { font-weight: var(--w-medium); }
-.district-typed-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.district-typed-actions > button { flex: 1 1 auto; }
 /* aria-invalid on the sheet trigger, matching what the input rule does for
    every other control on the form. */
 .select-like[aria-invalid="true"] { border-color: var(--danger); }
