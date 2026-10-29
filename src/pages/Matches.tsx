@@ -13,6 +13,7 @@ import {
 import OrgMark from '../components/OrgMark'
 import { SchemeSheet } from './public/SchemeSheet'
 import { applyRoute, externalHelpKey } from '../lib/apply'
+import { recordReferral } from '../lib/referral'
 import { canApply, stateClass, stateLabelKey, stateMark } from '../lib/eligibility'
 import type { Match, Reason } from '../lib/types'
 
@@ -660,6 +661,12 @@ function ScholarshipRow({ match, onOpen, outside }: {
                 href={route.href}
                 target="_blank"
                 rel="noopener noreferrer"
+                /* Recorded as on the directory. This was the one external
+                   button that did not, and it is the busiest: a signed-in
+                   student applies from their matches far more than from the
+                   directory, so the referral counts missed most presses. No
+                   status check — this page is behind sign-in. */
+                onClick={() => recordReferral(match.scholarship_id)}
               >
                 {t('public.applyExternal')}
                 <span aria-hidden="true"> ↗</span>

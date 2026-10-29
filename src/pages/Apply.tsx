@@ -8,6 +8,7 @@ import { useQuery } from '../lib/hooks'
 import { useAnnounce } from '../lib/announce'
 import { useI18n } from '../lib/i18n-context'
 import { withNext } from '../lib/next'
+import { recordReferral } from '../lib/referral'
 import { Empty, ErrorState, Notice, StateBadge } from '../components/ui'
 import type { Application, EligibilityState, Reason, RequiredDocument } from '../lib/types'
 
@@ -220,7 +221,16 @@ export default function Apply() {
 
         {away && (
           <p>
-            <a className="btn primary" href={away} target="_blank" rel="noopener noreferrer">
+            {/* Recorded: a stale card or a shared link lands here instead of
+                on the sponsor, and the press from here is the same connection
+                the directory's button records. */}
+            <a
+              className="btn primary"
+              href={away}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => { if (scholarshipId) recordReferral(scholarshipId) }}
+            >
               {t('public.applyExternal')}
               <span aria-hidden="true"> ↗</span>
               <span className="sr-only"> ({t('common.newTab')})</span>

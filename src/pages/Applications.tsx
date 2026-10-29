@@ -6,6 +6,7 @@ import { useQuery } from '../lib/hooks'
 import { useI18n } from '../lib/i18n-context'
 import { dateTime } from '../lib/format'
 import { trackOf } from '../lib/track'
+import { recordReferral } from '../lib/referral'
 import { Empty, ErrorState } from '../components/ui'
 import { SkeletonCards } from '../components/Skeleton'
 import ApplicationTrack from '../components/ApplicationTrack'
@@ -212,6 +213,10 @@ function ReferralCard({ referral: r, onChanged }: {
             href={r.external_url}
             target="_blank"
             rel="noopener noreferrer"
+            /* Counted as another opening of the same referral — the upsert
+               bumps `times`, it does not add a student. A student going back
+               to finish a sponsor's form is what that figure is for. */
+            onClick={() => recordReferral(r.scholarship_id)}
           >
             {t('ref.open')}
             <span aria-hidden="true"> ↗</span>
