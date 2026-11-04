@@ -85,12 +85,22 @@ export default function MyData() {
     return <div className="page"><Empty title={t('match.none')} hint={t('match.noneHint')} /></div>
   }
 
+  /* Asks for the export and hands it over in the same press (2026-11-05).
+   *
+   * It used to stop at "Requested" and leave the copy to a background worker
+   * that production never ran — requests waited up to 48 days and none was
+   * ever delivered. The server now builds the file when it is downloaded, so
+   * the button does both: the request is recorded (and a request already
+   * open is reused, so a student who was left waiting gets that one met), and
+   * the file is saved. The button's own words already said "Download". */
   async function requestExport() {
     setBusy('export')
     try {
-      await api.post('/me/data-requests/export')
-      setMessage(t('privacy.requested'))
-      announce(t('privacy.requested'))
+      const res = await api.post<{ request_id: string }>('/me/data-requests/export')
+      await api.download(`/me/data-requests/${res.data.request_id}/download`)
+      requests.reload()
+      setMessage(t('profile.saved'))
+      announce(t('profile.saved'))
     } catch (err) {
       setMessage(err instanceof Error ? err.message : t('common.error'))
     } finally {
