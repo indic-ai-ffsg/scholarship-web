@@ -160,9 +160,29 @@ fi
 # proxied request fail to resolve. Nothing about that is visible from outside,
 # because the static site is served from disk and keeps working.
 #
-# A container that has an IPv6 stack is the one that might need AAAA, so derive
-# it from that rather than naming a platform here. RESOLVER_IPV6=off opts out.
-if [ -f /proc/net/if_inet6 ]; then
+# Having an IPv6 stack is necessary but not sufficient, and treating it as
+# sufficient was wrong in production. sp-web proxies to the API's public name
+# (https://sship-api.indic-ai.org — the API is in another Railway project, so
+# the private network cannot reach it). Behind Cloudflare that name publishes
+# AAAA, the container has an IPv6 stack for the private network, so AAAA was
+# switched on — and Railway has no IPv6 route to the internet. Every proxied
+# request first logged
+#   connect() to [2606:4700:...]:443 failed (101: Network unreachable)
+#   upstream server temporarily disabled while connecting to upstream
+# and only then fell back to an A record and succeeded. It looked like an
+# outage in the log and cost a failed connect per request, while every user
+# saw a 200.
+#
+# The address that needs AAAA is the private one, so the test is now the
+# target as well as the stack: on for a *.railway.internal name or an IPv6
+# literal, off for everything else, because any name reachable from an IPv4
+# network has an A record to use. RESOLVER_IPV6=on|off still overrides, for an
+# IPv6-only network that names its services some other way.
+case "$derived_host" in
+    *.railway.internal|*.railway.internal:*|\[*) target_needs_ipv6=1 ;;
+    *) target_needs_ipv6= ;;
+esac
+if [ -f /proc/net/if_inet6 ] && [ -n "$target_needs_ipv6" ]; then
     : "${RESOLVER_IPV6:=on}"
 else
     : "${RESOLVER_IPV6:=off}"
