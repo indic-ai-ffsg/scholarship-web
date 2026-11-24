@@ -130,6 +130,16 @@ ENV MSG91_WIDGET_ID=
 ENV MSG91_TOKEN_AUTH=
 COPY --chmod=0755 docker-entrypoint.d/17-runtime-config.envsh /docker-entrypoint.d/
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+
+# nginx's error log at warn, not the image's notice. Railway labels every
+# stderr line severity "error", and at notice nginx writes ~30 lines to stderr
+# on each start and stop ("start worker process 93", "gracefully shutting
+# down", "signal 17 (SIGCHLD)"). Each one showed red in the deploy log and was
+# read as a failure more than once. At warn, the red lines that remain are the
+# ones worth reading, such as "upstream server temporarily disabled". The grep
+# fails the build if the stock line ever changes and the sed stops matching.
+RUN sed -i 's/^\(error_log[[:space:]]\{1,\}[^[:space:]]\{1,\}\)[[:space:]]\{1,\}notice;/\1 warn;/' /etc/nginx/nginx.conf \
+ && grep -q '^error_log[[:space:]].* warn;' /etc/nginx/nginx.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # The default port inside the container. Compose publishes it on 5173 to match
