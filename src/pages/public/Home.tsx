@@ -220,8 +220,18 @@ export default function Home() {
                     {/* By scholarship: a directory listing carries no
                         organisation id, and the scholarship's own logo route is
                         the one that answers for a curated scheme and a tenant's
-                        alike. */}
-                    <OrgMark scholarshipID={l.scholarship_id} name={l.organisation_name} />
+                        alike.
+
+                        Only when the listing says there is one. Unlike an
+                        application, a listing does carry logo_url, so asking
+                        anyway spent a request per row on the most-visited page
+                        and answered 404 for every scheme without a logo, three
+                        to a visit in the logs. The monogram covers the gap
+                        either way. */}
+                    <OrgMark
+                      scholarshipID={l.logo_url ? l.scholarship_id : undefined}
+                      name={l.organisation_name}
+                    />
                     <div className="deadline-body">
                       <Link to={`/scholarships/${l.slug}`}>{l.title}</Link>
                       <p>
